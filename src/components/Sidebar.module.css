@@ -1,0 +1,139 @@
+.sidebarContainer {
+  width: 250px;
+  background-color: #333;
+  color: #fff;
+  min-height: 100vh;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+}
+
+.sidebarOpen {
+  width: 250px;
+}
+
+.sidebarClosed {
+  width: 70px;
+  align-items: center; /* ပိတ်ထားချိန်တွင် Icon များ အလယ်ဗဟိုကျစေရန် */
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* ဘယ်/ညာ အစွန်းဆီသို့ ကပ်ရန် */
+  margin-bottom: 10px;
+}
+
+.sidebarClosed .sidebarHeader {
+  flex-direction: column;
+  justify-content: center;
+  gap: 15px;
+}
+
+.toggleBtn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.toggleBtn:hover {
+  background-color: #555;
+}
+
+.sidebarClosed .toggleBtn {
+  align-self: center; /* ပိတ်ထားချိန်တွင် အလယ်သို့ ရွှေ့ရန် */
+}
+
+.menuTitle {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.navContainer {
+  flex-grow: 1;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.navLink {
+  color: #fff;
+  text-decoration: none;
+  padding: 10px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Icon နှင့် စာသားကြား အကွာအဝေး */
+  white-space: nowrap; /* စာသားများ အောက်မဆင်းသွားစေရန် */
+  overflow: hidden;
+}
+
+.navLink:hover {
+  background-color: #555;
+}
+
+.activeLink {
+  background-color: #2655d7;
+  color: #fff;
+  font-weight: bold;
+}
+
+.logoutBtn {
+  background-color: #f44336;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px; /* Icon နှင့် စာသားကြား အကွာအဝေး */
+  white-space: nowrap; /* စာသားများ အောက်မဆင်းသွားစေရန် */
+  overflow: hidden;
+}
+
+.logoutBtn:hover {
+  background-color: #d32f2f;
+}
+
+/* Inline CSS နေရာတွင် အစားထိုးမည့် Class */
+.dropdownHeader {
+  padding: 10px;
+  font-size: 0.9rem;
+  color: #aaa;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.dropdownHeader:hover {
+  background-color: #444;
+  color: #fff;
+}
+
+/* Dropdown အောက်က Menu များကို အနည်းငယ် ညာဘက်သို့ တွန်းထားရန် */
+.dropdownContent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 20px; 
+  margin-top: 10px;
+}

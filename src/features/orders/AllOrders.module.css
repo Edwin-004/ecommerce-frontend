@@ -1,0 +1,73 @@
+.pageContainer {
+  padding: 20px;
+  background-color: #f4f6f8;
+  min-height: 100vh;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.tableContainer {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+
+.orderTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.orderTable th,
+.orderTable td {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.orderTable th {
+  background-color: #f9fafb;
+  color: #666;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.orderTable tbody tr:hover {
+  background-color: #fcfcfc;
+}
+
+/* Status Badges များ */
+.badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.statusPending { background-color: #fff3cd; color: #856404; }
+.statusProcessing { background-color: #cce5ff; color: #004085; }
+.statusShipped { background-color: #d1ecf1; color: #0c5460; }
+.statusDelivered { background-color: #d4edda; color: #155724; }
+.statusCancelled { background-color: #f8d7da; color: #721c24; }
+
+.actionBtn {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+  text-decoration: none;
+}
+
+.actionBtn:hover {
+  color: #0056b3;
+}
