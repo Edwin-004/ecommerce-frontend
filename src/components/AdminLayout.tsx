@@ -3,9 +3,15 @@ import { Sidebar } from './Sidebar';
 
 export const AdminLayout = () => {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', overflow: 'hidden' }}>
       <Sidebar />
-      <div style={{ flexGrow: 1, padding: '30px', background: '#f4f4f9' }}>
+      <div
+        style={{
+          flexGrow: 1,
+          background: '#f4f4f9',
+          overflowY: 'auto',
+        }}
+      >
         <Outlet />
       </div>
     </div>
