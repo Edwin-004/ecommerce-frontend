@@ -11,6 +11,7 @@ import {
   FiList,
   FiShoppingCart,
   FiLogOut,
+  FiFolder,
 } from 'react-icons/fi';
 
 export const Sidebar = () => {
@@ -52,7 +53,14 @@ export const Sidebar = () => {
           <FiHome size={20} />
           {isSidebarOpen && <span>Dashboard</span>}
         </NavLink>
-
+          <NavLink
+          to="/admin/categories"
+          className={getNavLinkClass}
+          title="Category Management"
+        >
+          <FiFolder size={20} />
+          {isSidebarOpen && <span>Categories</span>}
+        </NavLink>
         <div
           className={styles.dropdownHeader}
           onClick={() => setIsOrderMenuOpen(!isOrderMenuOpen)}
