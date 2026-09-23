@@ -79,7 +79,21 @@ export const AllOrders = () => {
               orders.map((order) => (
                 <tr key={order.orderId}>
                   <td style={{ fontWeight: 'bold' }}>{order.orderNo}</td>
-                  <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    {order.createdAt ? (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: '500' }}>
+                          {order.createdAt.split(' ')[0]}
+                        </span>
+
+                        <span style={{ fontSize: '0.85em', color: 'gray' }}>
+                          {order.createdAt.split(' ').slice(1).join(' ')}
+                        </span>
+                      </div>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
                   <td>{order.customerName}</td>
                   <td>{order.totalAmount.toLocaleString()} MMK</td>
                   <td>
