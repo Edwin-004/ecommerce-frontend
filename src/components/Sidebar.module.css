@@ -1,139 +1,74 @@
-.sidebarContainer {
-  width: 250px;
-  background-color: #333;
-  color: #fff;
-  min-height: 100vh;
-  padding: 20px 10px;
-  display: flex;
-  flex-direction: column;
-  transition: width 0.3s ease;
+.sidebar{
+  width:250px;
+  background:#111827;
+  color:white;
+  display:flex;
+  flex-direction:column;
+  transition:.3s;
 }
 
-.sidebarOpen {
-  width: 250px;
+.close{
+  width:80px;
 }
 
-.sidebarClosed {
-  width: 70px;
-  align-items: center; /* ပိတ်ထားချိန်တွင် Icon များ အလယ်ဗဟိုကျစေရန် */
+.header{
+  height:70px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 18px;
+  border-bottom:1px solid rgba(255,255,255,.08);
 }
 
-.sidebarHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* ဘယ်/ညာ အစွန်းဆီသို့ ကပ်ရန် */
-  margin-bottom: 10px;
+.header h2{
+  font-size:20px;
 }
 
-.sidebarClosed .sidebarHeader {
-  flex-direction: column;
-  justify-content: center;
-  gap: 15px;
+.header button{
+  background:none;
+  border:none;
+  color:white;
+  cursor:pointer;
+  font-size:22px;
 }
 
-.toggleBtn {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
+nav{
+  flex:1;
+  padding:20px 12px;
 }
 
-.toggleBtn:hover {
-  background-color: #555;
+.link{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  color:#cbd5e1;
+  text-decoration:none;
+  padding:14px;
+  border-radius:10px;
+  margin-bottom:8px;
+  transition:.2s;
 }
 
-.sidebarClosed .toggleBtn {
-  align-self: center; /* ပိတ်ထားချိန်တွင် အလယ်သို့ ရွှေ့ရန် */
+.link:hover{
+  background:#1f2937;
+  color:white;
 }
 
-.menuTitle {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 0;
-  white-space: nowrap;
+.active{
+  background:#2563eb;
+  color:white;
 }
 
-.navContainer {
-  flex-grow: 1;
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-}
-
-.navLink {
-  color: #fff;
-  text-decoration: none;
-  padding: 10px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 15px; /* Icon နှင့် စာသားကြား အကွာအဝေး */
-  white-space: nowrap; /* စာသားများ အောက်မဆင်းသွားစေရန် */
-  overflow: hidden;
-}
-
-.navLink:hover {
-  background-color: #555;
-}
-
-.activeLink {
-  background-color: #2655d7;
-  color: #fff;
-  font-weight: bold;
-}
-
-.logoutBtn {
-  background-color: #f44336;
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px; /* Icon နှင့် စာသားကြား အကွာအဝေး */
-  white-space: nowrap; /* စာသားများ အောက်မဆင်းသွားစေရန် */
-  overflow: hidden;
-}
-
-.logoutBtn:hover {
-  background-color: #d32f2f;
-}
-
-/* Inline CSS နေရာတွင် အစားထိုးမည့် Class */
-.dropdownHeader {
-  padding: 10px;
-  font-size: 0.9rem;
-  color: #aaa;
-  text-transform: uppercase;
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.dropdownHeader:hover {
-  background-color: #444;
-  color: #fff;
-}
-
-/* Dropdown အောက်က Menu များကို အနည်းငယ် ညာဘက်သို့ တွန်းထားရန် */
-.dropdownContent {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-left: 20px; 
-  margin-top: 10px;
+.logout{
+  margin:16px;
+  border:none;
+  background:#dc2626;
+  color:white;
+  padding:14px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  cursor:pointer;
 }
