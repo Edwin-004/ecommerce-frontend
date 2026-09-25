@@ -2,6 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './features/auth/Login';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLayout } from './components/AdminLayout';
+import { ProductManagementPage } from './features/products/ProductManagementPage';
+import { CreateProductPage } from './features/products/CreateProductPage';
+import { InventoryPage } from './features/inventory/InventoryPage';
+import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import "./App.css";
 
@@ -16,6 +20,11 @@ function App() {
         <Route element={<ProtectedRoute allowedRole="ADMIN" />}>
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/products" element={<ProductManagementPage />} />
+            <Route path="/admin/products/new" element={<CreateProductPage />} />
+            <Route path="/admin/variants" element={<VariantsPage />} />
+            <Route path="/admin/variations" element={<VariantsPage />} />
+            <Route path="/admin/inventory" element={<InventoryPage />} />
             
             {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
