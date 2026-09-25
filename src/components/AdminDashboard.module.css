@@ -1,0 +1,36 @@
+.subtitle{
+  color:#64748b;
+  margin-bottom:24px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:20px;
+}
+
+.card{
+  background:white;
+  border-radius:16px;
+  padding:24px;
+  box-shadow:0 4px 12px rgba(0,0,0,.05);
+}
+
+.card svg{
+  font-size:30px;
+  margin-bottom:12px;
+}
+
+.card h2{
+  margin:0;
+  font-size:28px;
+}
+
+.card p{
+  color:#64748b;
+}
+
+.blue{color:#2563eb;}
+.green{color:#16a34a;}
+.orange{color:#ea580c;}
+.purple{color:#9333ea;}

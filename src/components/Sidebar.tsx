@@ -1,96 +1,82 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { logout } from '../features/auth/authSlice';
-import styles from './Sidebar.module.css';
-import { useState } from 'react';
+import { NavLink, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logout } from "../features/auth/authSlice";
+import styles from "./Sidebar.module.css";
+import { useState } from "react";
+
 import {
   FiMenu,
   FiChevronLeft,
   FiHome,
-  FiBox,
-  FiList,
   FiShoppingCart,
+  FiPackage,
+  FiBox,
+  FiUsers,
+  FiBarChart2,
   FiLogOut,
   FiFolder,
 } from 'react-icons/fi';
 
 export const Sidebar = () => {
+  const [open, setOpen] = useState(true);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [isOrderMenuOpen, setIsOrderMenuOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  
   const handleLogout = () => {
     dispatch(logout());
-    navigate('/login');
+    navigate("/login");
   };
 
-  const getNavLinkClass = ({ isActive }: { isActive: boolean }) => {
-    return isActive ? `${styles.navLink} ${styles.activeLink}` : styles.navLink;
-  };
+  const navClass = ({ isActive }: { isActive: boolean }) =>
+    isActive ? `${styles.link} ${styles.active}` : styles.link;
 
   return (
-    <div
-      className={`${styles.sidebarContainer} ${isSidebarOpen ? styles.sidebarOpen : styles.sidebarClosed}`}
-    >
-      <div className={styles.sidebarHeader}>
-        <h2 className={styles.menuTitle}>
-          {isSidebarOpen ? 'Admin Panel' : 'AP'}
-        </h2>
+    <aside className={`${styles.sidebar} ${!open ? styles.close : ""}`}>
+      <div className={styles.header}>
+        {open && <h2>E-Shop</h2>}
 
-        <button
-          className={styles.toggleBtn}
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        >
-          {isSidebarOpen ? <FiChevronLeft /> : <FiMenu />}
+        <button onClick={() => setOpen(!open)}>
+          {open ? <FiChevronLeft /> : <FiMenu />}
         </button>
       </div>
-      <nav className={styles.navContainer}>
-        <NavLink
-          to="/admin/dashboard"
-          className={getNavLinkClass}
-          title="Order Management"
-        >
-          <FiHome size={20} />
-          {isSidebarOpen && <span>Dashboard</span>}
-        </NavLink>
-          <NavLink
-          to="/admin/categories"
-          className={getNavLinkClass}
-          title="Category Management"
-        >
-          <FiFolder size={20} />
-          {isSidebarOpen && <span>Categories</span>}
-        </NavLink>
-        <div
-          className={styles.dropdownHeader}
-          onClick={() => setIsOrderMenuOpen(!isOrderMenuOpen)}
-          title="Order Management"
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <FiShoppingCart size={20} />
-            {isSidebarOpen && <span>Order Management</span>}
-          </div>
-          {isSidebarOpen && <span>{isOrderMenuOpen ? '▼' : '▶'}</span>}
-        </div>
 
-        {isOrderMenuOpen && (
-          <div className={styles.dropdownContent}>
-            <NavLink to="/admin/orders" className={getNavLinkClass}>
-              <FiBox size={20} />
-              {isSidebarOpen && <span>All Orders</span>}
-            </NavLink>
+      <nav>
+        <NavLink to="/admin/dashboard" className={navClass}>
+          <FiHome />
+          {open && "Dashboard"}
+        </NavLink>
 
-            <NavLink to="/admin/orders/pending" className={getNavLinkClass}>
-              <FiList size={20} />
-              {isSidebarOpen && <span>Pending Orders</span>}
-            </NavLink>
-          </div>
-        )}
+        <NavLink to="/admin/orders" className={navClass}>
+          <FiShoppingCart />
+          {open && "Orders"}
+        </NavLink>
+
+        <NavLink to="/admin/products" className={navClass}>
+          <FiPackage />
+          {open && "Products"}
+        </NavLink>
+
+        <NavLink to="/admin/inventory" className={navClass}>
+          <FiBox />
+          {open && "Inventory"}
+        </NavLink>
+
+        <NavLink to="/admin/staff" className={navClass}>
+          <FiUsers />
+          {open && "Staff"}
+        </NavLink>
+
+        <NavLink to="/admin/reports" className={navClass}>
+          <FiBarChart2 />
+          {open && "Reports"}
+        </NavLink>
       </nav>
-      <button className={styles.logoutBtn} onClick={handleLogout}>
-        {isSidebarOpen && <span>Logout</span>}
-        <FiLogOut size={20} />
+
+      <button className={styles.logout} onClick={handleLogout}>
+        <FiLogOut />
+        {open && "Logout"}
       </button>
-    </div>
+    </aside>
   );
 };
