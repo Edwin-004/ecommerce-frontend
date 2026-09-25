@@ -14,7 +14,7 @@ import {
   FiUsers,
   FiBarChart2,
   FiLogOut,
-  FiFolder,
+ FiFolder,
 } from 'react-icons/fi';
 
 export const Sidebar = () => {
@@ -46,6 +46,11 @@ export const Sidebar = () => {
           <FiHome />
           {open && "Dashboard"}
         </NavLink>
+
+        <NavLink to="/admin/categories" className={navClass}>
+  <FiFolder />
+  {open && "Categories"}
+</NavLink>
 
         <NavLink to="/admin/orders" className={navClass}>
           <FiShoppingCart />
