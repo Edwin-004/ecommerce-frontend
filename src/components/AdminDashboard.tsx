@@ -1,7 +1,19 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styles from "./AdminDashboard.module.css";
 import { FiShoppingCart, FiDollarSign, FiPackage, FiUsers } from "react-icons/fi";
+import { inventoryApi } from "../features/inventory/inventoryApi";
 
 export const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const [lowStockCount, setLowStockCount] = useState<number | string>(0);
+
+  useEffect(() => {
+    inventoryApi.getLowStockAlerts()
+      .then((data) => setLowStockCount(data.length))
+      .catch(() => setLowStockCount(0));
+  }, []);
+
   return (
     <div>
 
@@ -24,10 +36,15 @@ export const AdminDashboard = () => {
           <p>Revenue</p>
         </div>
 
-        <div className={styles.card}>
+        <div
+          className={styles.card}
+          style={{ cursor: "pointer", transition: "transform 0.2s" }}
+          onClick={() => navigate("/admin/inventory")}
+          title="Click to view Low Stock items"
+        >
           <FiPackage className={styles.orange}/>
-          <h2>23</h2>
-          <p>Low Stock</p>
+          <h2>{lowStockCount}</h2>
+          <p>Low Stock (View All &rarr;)</p>
         </div>
 
         <div className={styles.card}>

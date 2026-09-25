@@ -1,0 +1,861 @@
+/* =======================================================
+   SHARED PAGE HEADER (3D Cube Icon + Title + Subtitle)
+   ======================================================= */
+.pageTopHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.iconBadge {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: #f0f7ff;
+  border: 1px solid #dbeafe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #3b82f6;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.1);
+}
+
+.mainTitle {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.3px;
+}
+
+.mainSubtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* =======================================================
+   1. PRODUCT MANAGEMENT DASHBOARD (Screenshots 3 & 4)
+   ======================================================= */
+.dashboardContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 8px;
+}
+
+/* Search & Filter Bar */
+.filterCard {
+  background: white;
+  border-radius: 14px;
+  padding: 14px 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.searchGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.searchInputWrapper {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 14px;
+  width: 320px;
+  transition: border-color 0.2s;
+}
+
+.searchInputWrapper:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.searchInputWrapper input {
+  border: none;
+  background: transparent;
+  outline: none;
+  margin-left: 8px;
+  width: 100%;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.productsFoundText {
+  font-size: 13px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.dropdownFiltersGroup {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filterSelect {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  font-size: 13px;
+  color: #334155;
+  outline: none;
+  cursor: pointer;
+}
+
+.filterSelect:focus {
+  border-color: #3b82f6;
+}
+
+/* Action Toolbar */
+.toolbarCard {
+  background: white;
+  border-radius: 14px 14px 0 0;
+  padding: 14px 20px;
+  border: 1px solid #e2e8f0;
+  border-bottom: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toolbarLeft {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btnActionOutline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnActionOutline:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btnActionDelete {
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.btnActionDelete:hover {
+  background: #fef2f2;
+}
+
+.btnExportCsv {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btnExportCsv:hover {
+  background: #1d4ed8;
+}
+
+.btnExportPdf {
+  background: white;
+  color: #ef4444;
+  border: 1px solid #f87171;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btnExportPdf:hover {
+  background: #fef2f2;
+}
+
+.btnCreateProduct {
+  background: #334155;
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btnCreateProduct:hover {
+  background: #1e293b;
+}
+
+/* Products Table */
+.tableWrapper {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0 0 14px 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  margin-bottom: 28px;
+}
+
+.productTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.productTable th {
+  background: #f8fafc;
+  padding: 14px 18px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.productTable td {
+  padding: 12px 18px;
+  font-size: 13px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.productTable tr:hover td {
+  background: #fbfcfe;
+}
+
+.productCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.productThumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.skuText {
+  font-family: monospace;
+  font-weight: 500;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.priceText {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.stockText {
+  font-weight: 600;
+  color: #475569;
+}
+
+.statusPillActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f0fdf4;
+  color: #16a34a;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.btnViewAction {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btnViewAction:hover {
+  background: #f1f5f9;
+}
+
+/* Pagination Bar */
+.paginationBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.pageControls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.btnPage {
+  padding: 5px 10px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #475569;
+}
+
+.btnPageActive {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+  font-weight: 600;
+}
+
+/* Attributes & Values Bottom Card (Screenshot 4) */
+.attributesSectionCard {
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  padding: 20px 24px;
+  margin-bottom: 40px;
+}
+
+.attributesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.attributesHeader h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.btnNewAttribute {
+  background: #334155;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btnNewAttribute:hover {
+  background: #1e293b;
+}
+
+.attributeTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.attributeTable th {
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.attributeTable td {
+  padding: 16px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.colorSwatchesRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.colorCircle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: inline-block;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.colorCircle:hover {
+  transform: scale(1.2);
+}
+
+.sizePill {
+  display: inline-flex;
+  align-items: center;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.attrActionGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.btnAttrEdit {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  background: white;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btnAttrEdit:hover {
+  background: #eff6ff;
+}
+
+.btnAttrDelete {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  background: white;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btnAttrDelete:hover {
+  background: #fef2f2;
+}
+
+/* =======================================================
+   2. CREATE NEW PRODUCT FORM (Screenshots 1 & 2)
+   ======================================================= */
+.createProductContainer {
+  max-width: 740px;
+  margin: 0 auto;
+  padding-bottom: 60px;
+}
+
+.sectionCard {
+  background: white;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+  padding: 24px 28px;
+  margin-bottom: 22px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 18px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.formGrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.inputGroup label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.inputField {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #1e293b;
+  outline: none;
+  background: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.inputField:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inputField::placeholder {
+  color: #94a3b8;
+}
+
+.textareaField {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #1e293b;
+  outline: none;
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.textareaField:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Category & Brand Selectors Row (Screenshot 1) */
+.categoryBrandRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.categoryBrandRow select {
+  flex: 1;
+}
+
+.btnIconAction {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.btnIconAction:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* Drag & Drop Upload Zone (Screenshot 1 & 2) */
+.uploadZone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadZone:hover {
+  border-color: #3b82f6;
+  background: #f0f7ff;
+}
+
+.cloudIcon {
+  font-size: 38px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.uploadTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 4px 0;
+}
+
+.uploadSubtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.imagePreviewGrid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.imagePreviewThumb {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.imagePreviewThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.removeThumbBtn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Product Variations Card (Screenshot 1 & 2) */
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.validationHintText {
+  color: #ef4444;
+  font-size: 12px;
+  margin: 6px 0 0 0;
+}
+
+/* Expanded Variations Section (Screenshot 2) */
+.variationsSubSection {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.attrSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.attrSectionHeader h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #3b82f6;
+  margin: 0;
+}
+
+.btnNewAttrSmall {
+  background: #334155;
+  color: white;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.attributeItemCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.attrItemTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.attrNameTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatchesBox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.inlineAddValueRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inlineAddValueRow input {
+  padding: 6px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 12px;
+  width: 180px;
+}
+
+.btnAddValuePlus {
+  background: #334155;
+  color: white;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* Add existing attribute row (Screenshot 2) */
+.addExistingRow {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.addExistingRow label {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.addExistingControls {
+  display: flex;
+  gap: 8px;
+}
+
+.addExistingControls select {
+  width: 200px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.btnSubmitCreateProduct {
+  display: block;
+  margin: 32px auto 0 auto;
+  background: #334155;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(51, 65, 85, 0.2);
+  transition: all 0.2s;
+}
+
+.btnSubmitCreateProduct:hover {
+  background: #1e293b;
+  transform: translateY(-1px);
+}
