@@ -38,7 +38,7 @@ export const Sidebar = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
+  
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
@@ -51,18 +51,16 @@ export const Sidebar = () => {
     isActive ? `${styles.subLink} ${styles.subActive}` : styles.subLink;
 
   return (
-    <aside className={`${styles.sidebar} ${!open && styles.close}`}>
-      {/* Brand Header */}
+    <aside className={`${styles.sidebar} ${!open ? styles.close : ""}`}>
       <div className={styles.header}>
         {open && <h2>E-Shop Admin</h2>}
 
-        <button onClick={() => setOpen(!open)} title={open ? "Collapse sidebar" : "Expand sidebar"}>
+        <button onClick={() => setOpen(!open)}>
           {open ? <FiChevronLeft /> : <FiMenu />}
         </button>
       </div>
 
       <nav>
-        {/* Dashboard */}
         <NavLink to="/admin/dashboard" className={navClass}>
           <FiHome />
           {open && "Dashboard"}
@@ -156,16 +154,25 @@ export const Sidebar = () => {
           {open && "Orders"}
         </NavLink>
 
-        {/* Staff */}
+        <NavLink to="/admin/products" className={navClass}>
+          <FiPackage />
+          {open && "Products"}
+        </NavLink>
+
+        <NavLink to="/admin/inventory" className={navClass}>
+          <FiBox />
+          {open && "Inventory"}
+        </NavLink>
+
         <NavLink to="/admin/staff" className={navClass}>
           <FiUsers />
-          {open && "Staff Accounts"}
+          {open && "Staff"}
         </NavLink>
 
         {/* Reports */}
         <NavLink to="/admin/reports" className={navClass}>
           <FiBarChart2 />
-          {open && "Sales Reports"}
+          {open && "Reports"}
         </NavLink>
       </nav>
 
