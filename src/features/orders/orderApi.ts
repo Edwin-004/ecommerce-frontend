@@ -20,8 +20,15 @@ export const orderApi = createApi({
       query: (status) => status ? `/orders?status=${status}` : '/orders',
       providesTags: ['Order'],
     }),
+
+    getOrderByOrderNo: builder.query<OrderResponseDto, string>({
+      query: (orderNo) => `/orders/${orderNo}`,
+      // ID အလိုက် Cache မှတ်ထားမှ Update လုပ်တဲ့အခါ ဒီတစ်ခုတည်းကိုပဲ Refresh ပြန်လုပ်လို့ရပါမည်
+      providesTags: (_result, _error, orderNo) => [{ type: 'Order', id: orderNo }], 
+    }),
+
   }),
 });
 
 // React Component များတွင် အလွယ်တကူ သုံးနိုင်ရန် Hook အဖြစ် ထုတ်ပေးခြင်း
-export const { useGetOrdersQuery } = orderApi;
+export const { useGetOrdersQuery, useGetOrderByOrderNoQuery } = orderApi;
