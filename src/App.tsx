@@ -9,6 +9,7 @@ import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import './App.css';
 import { AllOrders } from './features/orders/AllOrders';
+import CategoryManagement from './features/categories/CategoryManagement';
 import OrderManagement from './features/orders/OrderManagement';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
 
         {/* မရှိသော URL ရိုက်ထည့်မိပါက Login သို့ အလိုအလျောက် ပြန်ပို့မည် */}
         <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/categories" element={<CategoryManagement />} />
       </Routes>
     </BrowserRouter>
   );
