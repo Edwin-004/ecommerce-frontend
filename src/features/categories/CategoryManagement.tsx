@@ -1,237 +1,693 @@
-import React, { useEffect, useState } from 'react';
-import { categoryApi } from './categoryApi';
-import {type CategoryRequestDto,type CategoryResponseDto } from '../../types/category';
-import styles from './CategoryManagement.module.css';
+
+import React, { useEffect, useState } from "react";
+import {
+  FiLayers, FiFolder, FiGitBranch, FiSearch,
+  FiPlus, FiEdit2, FiTrash2, FiList,
+  FiChevronDown, FiChevronRight, FiRefreshCw,
+  FiX, FiSave
+} from "react-icons/fi";
+
+import { categoryApi } from "./categoryApi";
+import {
+  type CategoryRequestDto,
+  type CategoryResponseDto
+} from "../../types/category";
+
+import styles from "./CategoryManagement.module.css";
 
 export const CategoryManagement: React.FC = () => {
-  const CURRENT_USER_ID = 1; // Backend မှ User ID လိုအပ်ချက်အတွက် (Login System မှ ပို့ပေးရန်)
+  const CURRENT_USER_ID = 1;
 
-  const [viewMode, setViewMode] = useState<'flat' | 'tree'>('flat');
-  const [categories, setCategories] = useState<CategoryResponseDto[]>([]);
-  const [treeCategories, setTreeCategories] = useState<CategoryResponseDto[]>([]);
-  const [flatAll, setFlatAll] = useState<CategoryResponseDto[]>([]);
-  
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [viewMode, setViewMode] =
+    useState<"flat" | "tree">("flat");
 
-  // Form State
-  const [formData, setFormData] = useState<CategoryRequestDto>({
-    categoryName: '',
-    description: '',
-    parentId: null,
-    userId: CURRENT_USER_ID,
-  });
+  const [categories, setCategories] =
+    useState<CategoryResponseDto[]>([]);
 
-  // Load Data
-  useEffect(() => {
-    fetchData();
-  }, [viewMode]);
+  const [treeCategories, setTreeCategories] =
+    useState<CategoryResponseDto[]>([]);
+
+  const [flatAll, setFlatAll] =
+    useState<CategoryResponseDto[]>([]);
+
+  const [editingId, setEditingId] =
+    useState<number | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState<string | null>(null);
+
+  const [successMessage, setSuccessMessage] =
+    useState<string | null>(null);
+
+  const [expanded, setExpanded] = useState<number[]>([]);
+
+  const [formData, setFormData] =
+    useState<CategoryRequestDto>({
+      categoryName: "",
+      description: "",
+      parentId: null,
+      userId: CURRENT_USER_ID
+    });
 
   const fetchData = async () => {
-    setErrorMessage(null);
+    setLoading(true);
+
     try {
-      if (viewMode === 'flat') {
-        const data = await categoryApi.getAllCategories(0, 50);
-        setCategories(data.content);
-      } else {
-        const treeData = await categoryApi.getCategoryTree();
-        setTreeCategories(treeData);
-      }
-      
-      // Select Box အတွက် Dropdown Data
-      const all = await categoryApi.getAllCategories(0, 1000);
+      const [flat, tree, all] = await Promise.all([
+        categoryApi.getAllCategories(0, 50),
+        categoryApi.getCategoryTree(),
+        categoryApi.getAllCategories(0, 1000)
+      ]);
+
+      setCategories(flat.content);
+      setTreeCategories(tree);
       setFlatAll(all.content);
+      setErrorMessage(null);
     } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || 'Failed to fetch categories.');
+      setErrorMessage(
+        err.response?.data?.message ||
+        "Failed to load categories."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement |
+      HTMLTextAreaElement |
+      HTMLSelectElement
+    >
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+
+    setFormData(prev => ({
       ...prev,
-      [name]: name === 'parentId' ? (value ? Number(value) : null) : value,
+      [name]:
+        name === "parentId"
+          ? value ? Number(value) : null
+          : value
     }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    try {
-      if (editingId) {
-        await categoryApi.updateCategory(editingId, formData);
-      } else {
-        await categoryApi.createCategory(formData);
-      }
-      resetForm();
-      fetchData();
-    } catch (err: any) {
-      // Backend Exception မှ ပြန်လာသော error message ကို ပြခြင်း
-      setErrorMessage(err.response?.data?.message || err.message || 'Operation failed.');
-    }
-  };
-
-  const handleEdit = (category: CategoryResponseDto) => {
-    setEditingId(category.categoryId);
-    setFormData({
-      categoryName: category.categoryName,
-      description: category.description || '',
-      parentId: category.parentId || null,
-      userId: CURRENT_USER_ID,
-    });
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this category?')) return;
-    setErrorMessage(null);
-
-    try {
-      await categoryApi.deleteCategory(id);
-      fetchData();
-    } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || 'Cannot delete category containing sub-categories.');
-    }
   };
 
   const resetForm = () => {
     setEditingId(null);
     setFormData({
-      categoryName: '',
-      description: '',
+      categoryName: "",
+      description: "",
       parentId: null,
-      userId: CURRENT_USER_ID,
+      userId: CURRENT_USER_ID
     });
   };
 
-  // Tree View Render Recursive Component
-  const renderTree = (nodes: CategoryResponseDto[]) => (
-    <ul className={styles.treeList}>
-      {nodes.map((node) => (
-        <li key={node.categoryId} className={styles.treeItem}>
-          <div>
-            <strong>📁 {node.categoryName}</strong>
-            <span style={{ marginLeft: 12 }}>
-              <button onClick={() => handleEdit(node)} className={`${styles.actionBtn} ${styles.editBtn}`}>Edit</button>
-              <button onClick={() => handleDelete(node.categoryId)} className={`${styles.actionBtn} ${styles.deleteBtn}`}>Delete</button>
-            </span>
-          </div>
-          {node.children && node.children.length > 0 && renderTree(node.children)}
-        </li>
-      ))}
-    </ul>
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
+
+    if (!formData.categoryName.trim()) {
+      setErrorMessage("Category name is required.");
+      return;
+    }
+
+    setSaving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      if (editingId !== null) {
+        await categoryApi.updateCategory(
+          editingId, formData
+        );
+        setSuccessMessage(
+          "Category updated successfully."
+        );
+      } else {
+        await categoryApi.createCategory(formData);
+        setSuccessMessage(
+          "Category created successfully."
+        );
+      }
+
+      resetForm();
+      await fetchData();
+    } catch (err: any) {
+      setErrorMessage(
+        err.response?.data?.message ||
+        "Operation failed."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEdit = (
+    category: CategoryResponseDto
+  ) => {
+    setEditingId(category.categoryId);
+
+    setFormData({
+      categoryName: category.categoryName,
+      description: category.description || "",
+      parentId: category.parentId ?? null,
+      userId: CURRENT_USER_ID
+    });
+
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm(
+      "Are you sure you want to delete this category?"
+    )) return;
+
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await categoryApi.deleteCategory(id);
+
+      if (editingId === id) resetForm();
+
+      setSuccessMessage(
+        "Category deleted successfully."
+      );
+
+      await fetchData();
+    } catch (err: any) {
+      setErrorMessage(
+        err.response?.data?.message ||
+        "Cannot delete this category."
+      );
+    }
+  };
+
+  // Prevent selecting self or descendants as parent.
+  const getDescendantIds = (
+    id: number,
+    visited = new Set<number>()
+  ): Set<number> => {
+    if (visited.has(id)) return visited;
+    visited.add(id);
+
+    flatAll
+      .filter(cat => cat.parentId === id)
+      .forEach(cat =>
+        getDescendantIds(cat.categoryId, visited)
+      );
+
+    return visited;
+  };
+
+  const invalidParentIds =
+    editingId !== null
+      ? getDescendantIds(editingId)
+      : new Set<number>();
+
+  const availableParents = flatAll.filter(
+    cat => !invalidParentIds.has(cat.categoryId)
   );
+
+  const filteredCategories = categories.filter(
+    cat =>
+      cat.categoryName
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      (cat.parentName || "")
+        .toLowerCase()
+        .includes(search.toLowerCase())
+  );
+
+  const matchesSearch = (
+    node: CategoryResponseDto
+  ): boolean =>
+    node.categoryName
+      .toLowerCase()
+      .includes(search.toLowerCase()) ||
+    (node.children || []).some(matchesSearch);
+
+  const filteredTree = treeCategories.filter(
+    node => !search || matchesSearch(node)
+  );
+
+  const toggleExpand = (id: number) => {
+    setExpanded(prev =>
+      prev.includes(id)
+        ? prev.filter(x => x !== id)
+        : [...prev, id]
+    );
+  };
+
+  const renderTree = (
+    nodes: CategoryResponseDto[],
+    depth = 0
+  ): React.ReactNode => (
+    <div className={styles.treeList}>
+      {nodes.map(node => {
+        const hasChildren =
+          (node.children?.length || 0) > 0;
+
+        const isExpanded =
+          expanded.includes(node.categoryId) ||
+          search.length > 0;
+
+        return (
+          <div
+            key={node.categoryId}
+            className={styles.treeItem}
+          >
+            <div className={styles.treeRow}>
+              <div className={styles.treeName}>
+                {hasChildren ? (
+                  <button
+                    className={styles.expandBtn}
+                    onClick={() =>
+                      toggleExpand(node.categoryId)
+                    }
+                    aria-label="Toggle category"
+                  >
+                    {isExpanded
+                      ? <FiChevronDown />
+                      : <FiChevronRight />}
+                  </button>
+                ) : (
+                  <span className={styles.expandSpace} />
+                )}
+
+                <span className={styles.folderIcon}>
+                  <FiFolder />
+                </span>
+
+                <span>{node.categoryName}</span>
+
+                {depth === 0 && (
+                  <span className={styles.rootBadge}>
+                    Root
+                  </span>
+                )}
+              </div>
+
+              <div className={styles.actions}>
+                <button
+                  className={styles.editBtn}
+                  onClick={() => handleEdit(node)}
+                  title="Edit"
+                >
+                  <FiEdit2 />
+                </button>
+
+                <button
+                  className={styles.deleteBtn}
+                  onClick={() =>
+                    handleDelete(node.categoryId)
+                  }
+                  title="Delete"
+                >
+                  <FiTrash2 />
+                </button>
+              </div>
+            </div>
+
+            {hasChildren && isExpanded && (
+              <div className={styles.treeChildren}>
+                {renderTree(
+                  node.children || [], depth + 1
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const rootCount = flatAll.filter(
+    cat => cat.parentId == null
+  ).length;
+
+  const subCount = flatAll.filter(
+    cat => cat.parentId != null
+  ).length;
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Category Management</h1>
 
-      {errorMessage && <div className={styles.errorText}>⚠️ {errorMessage}</div>}
+      {/* Page Header */}
+      <div className={styles.pageHeader}>
+        <div>
+          <h1>Category Management</h1>
+          <p>
+            Organize and manage your product categories
+          </p>
+        </div>
 
-      <div className={styles.grid}>
-        {/* Form Panel */}
-        <div className={styles.card}>
-          <h3>{editingId ? 'Edit Category' : 'Create Category'}</h3>
-          <form onSubmit={handleSubmit}>
+        <button
+          className={styles.refreshBtn}
+          onClick={fetchData}
+          disabled={loading}
+        >
+          <FiRefreshCw />
+          Refresh
+        </button>
+      </div>
+
+      {/* Statistics */}
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={`${styles.statIcon} ${styles.blue}`}>
+            <FiLayers />
+          </div>
+          <div>
+            <h2>{flatAll.length}</h2>
+            <p>Total Categories</p>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={`${styles.statIcon} ${styles.green}`}>
+            <FiFolder />
+          </div>
+          <div>
+            <h2>{rootCount}</h2>
+            <p>Root Categories</p>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={`${styles.statIcon} ${styles.purple}`}>
+            <FiGitBranch />
+          </div>
+          <div>
+            <h2>{subCount}</h2>
+            <p>Subcategories</p>
+          </div>
+        </div>
+      </div>
+
+      {errorMessage && (
+        <div className={styles.errorAlert}>
+          <span>{errorMessage}</span>
+          <button onClick={() => setErrorMessage(null)}>
+            <FiX />
+          </button>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className={styles.successAlert}>
+          <span>{successMessage}</span>
+          <button onClick={() => setSuccessMessage(null)}>
+            <FiX />
+          </button>
+        </div>
+      )}
+
+      <div className={styles.mainGrid}>
+
+        {/* Category Form */}
+        <section className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.headerIcon}>
+              {editingId !== null
+                ? <FiEdit2 />
+                : <FiPlus />}
+            </div>
+
+            <div>
+              <h3>
+                {editingId !== null
+                  ? "Edit Category"
+                  : "Create Category"}
+              </h3>
+              <p>
+                {editingId !== null
+                  ? "Update category information"
+                  : "Add a new product category"}
+              </p>
+            </div>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className={styles.form}
+          >
             <div className={styles.formGroup}>
-              <label>Category Name *</label>
+              <label htmlFor="categoryName">
+                Category Name
+                <span className={styles.required}> *</span>
+              </label>
+
               <input
-                type="text"
+                id="categoryName"
                 name="categoryName"
+                type="text"
+                placeholder="e.g. Electronics"
                 value={formData.categoryName}
                 onChange={handleInputChange}
-                required
                 maxLength={120}
-                className={styles.input}
+                required
               />
             </div>
 
             <div className={styles.formGroup}>
-              <label>Parent Category</label>
+              <label htmlFor="parentId">
+                Parent Category
+              </label>
+
               <select
+                id="parentId"
                 name="parentId"
-                value={formData.parentId || ''}
+                value={formData.parentId ?? ""}
                 onChange={handleInputChange}
-                className={styles.select}
               >
-                <option value="">-- No Parent (Root Category) --</option>
-                {flatAll
-                  .filter((cat) => cat.categoryId !== editingId) // Self-reference မဖြစ်အောင် ပိတ်ထားခြင်း
-                  .map((cat) => (
-                    <option key={cat.categoryId} value={cat.categoryId}>
-                      {cat.categoryName}
-                    </option>
-                  ))}
+                <option value="">
+                  No Parent (Root Category)
+                </option>
+
+                {availableParents.map(cat => (
+                  <option
+                    key={cat.categoryId}
+                    value={cat.categoryId}
+                  >
+                    {cat.categoryName}
+                  </option>
+                ))}
               </select>
+
+              <small>
+                Leave empty to create a root category.
+              </small>
             </div>
 
             <div className={styles.formGroup}>
-              <label>Description</label>
+              <label htmlFor="description">
+                Description
+                <span className={styles.optional}>
+                  {" "}(Optional)
+                </span>
+              </label>
+
               <textarea
+                id="description"
                 name="description"
-                rows={3}
+                placeholder="Enter category description..."
+                rows={4}
                 value={formData.description}
                 onChange={handleInputChange}
-                className={styles.textarea}
               />
             </div>
 
-            <button type="submit" className={styles.submitBtn}>
-              {editingId ? 'Update Category' : 'Save Category'}
+            <button
+              type="submit"
+              className={styles.submitBtn}
+              disabled={saving}
+            >
+              {editingId !== null
+                ? <FiSave />
+                : <FiPlus />}
+
+              {saving
+                ? "Saving..."
+                : editingId !== null
+                  ? "Update Category"
+                  : "Create Category"}
             </button>
-            {editingId && (
-              <button type="button" onClick={resetForm} className={styles.cancelBtn}>
+
+            {editingId !== null && (
+              <button
+                type="button"
+                className={styles.cancelBtn}
+                onClick={resetForm}
+              >
                 Cancel Edit
               </button>
             )}
           </form>
-        </div>
+        </section>
 
-        {/* Display List Panel */}
-        <div className={styles.card}>
-          <div className={styles.tabButtons}>
-            <button
-              className={`${styles.tabBtn} ${viewMode === 'flat' ? styles.activeTab : ''}`}
-              onClick={() => setViewMode('flat')}
-            >
-              Flat View
-            </button>
-            <button
-              className={`${styles.tabBtn} ${viewMode === 'tree' ? styles.activeTab : ''}`}
-              onClick={() => setViewMode('tree')}
-            >
-              Tree Hierarchy View
-            </button>
+        {/* Category List */}
+        <section className={styles.card}>
+          <div className={styles.listHeader}>
+            <div>
+              <h3>All Categories</h3>
+              <p>
+                View and manage your categories
+              </p>
+            </div>
+
+            <span className={styles.countBadge}>
+              {flatAll.length} Total
+            </span>
           </div>
 
-          {viewMode === 'flat' ? (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Parent</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((cat) => (
-                  <tr key={cat.categoryId}>
-                    <td>{cat.categoryId}</td>
-                    <td>{cat.categoryName}</td>
-                    <td>{cat.parentName || '-'}</td>
-                    <td>
-                      <button onClick={() => handleEdit(cat)} className={`${styles.actionBtn} ${styles.editBtn}`}>Edit</button>
-                      <button onClick={() => handleDelete(cat.categoryId)} className={`${styles.actionBtn} ${styles.deleteBtn}`}>Delete</button>
-                    </td>
+          <div className={styles.toolbar}>
+            <div className={styles.searchBox}>
+              <FiSearch />
+
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={search}
+                onChange={e =>
+                  setSearch(e.target.value)
+                }
+              />
+            </div>
+
+            <div className={styles.viewTabs}>
+              <button
+                className={
+                  viewMode === "flat"
+                    ? styles.activeTab
+                    : styles.tabBtn
+                }
+                onClick={() => setViewMode("flat")}
+              >
+                <FiList />
+                Flat
+              </button>
+
+              <button
+                className={
+                  viewMode === "tree"
+                    ? styles.activeTab
+                    : styles.tabBtn
+                }
+                onClick={() => setViewMode("tree")}
+              >
+                <FiGitBranch />
+                Tree
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className={styles.emptyState}>
+              Loading categories...
+            </div>
+          ) : viewMode === "flat" ? (
+            <div className={styles.tableWrapper}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Category</th>
+                    <th>Parent</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody>
+                  {filteredCategories.map(cat => (
+                    <tr key={cat.categoryId}>
+                      <td>
+                        <span className={styles.idText}>
+                          #{cat.categoryId}
+                        </span>
+                      </td>
+
+                      <td>
+                        <div className={styles.categoryCell}>
+                          <span className={styles.categoryIcon}>
+                            <FiFolder />
+                          </span>
+
+                          <span>{cat.categoryName}</span>
+                        </div>
+                      </td>
+
+                      <td>
+                        {cat.parentName ? (
+                          <span className={styles.parentBadge}>
+                            {cat.parentName}
+                          </span>
+                        ) : (
+                          <span className={styles.rootBadge}>
+                            Root
+                          </span>
+                        )}
+                      </td>
+
+                      <td>
+                        <div className={styles.actions}>
+                          <button
+                            className={styles.editBtn}
+                            onClick={() => handleEdit(cat)}
+                            title="Edit category"
+                          >
+                            <FiEdit2 />
+                          </button>
+
+                          <button
+                            className={styles.deleteBtn}
+                            onClick={() =>
+                              handleDelete(cat.categoryId)
+                            }
+                            title="Delete category"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {filteredCategories.length === 0 && (
+                <div className={styles.emptyState}>
+                  <FiFolder />
+                  <p>No categories found</p>
+                </div>
+              )}
+            </div>
           ) : (
-            <div>{renderTree(treeCategories)}</div>
+            <div className={styles.treeContainer}>
+              {filteredTree.length > 0
+                ? renderTree(filteredTree)
+                : (
+                  <div className={styles.emptyState}>
+                    No categories found
+                  </div>
+                )}
+            </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

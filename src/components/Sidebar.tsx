@@ -67,7 +67,7 @@ export const Sidebar = () => {
         </NavLink>
 
         <NavLink to="/admin/categories" className={navClass}>
-  <FiFolder />
+ 
   {open && "Categories"}
 </NavLink>
 
