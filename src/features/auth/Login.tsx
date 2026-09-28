@@ -1,7 +1,9 @@
+// src/features/auth/Login.tsx
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setCredentials } from './authSlice';
+import './Login.css'; // <--- ခုနက ရေးထားသော CSS ဖိုင်ကို ချိတ်ဆက်ခြင်း
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,14 +24,19 @@ export const Login = () => {
 
       const data = await response.json();
       
-      // Redux နှင့် LocalStorage ထဲသို့ Token ထည့်သွင်းခြင်း
-      dispatch(setCredentials({ token: data.token, username: data.username, role: data.role }));
+      // Email ကိုပါ Redux ထဲ သိမ်းပေးမည် (ယခင်အဆင့်က ပြင်ထားသည့်အတိုင်း)
+      dispatch(setCredentials({ 
+          token: data.token, 
+          username: data.username, 
+          email: data.email,
+          role: data.role 
+      }));
       
-      // Admin ဆိုလျှင် Dashboard သို့ ပို့ပေးမည်
-      if(data.role === 'ADMIN') {
-         navigate('/admin/dashboard');
+      if (data.role === 'ADMIN' || data.role === 'INVENTORY_STAFF' || data.role === 'SALES_STAFF') {
+          navigate('/admin/dashboard');
       } else {
-         navigate('/');
+          alert('ဝင်ခွင့်မရှိသော အကောင့်ဖြစ်ပါသည်။');
+          navigate('/login');
       }
     } catch (error) {
       alert('Email သို့မဟုတ် Password မှားယွင်းနေပါသည်။');
@@ -37,13 +44,36 @@ export const Login = () => {
   };
 
   return (
-    <div>
-      <h2>Login System</h2>
-      <form onSubmit={handleLogin}>
-        <input type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit">Login</button>
-      </form>
+    <div className="login-container">
+      <div className="login-card">
+        {/* E-commerce နှင့် လိုက်ဖက်သော ခေါင်းစဉ် */}
+        <div className="login-logo">E-Commerce <span>Portal</span></div>
+        <p className="login-subtitle">Welcome back! Please login to your account.</p>
+        
+        <form className="login-form" onSubmit={handleLogin}>
+          <div className="input-group">
+            <label>Email Address</label>
+            <input 
+              type="email" 
+              placeholder="admin@ecommerce.com" 
+              onChange={(e) => setEmail(e.target.value)} 
+              required 
+            />
+          </div>
+          
+          <div className="input-group">
+            <label>Password</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              onChange={(e) => setPassword(e.target.value)} 
+              required 
+            />
+          </div>
+          
+          <button type="submit" className="login-btn">Sign In</button>
+        </form>
+      </div>
     </div>
   );
 };
