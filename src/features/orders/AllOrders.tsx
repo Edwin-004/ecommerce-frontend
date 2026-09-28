@@ -1,14 +1,17 @@
 import { Link } from 'react-router-dom';
-import { FiEye } from 'react-icons/fi';
 import { useGetOrdersQuery, useGetOrderByOrderNoQuery } from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
 import styles from './AllOrders.module.css';
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 
 export const AllOrders = () => {
   // RTK Query မှ Data၊ Loading နှင့် Error အခြေအနေများကို တိုက်ရိုက်ဆွဲထုတ်ခြင်း
   // data: orders = [] ဆိုသည်မှာ data မရလာသေးခင် အလွတ် [] ဖြင့်ထားရှိရန်ဖြစ်သည်
   const { data: orders = [], isLoading, isError } = useGetOrdersQuery();
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null);
+  const token =
+    useSelector((state: any) => state.auth.token) ||
+    localStorage.getItem('token');
   const {
     data: orderDetails,
     isLoading: loadingDetails,
@@ -36,20 +39,20 @@ export const AllOrders = () => {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            // 'Authorization': `Bearer ${token}` // Token လိုအပ်ပါက ဖြည့်ပါ
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ status: selectedStatus }),
+          body: JSON.stringify({ newStatus: selectedStatus }),
         }
       );
 
       if (!response.ok) throw new Error('Status Update Failed!');
 
-      alert('Order Status အောင်မြင်စွာ ပြောင်းလဲသွားပါပြီ။');
+      alert('Status Updated Successfully!');
 
       // Update အောင်မြင်သွားပါက ညာဘက်ခြမ်း Detail Data ကို အသစ်ပြန်ခေါ် (Refresh) လုပ်ရန်
       refetch();
     } catch (error) {
-      alert('Status ပြောင်းလဲရာတွင် အမှားဖြစ်နေပါသည်။');
+      alert('Status Update unsuccessful! Please try again.');
     } finally {
       setIsUpdating(false);
     }
@@ -98,31 +101,34 @@ export const AllOrders = () => {
                 <th>Total Amount</th>
                 <th>Order Status</th>
                 <th>Payment</th>
-                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center' }}>
+                  <td colSpan={6} style={{ textAlign: 'center' }}>
                     Loading orders...
                   </td>
                 </tr>
               ) : isError ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', color: 'red' }}>
+                  <td colSpan={6} style={{ textAlign: 'center', color: 'red' }}>
                     Error fetching orders!
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center' }}>
+                  <td colSpan={6} style={{ textAlign: 'center' }}>
                     No orders found.
                   </td>
                 </tr>
               ) : (
                 orders.map((order: any) => (
-                  <tr key={order.orderId}>
+                  <tr
+                    key={order.orderId}
+                    onClick={() => setSelectedOrderNo(order.orderNo)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td style={{ fontWeight: 'bold' }}>{order.orderNo}</td>
                     <td>{order.createdAt?.split(' ')[0]}</td>
                     <td>{order.customerName}</td>
@@ -146,14 +152,6 @@ export const AllOrders = () => {
                       >
                         {order.paymentStatus}
                       </span>
-                    </td>
-                    <td>
-                      <button
-                        className={styles.actionBtn}
-                        onClick={() => setSelectedOrderNo(order.orderNo)}
-                      >
-                        <FiEye size={18} /> View
-                      </button>
                     </td>
                   </tr>
                 ))
@@ -246,6 +244,10 @@ export const AllOrders = () => {
                       .join(', ') || 'N/A'}
                   </p>
 
+                  <p style={{ margin: 0 }}>
+                    <strong>Date: </strong>
+                    {orderDetails.createdAt}
+                  </p>
                   <p
                     style={{
                       margin: '8px 0 0 0',

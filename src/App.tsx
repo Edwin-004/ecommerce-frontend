@@ -10,6 +10,7 @@ import { InventoryPage } from './features/inventory/InventoryPage';
 import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
+import CategoryManagement from './features/categories/CategoryManagement';
 import OrderManagement from './features/orders/OrderManagement';
 import StaffList from './components/StaffList'; 
 import { Profile } from './components/Profile'; 
@@ -42,6 +43,7 @@ function App() {
 
         {/* မရှိသော URL ရိုက်ထည့်မိပါက Login သို့ အလိုအလျောက် ပြန်ပို့မည် */}
         <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/categories" element={<CategoryManagement />} />
       </Routes>
     </BrowserRouter>
   );
