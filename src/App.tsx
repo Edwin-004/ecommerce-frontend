@@ -1,3 +1,5 @@
+// src/App.tsx
+// src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './features/auth/Login';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -7,29 +9,35 @@ import { CreateProductPage } from './features/products/CreateProductPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
 import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
-import './App.css';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
 import OrderManagement from './features/orders/OrderManagement';
+import StaffList from './components/StaffList'; 
+import { Profile } from './components/Profile'; 
+import './App.css';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* လော့ဂ်အင် ဝင်ရန် စာမျက်နှာ */}
         <Route path="/login" element={<Login />} />
 
-        {/* ADMIN Role ရှိမှသာ ဝင်ခွင့်ပြုမည့် လမ်းကြောင်းများ */}
-        <Route element={<ProtectedRoute allowedRole="ADMIN" />}>
+        {/* ADMIN ရော STAFF ပါ ဝင်ခွင့်ပြုမည့် လမ်းကြောင်းများ */}
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF']} />}>
           <Route element={<AdminLayout />}>
+            {/* Dashboard & Profile */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/profile" element={<Profile />} /> 
+            
+            {/* Staff Management */}
+            <Route path="/admin/staff" element={<StaffList />} /> 
+            
+            {/* Orders Management */}
             <Route path="/admin/orders" element={<AllOrders />} />
             <Route path="/admin/orderdetails" element={<OrderManagement />} />
+            
             {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
-            <Route
-              path="/admin"
-              element={<Navigate to="/admin/dashboard" replace />}
-            />
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           </Route>
         </Route>
 

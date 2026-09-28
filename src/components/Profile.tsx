@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../store';
 import api from '../utils/axiosConfig';
+import styles from './Profile.module.css';
 
 export const Profile = () => {
-  // Redux မှ username နှင့် role အပြင် email ကိုပါ ရယူခြင်း
   const { username, email, role } = useSelector((state: RootState) => state.auth);
 
   const [passwords, setPasswords] = useState({
@@ -31,7 +31,7 @@ export const Profile = () => {
     setMessage(null);
 
     if (passwords.newPassword !== passwords.confirmPassword) {
-      setMessage({ type: 'error', text: 'Password အသစ်နှင့် Confirm Password မတူညီပါ။' });
+      setMessage({ type: 'error', text: 'New password and confirm password do not match.' });
       return;
     }
 
@@ -42,65 +42,96 @@ export const Profile = () => {
         newPassword: passwords.newPassword
       });
 
-      setMessage({ type: 'success', text: 'Password အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ။' });
+      setMessage({ type: 'success', text: 'Password updated successfully.' });
       setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Password ပြောင်းလဲရာတွင် အမှားအယွင်းဖြစ်နေပါသည်။' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update password. Please try again.' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>My Profile</h2>
-      <div style={{ background: '#f9f9f9', padding: '20px', marginTop: '20px', border: '1px solid #ddd', borderRadius: '4px', maxWidth: '500px' }}>
+    <div className={styles.container}>
+      <h2 className={styles.title}>My Profile</h2>
+      
+      <div className={styles.profileCard}>
+        <div className={styles.infoRow}>
+          <span className={styles.label}>Name:</span>
+          <span className={styles.value}>{username}</span>
+        </div>
         
-        <p><strong>Name:</strong> {username}</p>
-        <p><strong>Email:</strong> {email}</p>
-        <p><strong>Role:</strong> <span style={{ color: '#008CBA', fontWeight: 'bold' }}>{formatRole(role)}</span></p>
+        <div className={styles.infoRow}>
+          <span className={styles.label}>Email:</span>
+          <span className={styles.value}>{email || 'Not provided'}</span>
+        </div>
         
-        <hr style={{ margin: '20px 0', border: '0', borderTop: '1px solid #ccc' }} />
+        <div className={styles.infoRow}>
+          <span className={styles.label}>Role:</span>
+          <span className={styles.roleBadge}>{formatRole(role)}</span>
+        </div>
         
-        {/* Admin မဟုတ်တဲ့သူ (Staff တွေ) ဝင်လာမှသာ Change Password ကို ပြမည် */}
+        <hr className={styles.divider} />
+        
         {role !== 'ADMIN' && (
           <>
-            <h3>Change Password</h3>
+            <h3 className={styles.sectionTitle}>Change Password</h3>
             
             {message && (
-              <div style={{ padding: '10px', marginBottom: '15px', color: 'white', background: message.type === 'success' ? '#4CAF50' : '#f44336', borderRadius: '4px' }}>
+              <div className={`${styles.alert} ${message.type === 'success' ? styles.alertSuccess : styles.alertError}`}>
                 {message.text}
               </div>
             )}
 
-            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div>
-                <label>Current Password:</label><br />
-                <input type="password" name="currentPassword" value={passwords.currentPassword} onChange={handleInputChange} required style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }} />
+            <form onSubmit={handleChangePassword}>
+              <div className={styles.formGroup}>
+                <label>Current Password</label>
+                <input 
+                  type="password" 
+                  name="currentPassword" 
+                  value={passwords.currentPassword} 
+                  onChange={handleInputChange} 
+                  required 
+                  className={styles.inputField}
+                />
               </div>
-              <div>
-                <label>New Password:</label><br />
-                <input type="password" name="newPassword" value={passwords.newPassword} onChange={handleInputChange} required style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }} />
+              
+              <div className={styles.formGroup}>
+                <label>New Password</label>
+                <input 
+                  type="password" 
+                  name="newPassword" 
+                  value={passwords.newPassword} 
+                  onChange={handleInputChange} 
+                  required 
+                  className={styles.inputField}
+                />
               </div>
-              <div>
-                <label>Confirm New Password:</label><br />
-                <input type="password" name="confirmPassword" value={passwords.confirmPassword} onChange={handleInputChange} required style={{ width: '100%', padding: '8px', marginTop: '5px', boxSizing: 'border-box' }} />
+              
+              <div className={styles.formGroup}>
+                <label>Confirm New Password</label>
+                <input 
+                  type="password" 
+                  name="confirmPassword" 
+                  value={passwords.confirmPassword} 
+                  onChange={handleInputChange} 
+                  required 
+                  className={styles.inputField}
+                />
               </div>
 
-              <button type="submit" disabled={loading} style={{ padding: '10px 15px', background: '#008CBA', color: 'white', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: '4px', marginTop: '10px', width: 'fit-content' }}>
+              <button type="submit" disabled={loading} className={styles.submitBtn}>
                 {loading ? 'Updating...' : 'Update Password'}
               </button>
             </form>
           </>
         )}
 
-        {/* Admin ဝင်လာပါက Password ပြင်လို့မရကြောင်း စာသားပြပေးမည် */}
         {role === 'ADMIN' && (
-          <div style={{ padding: '15px', background: '#e7f3fe', color: '#3182ce', borderRadius: '4px', textAlign: 'center' }}>
-            Admin အကောင့်များအတွက် Password ပြင်ဆင်ခြင်းကို ဤနေရာမှ ခွင့်မပြုပါ။
+          <div className={`${styles.alert} ${styles.alertInfo}`}>
+            Password modification for Admin accounts is restricted in this portal.
           </div>
         )}
-
       </div>
     </div>
   );

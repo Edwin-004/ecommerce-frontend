@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; // <--- Link ကိုပါ ထည့်ခေါ်ပါ
+import { useSelector } from "react-redux";
+import { type RootState } from "../store";
 import styles from "./AdminDashboard.module.css";
 import { FiShoppingCart, FiDollarSign, FiPackage, FiUsers } from "react-icons/fi";
 import { inventoryApi } from "../features/inventory/inventoryApi";
@@ -7,6 +9,15 @@ import { inventoryApi } from "../features/inventory/inventoryApi";
 export const AdminDashboard = () => {
   const navigate = useNavigate();
   const [lowStockCount, setLowStockCount] = useState<number | string>(0);
+  
+  const { username, role } = useSelector((state: RootState) => state.auth);
+
+  const formatRole = (roleStr: string | null) => {
+    if (roleStr === 'ADMIN') return 'System Admin';
+    if (roleStr === 'INVENTORY_STAFF') return 'Inventory Staff';
+    if (roleStr === 'SALES_STAFF') return 'Sales Staff';
+    return roleStr || '';
+  };
 
   useEffect(() => {
     inventoryApi.getLowStockAlerts()
@@ -19,11 +30,13 @@ export const AdminDashboard = () => {
 
       <h1>Dashboard</h1>
       <p className={styles.subtitle}>
-        Welcome back, Admin
+        Welcome back,{' '}
+        
+        
+        <span style={{ fontSize: '14px', color: '#6b7280' }}>({formatRole(role)})</span>
       </p>
 
       <div className={styles.grid}>
-
         <div className={styles.card}>
           <FiShoppingCart className={styles.blue}/>
           <h2>1,248</h2>
@@ -52,7 +65,6 @@ export const AdminDashboard = () => {
           <h2>12</h2>
           <p>Staff</p>
         </div>
-
       </div>
 
     </div>
