@@ -29,6 +29,16 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/profile" element={<Profile />} /> 
             
+            {/* Product Catalog & Stock (Member 3) */}
+            <Route path="/admin/products" element={<ProductManagementPage />} />
+            <Route path="/admin/products/new" element={<CreateProductPage />} />
+            <Route path="/admin/variants" element={<VariantsPage />} />
+            <Route path="/admin/variations" element={<VariantsPage />} />
+            <Route path="/admin/inventory" element={<InventoryPage />} />
+
+            {/* Categories */}
+            <Route path="/admin/categories" element={<CategoryManagement />} />
+
             {/* Staff Management */}
             <Route path="/admin/staff" element={<StaffList />} /> 
             
@@ -43,7 +53,6 @@ function App() {
 
         {/* မရှိသော URL ရိုက်ထည့်မိပါက Login သို့ အလိုအလျောက် ပြန်ပို့မည် */}
         <Route path="*" element={<Navigate to="/login" replace />} />
-        <Route path="/admin/categories" element={<CategoryManagement />} />
       </Routes>
     </BrowserRouter>
   );
