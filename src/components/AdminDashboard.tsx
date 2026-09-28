@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom"; // <--- Link ကိုပါ ထည့်ခေါ်ပါ
+import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { type RootState } from "../store";
 import styles from "./AdminDashboard.module.css";
@@ -30,9 +30,7 @@ export const AdminDashboard = () => {
 
       <h1>Dashboard</h1>
       <p className={styles.subtitle}>
-        Welcome back,{' '}
-        
-        
+        Welcome back, <strong>{username || 'Admin'}</strong>{' '}
         <span style={{ fontSize: '14px', color: '#6b7280' }}>({formatRole(role)})</span>
       </p>
 

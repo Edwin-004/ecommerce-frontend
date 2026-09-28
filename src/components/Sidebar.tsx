@@ -19,6 +19,7 @@ import {
   FiSliders,
   FiAlertTriangle,
   FiPlusCircle,
+  FiFolder,
 } from "react-icons/fi";
 
 export const Sidebar = () => {
@@ -104,6 +105,10 @@ export const Sidebar = () => {
                 <FiPlusCircle size={14} />
                 Create Product
               </NavLink>
+              <NavLink to="/admin/categories" className={subNavClass}>
+                <FiFolder size={14} />
+                Categories
+              </NavLink>
               <NavLink to="/admin/variants" className={subNavClass}>
                 <FiLayers size={14} />
                 Variants & SKUs
@@ -157,16 +162,6 @@ export const Sidebar = () => {
         <NavLink to="/admin/orders" className={navClass}>
           <FiShoppingCart />
           {open && "Orders"}
-        </NavLink>
-
-        <NavLink to="/admin/products" className={navClass}>
-          <FiPackage />
-          {open && "Products"}
-        </NavLink>
-
-        <NavLink to="/admin/inventory" className={navClass}>
-          <FiBox />
-          {open && "Inventory"}
         </NavLink>
 
         <NavLink to="/admin/staff" className={navClass}>
