@@ -10,6 +10,7 @@ import { ProtectedRoute } from './utils/ProtectedRoute';
 import './App.css';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
+import OrderManagement from './features/orders/OrderManagement';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route element={<AdminLayout />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/orders" element={<AllOrders />} />
+            <Route path="/admin/orderdetails" element={<OrderManagement />} />
             {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
             <Route
               path="/admin"

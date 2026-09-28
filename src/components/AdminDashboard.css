@@ -1,0 +1,169 @@
+/* src/components/AdminDashboard.css */
+
+.dashboard-wrapper {
+  padding: 10px 20px 30px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard-header {
+  margin-bottom: 25px;
+  color: #1f2937;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+/* Layout ကို ဘယ်/ညာ ခွဲရန် Grid အသုံးပြုခြင်း */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr; /* ဘယ်ဘက်က ပိုကျယ်ပြီး၊ ညာဘက်က ကျဉ်းမည် */
+  gap: 25px;
+}
+
+/* ================= Left Side (Main Content) ================= */
+.dashboard-main {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.stat-card {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f3f4f6;
+  border-left: 4px solid #3b82f6; /* ဘေးဘောင်အရောင်လေး */
+}
+
+.stat-card:nth-child(2) { border-left-color: #10b981; } /* အစိမ်း */
+.stat-card:nth-child(3) { border-left-color: #f59e0b; } /* အဝါ */
+
+.stat-title {
+  font-size: 13px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #111827;
+}
+
+.main-content-card {
+  background: #fff;
+  padding: 40px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+  color: #64748b;
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ================= Right Side (Side Info) ================= */
+.dashboard-side {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.profile-widget {
+  background: #fff;
+  padding: 25px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f3f4f6;
+  text-align: center;
+}
+
+.avatar-circle {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #3b82f6;
+  font-size: 28px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px auto;
+  border: 2px solid #bfdbfe;
+}
+
+.profile-widget h3 {
+  margin: 0 0 5px 0;
+  font-size: 18px;
+  color: #1f2937;
+}
+
+.profile-email {
+  margin: 0 0 15px 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.role-badge {
+  display: inline-block;
+  background: #e0e7ff;
+  color: #4338ca;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.system-status {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f3f4f6;
+}
+
+.system-status h4 {
+  margin: 0 0 15px 0;
+  font-size: 15px;
+  color: #374151;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 10px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  margin-right: 10px;
+}
+
+/* Responsive ဖြစ်စေရန် (Screen သေးလျှင် အောက်သို့ဆင်းမည်) */
+@media (max-width: 992px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats-container {
+    grid-template-columns: 1fr 1fr;
+  }
+}
