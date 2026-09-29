@@ -1,4 +1,8 @@
-import { useGetOrdersQuery, useGetOrderByOrderNoQuery } from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
+import {
+  useGetOrdersQuery,
+  useGetOrderByOrderNoQuery,
+  useGetPaymentByOrderNoQuery,
+} from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
 import styles from './AllOrders.module.css';
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -6,20 +10,33 @@ import { useSelector } from 'react-redux';
 export const AllOrders = () => {
   // RTK Query မှ Data၊ Loading နှင့် Error အခြေအနေများကို တိုက်ရိုက်ဆွဲထုတ်ခြင်း
   // data: orders = [] ဆိုသည်မှာ data မရလာသေးခင် အလွတ် [] ဖြင့်ထားရှိရန်ဖြစ်သည်
-  const { data: orders = [], isLoading, isError } = useGetOrdersQuery();
+  const {
+    data: orders = [],
+    isLoading,
+    isError,
+    refetch: refetchList,
+  } = useGetOrdersQuery();
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null);
+  const {
+    data: paymentInfo,
+    isLoading: LoadingPaymentInfo,
+    refetch: refetchPaymentInfo,
+  } = useGetPaymentByOrderNoQuery(selectedOrderNo || '', {
+    skip: !selectedOrderNo,
+  });
   const token =
     useSelector((state: any) => state.auth.token) ||
     localStorage.getItem('token');
   const {
     data: orderDetails,
     isLoading: loadingDetails,
-    refetch,
+    refetch: refetchDetails,
   } = useGetOrderByOrderNoQuery(selectedOrderNo || '', {
     skip: !selectedOrderNo,
   });
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+
   useEffect(() => {
     if (orderDetails) {
       setSelectedStatus(orderDetails.orderStatus);
@@ -49,7 +66,9 @@ export const AllOrders = () => {
       alert('Status Updated Successfully!');
 
       // Update အောင်မြင်သွားပါက ညာဘက်ခြမ်း Detail Data ကို အသစ်ပြန်ခေါ် (Refresh) လုပ်ရန်
-      refetch();
+      refetchDetails();
+      refetchList();
+      refetchPaymentInfo();
     } catch (error) {
       alert('Status Update unsuccessful! Please try again.');
     } finally {
@@ -210,7 +229,7 @@ export const AllOrders = () => {
             ) : orderDetails ? (
               <div>
                 <div className={styles.detailHeader}>
-                  <h3>Order: #{orderDetails.orderNo}</h3>
+                  <h3>Order Details: #{orderDetails.orderNo}</h3>
                   {/* Close Button ထည့်သွင်းခြင်း */}
                   <button
                     className={styles.closeBtn}
@@ -220,134 +239,238 @@ export const AllOrders = () => {
                   </button>
                 </div>
 
-                {/* Customer & Address Info */}
-                <div style={{ marginBottom: '20px', lineHeight: '1.6' }}>
-                  <p style={{ margin: 0 }}>
-                    <strong>Customer:</strong> {orderDetails.customerName}
-                  </p>
-                  <p style={{ margin: 0 }}>
-                    <strong>Phone:</strong>{' '}
-                    {orderDetails.shippingAddress?.phoneNumber || 'N/A'}
-                  </p>
+                {/* --- ဒီနေရာမှစ၍ OrderManagement ၏ Card UI ဖြင့် အစားထိုးထားသည် --- */}
+                <div className={styles.detailGrid}>
+                  {/* Information View (Customer + Items) */}
+                  <div>
+                    <div className={styles.card}>
+                      <h3 className={styles.cardTitle}>Customer Information</h3>
+                      <p style={{ margin: '8px 0' }}>
+                        <strong>Name:</strong> {orderDetails.customerName}
+                      </p>
+                      <p style={{ margin: '8px 0' }}>
+                        <strong>Phone:</strong>{' '}
+                        {orderDetails.shippingAddress?.phoneNumber || 'N/A'}
+                      </p>
+                      <p style={{ margin: '8px 0' }}>
+                        <strong>Address:</strong>{' '}
+                        {[
+                          orderDetails.shippingAddress?.addressLine1,
+                          orderDetails.shippingAddress?.township,
+                          orderDetails.shippingAddress?.city,
+                          orderDetails.shippingAddress?.regionOrState,
+                        ]
+                          .filter(Boolean)
+                          .join(', ') || 'N/A'}
+                      </p>
+                      <p style={{ margin: '8px 0' }}>
+                        <strong>Date: </strong>
+                        {orderDetails.createdAt}
+                      </p>
+                    </div>
 
-                  {/* Address အပြည့်အစုံ ထည့်သွင်းခြင်း */}
-                  <p style={{ margin: 0 }}>
-                    <strong>Address:</strong>{' '}
-                    {[
-                      orderDetails.shippingAddress?.addressLine1,
-                      orderDetails.shippingAddress?.township,
-                      orderDetails.shippingAddress?.city,
-                      orderDetails.shippingAddress?.regionOrState,
-                    ]
-                      .filter(Boolean)
-                      .join(', ') || 'N/A'}
-                  </p>
+                    <div className={styles.card}>
+                      <h3 className={styles.cardTitle}>Ordered Items</h3>
+                      <table className={styles.itemTable}>
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th>Qty</th>
+                            <th>Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {orderDetails.items?.map((item: any) => (
+                            <tr key={item.orderItemId}>
+                              <td>
+                                {item.productName}
+                                {item.variantAttributes && (
+                                  <span
+                                    style={{
+                                      color: 'gray',
+                                      display: 'block',
+                                      fontSize: '13px',
+                                    }}
+                                  >
+                                    ({formatAttributes(item.variantAttributes)})
+                                  </span>
+                                )}
+                              </td>
+                              <td>{item.qty}</td>
+                              <td>{item.subtotal?.toLocaleString()} Ks</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className={styles.totalSection}>
+                        <h4 style={{ margin: 0 }}>
+                          Total:{' '}
+                          <span style={{ color: 'green', fontSize: '1.2rem' }}>
+                            {orderDetails.totalAmount?.toLocaleString()} MMK
+                          </span>
+                        </h4>
+                      </div>
+                    </div>
+                  </div>
 
-                  <p style={{ margin: 0 }}>
-                    <strong>Date: </strong>
-                    {orderDetails.createdAt}
-                  </p>
-                  <p
+                  {/* Action View (Update Status) */}
+                  <div
                     style={{
-                      margin: '8px 0 0 0',
-                      color: 'green',
-                      fontWeight: 'bold',
-                      fontSize: '1.1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '24px',
                     }}
                   >
-                    Total: {orderDetails.totalAmount?.toLocaleString()} MMK
-                  </p>
-                </div>
-
-                {/* Items List */}
-                <h4
-                  style={{
-                    margin: '16px 0 8px 0',
-                    borderBottom: '1px solid #eee',
-                    paddingBottom: '4px',
-                  }}
-                >
-                  Items
-                </h4>
-                <ul
-                  style={{
-                    paddingLeft: '20px',
-                    margin: '0 0 24px 0',
-                    fontSize: '14.5px',
-                  }}
-                >
-                  {orderDetails.items?.map((item: any) => (
-                    <li key={item.orderItemId} style={{ marginBottom: '8px' }}>
-                      {item.productName}
-                      {item.variantAttributes && (
-                        <span style={{ color: 'gray' }}>
-                          {' '}
-                          ({formatAttributes(item.variantAttributes)})
+                    <div className={styles.card}>
+                      <h3 className={styles.cardTitle}>Order Action</h3>
+                      <p style={{ marginBottom: '16px' }}>
+                        Current Status:{' '}
+                        <span
+                          className={`${styles.badge} ${getStatusBadgeClass(orderDetails.orderStatus)}`}
+                        >
+                          {orderDetails.orderStatus}
                         </span>
-                      )}{' '}
-                      x {item.qty}
-                      <span style={{ float: 'right', fontWeight: '500' }}>
-                        {item.subtotal?.toLocaleString()} Ks
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                      </p>
 
-                {/* Status Update Action */}
-                <div
-                  style={{
-                    backgroundColor: '#f8f9fa',
-                    padding: '16px',
-                    borderRadius: '6px',
-                  }}
-                >
-                  <p style={{ margin: '0 0 10px 0', fontWeight: 'bold' }}>
-                    Update Status
-                  </p>
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      marginBottom: '12px',
-                      borderRadius: '4px',
-                      border: '1px solid #ccc',
-                    }}
-                  >
-                    <option value="PENDING">PENDING</option>
-                    <option value="PAID">PAID</option>
-                    <option value="PROCESSING">PROCESSING</option>
-                    <option value="SHIPPED">SHIPPED</option>
-                    <option value="DELIVERED">DELIVERED</option>
-                    <option value="CANCELLED">CANCELLED</option>
-                  </select>
-                  <button
-                    onClick={handleStatusUpdate}
-                    disabled={
-                      isUpdating || selectedStatus === orderDetails.orderStatus
-                    }
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      backgroundColor: '#556ee6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor:
-                        isUpdating ||
-                        selectedStatus === orderDetails.orderStatus
-                          ? 'not-allowed'
-                          : 'pointer',
-                      opacity:
-                        isUpdating ||
-                        selectedStatus === orderDetails.orderStatus
-                          ? 0.7
-                          : 1,
-                    }}
-                  >
-                    {isUpdating ? 'Updating...' : 'Update Status'}
-                  </button>
+                      <div className={styles.statusUpdateBox}>
+                        <label style={{ fontSize: '14px', fontWeight: '500' }}>
+                          Update Status to:
+                        </label>
+                        <select
+                          value={selectedStatus}
+                          onChange={(e) => setSelectedStatus(e.target.value)}
+                          className={styles.statusSelect}
+                        >
+                          <option value="PENDING">PENDING</option>
+                          <option value="PAID">PAID</option>
+                          <option value="PROCESSING">PROCESSING</option>
+                          <option value="SHIPPED">SHIPPED</option>
+                          <option value="DELIVERED">DELIVERED</option>
+                          <option value="CANCELLED">CANCELLED</option>
+                        </select>
+
+                        <button
+                          onClick={handleStatusUpdate}
+                          className={styles.updateBtn}
+                          disabled={
+                            isUpdating ||
+                            selectedStatus === orderDetails.orderStatus
+                          }
+                        >
+                          {isUpdating ? 'Updating...' : 'Update Status'}
+                        </button>
+                      </div>
+                    </div>
+                    {/* ၂။ Payment Information Card (အသစ်ထပ်တိုးရန်) */}
+                    <div className={styles.card}>
+                      <h3 className={styles.cardTitle}>Payment Information</h3>
+                      {LoadingPaymentInfo ? (
+                        <p style={{ fontSize: '14px', color: '#666' }}>
+                          Loading payment info...
+                        </p>
+                      ) : paymentInfo ? (
+                        <div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              marginBottom: '12px',
+                              alignItems: 'flex-start',
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: '#666',
+                                width: '80px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Status:
+                            </span>
+                            <strong
+                              style={{
+                                color:
+                                  paymentInfo.paymentStatus === 'SUCCESS'
+                                    ? '#34df5c'
+                                    : paymentInfo.paymentStatus === 'FAILED'
+                                      ? '#ec3241'
+                                      : '#f4c52b',
+                              }}
+                            >
+                              {paymentInfo.paymentStatus || 'N/A'}
+                            </strong>
+                          </div>
+
+                          <div
+                            style={{
+                              display: 'flex',
+                              marginBottom: '12px',
+                              alignItems: 'flex-start',
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: '#666',
+                                width: '80px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Method:
+                            </span>
+                            <strong style={{ wordBreak: 'break-word' }}>
+                              {paymentInfo.paymentMethod || 'N/A'}
+                            </strong>
+                          </div>
+
+                          <div
+                            style={{
+                              display: 'flex',
+                              marginBottom: '12px',
+                              alignItems: 'flex-start',
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: '#666',
+                                width: '80px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Txn Ref:
+                            </span>
+                            <strong style={{ wordBreak: 'break-all' }}>
+                              {paymentInfo.transactionRef || 'N/A'}
+                            </strong>
+                          </div>
+
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: '#666',
+                                width: '80px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              Paid At:
+                            </span>
+                            <strong style={{ wordBreak: 'break-word' }}>
+                              {paymentInfo.paidAt
+                                ? paymentInfo.paidAt.split('T').join(' ')
+                                : '-'}
+                            </strong>
+                          </div>
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: '14px', color: '#999' }}>
+                          Payment data not found.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (

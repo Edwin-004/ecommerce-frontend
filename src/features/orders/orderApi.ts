@@ -27,8 +27,12 @@ export const orderApi = createApi({
       providesTags: (_result, _error, orderNo) => [{ type: 'Order', id: orderNo }], 
     }),
 
+    getPaymentByOrderNo: builder.query({
+      query: (orderNo) => `/orders/${orderNo}/payment-info`,
+    }),
+
   }),
 });
 
 // React Component များတွင် အလွယ်တကူ သုံးနိုင်ရန် Hook အဖြစ် ထုတ်ပေးခြင်း
-export const { useGetOrdersQuery, useGetOrderByOrderNoQuery } = orderApi;
+export const { useGetOrdersQuery, useGetOrderByOrderNoQuery, useGetPaymentByOrderNoQuery } = orderApi;
