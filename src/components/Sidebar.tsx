@@ -67,10 +67,7 @@ export const Sidebar = () => {
           {open && "Dashboard"}
         </NavLink>
 
-        <NavLink to="/admin/categories" className={navClass}>
- 
-  {open && "Categories"}
-</NavLink>
+        
 
         {open && <div className={styles.navSectionTitle}>Catalog & Stock</div>}
 
