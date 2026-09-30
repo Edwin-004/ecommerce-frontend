@@ -11,9 +11,8 @@ import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
-import OrderManagement from './features/orders/OrderManagement';
-import StaffList from './components/StaffList'; 
-import { Profile } from './components/Profile'; 
+import StaffList from './components/StaffList';
+import { Profile } from './components/Profile';
 import './App.css';
 
 function App() {
@@ -23,12 +22,18 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         {/* ADMIN ရော STAFF ပါ ဝင်ခွင့်ပြုမည့် လမ်းကြောင်းများ */}
-        <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF']} />}>
+        <Route
+          element={
+            <ProtectedRoute
+              allowedRoles={['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF']}
+            />
+          }
+        >
           <Route element={<AdminLayout />}>
             {/* Dashboard & Profile */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/profile" element={<Profile />} /> 
-            
+            <Route path="/admin/profile" element={<Profile />} />
+
             {/* Product Catalog & Stock (Member 3) */}
             <Route path="/admin/products" element={<ProductManagementPage />} />
             <Route path="/admin/products/new" element={<CreateProductPage />} />
@@ -40,14 +45,16 @@ function App() {
             <Route path="/admin/categories" element={<CategoryManagement />} />
 
             {/* Staff Management */}
-            <Route path="/admin/staff" element={<StaffList />} /> 
-            
+            <Route path="/admin/staff" element={<StaffList />} />
+
             {/* Orders Management */}
             <Route path="/admin/orders" element={<AllOrders />} />
-            <Route path="/admin/orderdetails" element={<OrderManagement />} />
-            
+
             {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
-            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route
+              path="/admin"
+              element={<Navigate to="/admin/dashboard" replace />}
+            />
           </Route>
         </Route>
 
