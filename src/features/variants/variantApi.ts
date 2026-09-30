@@ -9,33 +9,33 @@ import type {
 
 export const variantApi = {
   // Variations CRUD
-  getVariations: () => apiFetch<Variation[]>('/api/variations'),
+  getVariations: () => apiFetch<Variation[]>('/api/backoffice/variations'),
 
   createVariation: (name: string) =>
-    apiFetch<Variation>('/api/variations', {
+    apiFetch<Variation>('/api/backoffice/variations', {
       method: 'POST',
       body: JSON.stringify({ name }),
     }),
 
   updateVariation: (id: number, name: string) =>
-    apiFetch<Variation>(`/api/variations/${id}`, {
+    apiFetch<Variation>(`/api/backoffice/variations/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ name }),
     }),
 
   deleteVariation: (id: number) =>
-    apiFetch<string>(`/api/variations/${id}`, {
+    apiFetch<string>(`/api/backoffice/variations/${id}`, {
       method: 'DELETE',
     }),
 
   // Variation Options CRUD
-  getVariationOptions: () => apiFetch<VariationOption[]>('/api/variation-options'),
+  getVariationOptions: () => apiFetch<VariationOption[]>('/api/backoffice/variation-options'),
 
   getOptionsByVariationId: (variationId: number) =>
-    apiFetch<VariationOption[]>(`/api/variation-options/variation/${variationId}`),
+    apiFetch<VariationOption[]>(`/api/backoffice/variation-options/variation/${variationId}`),
 
   createVariationOption: (variationId: number, value: string) =>
-    apiFetch<VariationOption>('/api/variation-options', {
+    apiFetch<VariationOption>('/api/backoffice/variation-options', {
       method: 'POST',
       body: JSON.stringify({
         variation: { variationId },
@@ -44,15 +44,15 @@ export const variantApi = {
     }),
 
   deleteVariationOption: (id: number) =>
-    apiFetch<string>(`/api/variation-options/${id}`, {
+    apiFetch<string>(`/api/backoffice/variation-options/${id}`, {
       method: 'DELETE',
     }),
 
   // Product Variants CRUD
-  getProductVariants: () => apiFetch<ProductVariant[]>('/api/product-variants'),
+  getProductVariants: () => apiFetch<ProductVariant[]>('/api/backoffice/product-variants'),
 
   getProductVariantById: (id: number) =>
-    apiFetch<ProductVariant>(`/api/product-variants/${id}`),
+    apiFetch<ProductVariant>(`/api/backoffice/product-variants/${id}`),
 
   createProductVariant: (payload: {
     product: { productId: number };
@@ -61,7 +61,7 @@ export const variantApi = {
     costPrice?: number;
     status: string;
   }) =>
-    apiFetch<ProductVariant>('/api/product-variants', {
+    apiFetch<ProductVariant>('/api/backoffice/product-variants', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
@@ -76,19 +76,19 @@ export const variantApi = {
       status?: string;
     }
   ) =>
-    apiFetch<ProductVariant>(`/api/product-variants/${id}`, {
+    apiFetch<ProductVariant>(`/api/backoffice/product-variants/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     }),
 
   deleteProductVariant: (id: number) =>
-    apiFetch<string>(`/api/product-variants/${id}`, {
+    apiFetch<string>(`/api/backoffice/product-variants/${id}`, {
       method: 'DELETE',
     }),
 
   // Auto-Generate SKU Preview
   generateSkuPreview: (productId: number, optionIds?: number[]) => {
-    let url = `/api/product-variants/generate-sku?productId=${productId}`;
+    let url = `/api/backoffice/product-variants/generate-sku?productId=${productId}`;
     if (optionIds && optionIds.length > 0) {
       url += `&optionIds=${optionIds.join(',')}`;
     }
@@ -97,10 +97,10 @@ export const variantApi = {
 
   // Variant Option Values (Mapping)
   getVariantOptionMappings: (variantId: number) =>
-    apiFetch<VariantOptionValue[]>(`/api/variant-option-values/variant/${variantId}`),
+    apiFetch<VariantOptionValue[]>(`/api/backoffice/variant-option-values/variant/${variantId}`),
 
   assignOptionToVariant: (variantId: number, optionId: number) =>
-    apiFetch<VariantOptionValue>('/api/variant-option-values', {
+    apiFetch<VariantOptionValue>('/api/backoffice/variant-option-values', {
       method: 'POST',
       body: JSON.stringify({
         variant: { variantId },
@@ -109,14 +109,14 @@ export const variantApi = {
     }),
 
   removeOptionMapping: (id: number) =>
-    apiFetch<string>(`/api/variant-option-values/${id}`, {
+    apiFetch<string>(`/api/backoffice/variant-option-values/${id}`, {
       method: 'DELETE',
     }),
 
   // Get base products list for dropdown selector
   getProductsList: async (): Promise<ProductSummary[]> => {
     try {
-      const response = await apiFetch<any>('/api/products');
+      const response = await apiFetch<any>('/api/backoffice/products');
       if (response && Array.isArray(response.content)) {
         return response.content;
       }

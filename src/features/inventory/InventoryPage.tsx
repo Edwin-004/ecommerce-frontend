@@ -54,7 +54,7 @@ export const InventoryPage: React.FC = () => {
     try {
       setLoading(true);
       const data = await inventoryApi.getTransactionHistory(type);
-      setTransactions(data);
+      setTransactions([...data].sort((a, b) => (b.txnId || 0) - (a.txnId || 0)));
     } catch (err: any) {
       console.error(err);
     } finally {
@@ -87,18 +87,20 @@ export const InventoryPage: React.FC = () => {
   const lowStockCount = useMemo(() => items.filter((item) => item.status === 'LOW_STOCK').length, [items]);
   const outOfStockCount = useMemo(() => items.filter((item) => item.status === 'OUT_OF_STOCK').length, [items]);
 
-  // Filtered Items based on active tab and search
+  // Filtered Items based on active tab and search (latest first)
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      const matchesSearch =
-        (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.productName && item.productName.toLowerCase().includes(searchQuery.toLowerCase()));
+    return [...items]
+      .sort((a, b) => (b.inventoryId || 0) - (a.inventoryId || 0))
+      .filter((item) => {
+        const matchesSearch =
+          (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (item.productName && item.productName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      if (activeTab === 'LOW_STOCK') {
-        return matchesSearch && (item.status === 'LOW_STOCK' || item.status === 'OUT_OF_STOCK');
-      }
-      return matchesSearch;
-    });
+        if (activeTab === 'LOW_STOCK') {
+          return matchesSearch && (item.status === 'LOW_STOCK' || item.status === 'OUT_OF_STOCK');
+        }
+        return matchesSearch;
+      });
   }, [items, activeTab, searchQuery]);
 
   return (

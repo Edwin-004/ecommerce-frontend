@@ -125,15 +125,17 @@ export const VariantsPage: React.FC = () => {
     }
   };
 
-  // Filtered variants
+  // Filtered variants (latest first)
   const filteredVariants = useMemo(() => {
-    return variants.filter((v) => {
-      const q = searchQuery.toLowerCase();
-      return (
-        (v.sku && v.sku.toLowerCase().includes(q)) ||
-        (v.product?.productName && v.product.productName.toLowerCase().includes(q))
-      );
-    });
+    return [...variants]
+      .sort((a, b) => (b.variantId || 0) - (a.variantId || 0))
+      .filter((v) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          (v.sku && v.sku.toLowerCase().includes(q)) ||
+          (v.product?.productName && v.product.productName.toLowerCase().includes(q))
+        );
+      });
   }, [variants, searchQuery]);
 
   const activeCount = useMemo(() => variants.filter((v) => v.status === 'ACTIVE').length, [variants]);

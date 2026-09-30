@@ -7,6 +7,29 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #f4f6f8; /* Dashboard နောက်ခံအရောင် */
+  background-color: #f8fafc;
   overflow-x: hidden;
+  color: #0f172a;
+}
+
+/* ==========================================================
+   Global Scrollbar Removal (Clean Scroll without Scrollbar UI)
+   ========================================================== */
+/* Hide scrollbar for Chrome, Safari, Edge and Opera */
+*::-webkit-scrollbar,
+::-webkit-scrollbar {
+  width: 0px !important;
+  height: 0px !important;
+  display: none !important;
+  background: transparent !important;
+}
+
+/* Hide scrollbar for Firefox and IE */
+html,
+body,
+*,
+*::before,
+*::after {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }

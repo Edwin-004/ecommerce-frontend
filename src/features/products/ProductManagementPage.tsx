@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
 import {
   productManagementApi,
+  getAssetUrl,
   type ProductItem,
   type CategoryItem,
   type BrandItem,
@@ -237,8 +238,10 @@ export const ProductManagementPage: React.FC = () => {
     }
   };
 
-  // Filter products
-  const filteredProducts = products.filter((p) => {
+  // Filter and sort products (latest first)
+  const filteredProducts = [...products]
+    .sort((a, b) => (b.productId || 0) - (a.productId || 0))
+    .filter((p) => {
     const matchesSearch =
       p.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -623,9 +626,12 @@ export const ProductManagementPage: React.FC = () => {
                       <div className={styles.productCell}>
                         {p.imageUrl ? (
                           <img
-                            src={p.imageUrl}
+                            src={getAssetUrl(p.imageUrl)}
                             alt={p.productName}
                             className={styles.productThumb}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = 'none';
+                            }}
                           />
                         ) : (
                           <div className={styles.productThumb}>
@@ -838,6 +844,25 @@ export const ProductManagementPage: React.FC = () => {
                 <FiX />
               </button>
             </div>
+
+            {viewProduct.imageUrl && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+                <img
+                  src={getAssetUrl(viewProduct.imageUrl)}
+                  alt={viewProduct.productName}
+                  style={{
+                    maxHeight: '160px',
+                    maxWidth: '100%',
+                    borderRadius: '8px',
+                    objectFit: 'contain',
+                    border: '1px solid #e2e8f0',
+                  }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
               <div>

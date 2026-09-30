@@ -25,11 +25,20 @@ export interface BrandItem {
   brandName: string;
 }
 
+export const getAssetUrl = (url?: string): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const clean = url.startsWith('/') ? url : `/${url}`;
+  return `http://localhost:8080${clean}`;
+};
+
 export const productManagementApi = {
-  // Get all products (with pagination or full list)
+  // Get all products (with pagination or full list, latest first)
   getProducts: async (): Promise<ProductItem[]> => {
     try {
-      const response = await apiFetch<any>('/api/products');
+      const response = await apiFetch<any>('/api/backoffice/products?sort=productId,desc');
       if (response && Array.isArray(response.content)) {
         return response.content;
       }
@@ -43,7 +52,7 @@ export const productManagementApi = {
   },
 
   // Get single product
-  getProductById: (id: number) => apiFetch<ProductItem>(`/api/products/${id}`),
+  getProductById: (id: number) => apiFetch<ProductItem>(`/api/backoffice/products/${id}`),
 
   // Create product
   createProduct: (payload: {
@@ -54,7 +63,7 @@ export const productManagementApi = {
     brandId?: number;
     userId: number;
   }) =>
-    apiFetch<ProductItem>('/api/products', {
+    apiFetch<ProductItem>('/api/backoffice/products', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
@@ -62,7 +71,7 @@ export const productManagementApi = {
   // Categories
   getCategories: async (): Promise<CategoryItem[]> => {
     try {
-      const response = await apiFetch<any>('/api/categories');
+      const response = await apiFetch<any>('/api/backoffice/categories');
       if (response && Array.isArray(response.content)) return response.content;
       if (Array.isArray(response)) return response;
       return [];
@@ -74,7 +83,7 @@ export const productManagementApi = {
   // Brands
   getBrands: async (): Promise<BrandItem[]> => {
     try {
-      const response = await apiFetch<any>('/api/brands');
+      const response = await apiFetch<any>('/api/backoffice/brands');
       if (response && Array.isArray(response.content)) return response.content;
       if (Array.isArray(response)) return response;
       return [];
@@ -85,7 +94,7 @@ export const productManagementApi = {
 
   // Product Images
   getProductImages: (productId: number) =>
-    apiFetch<any[]>(`/api/product-images/product/${productId}`),
+    apiFetch<any[]>(`/api/backoffice/product-images/product/${productId}`),
 
   uploadProductImage: async (productId: number, file: File, isPrimary = true) => {
     const formData = new FormData();
@@ -98,7 +107,7 @@ export const productManagementApi = {
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch('http://localhost:8080/api/product-images/upload', {
+    const res = await fetch('http://localhost:8080/api/backoffice/product-images/upload', {
       method: 'POST',
       headers,
       body: formData,
@@ -108,33 +117,33 @@ export const productManagementApi = {
   },
 
   // Variations & Options
-  getVariations: () => apiFetch<any[]>('/api/variations'),
+  getVariations: () => apiFetch<any[]>('/api/backoffice/variations'),
   createVariation: (name: string) =>
-    apiFetch<any>('/api/variations', {
+    apiFetch<any>('/api/backoffice/variations', {
       method: 'POST',
       body: JSON.stringify({ name }),
     }),
   deleteVariation: (id: number) =>
-    apiFetch<string>(`/api/variations/${id}`, { method: 'DELETE' }),
+    apiFetch<string>(`/api/backoffice/variations/${id}`, { method: 'DELETE' }),
 
-  getVariationOptions: () => apiFetch<any[]>('/api/variation-options'),
+  getVariationOptions: () => apiFetch<any[]>('/api/backoffice/variation-options'),
   createVariationOption: (variationId: number, value: string) =>
-    apiFetch<any>('/api/variation-options', {
+    apiFetch<any>('/api/backoffice/variation-options', {
       method: 'POST',
       body: JSON.stringify({ variation: { variationId }, value }),
     }),
   deleteVariationOption: (id: number) =>
-    apiFetch<string>(`/api/variation-options/${id}`, { method: 'DELETE' }),
+    apiFetch<string>(`/api/backoffice/variation-options/${id}`, { method: 'DELETE' }),
 
   // Variants & Inventory
-  getProductVariants: () => apiFetch<any[]>('/api/product-variants'),
+  getProductVariants: () => apiFetch<any[]>('/api/backoffice/product-variants'),
   createProductVariant: (payload: any) =>
-    apiFetch<any>('/api/product-variants', {
+    apiFetch<any>('/api/backoffice/product-variants', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
   assignOptionToVariant: (variantId: number, optionId: number) =>
-    apiFetch<any>('/api/variant-option-values', {
+    apiFetch<any>('/api/backoffice/variant-option-values', {
       method: 'POST',
       body: JSON.stringify({ variant: { variantId }, option: { optionId } }),
     }),
