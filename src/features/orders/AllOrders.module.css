@@ -123,16 +123,16 @@
 
 .detailGrid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 24px;
+  grid-template-columns: 3fr 2fr;
+  gap: 20px;
 }
 
 .card {
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  padding: 24px;
-  margin-bottom: 24px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
 }
 
 .cardTitle {
@@ -186,4 +186,105 @@
 .updateBtn:disabled { 
   background-color: #a5b3f1; 
   cursor: not-allowed; 
+}
+
+/* --- Table View အတွက် --- */
+.tableRow {
+  cursor: pointer;
+}
+
+.tableCellCenter {
+  text-align: center;
+}
+
+.paymentSuccess {
+  color: green;
+  font-weight: bold;
+}
+
+.paymentPending {
+  color: orange;
+  font-weight: bold;
+}
+
+/* --- List View (ဘယ်ဘက်ခြမ်း) အတွက် --- */
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.customerName {
+  font-size: 15px;
+}
+
+.amountText {
+  font-weight: bold;
+}
+
+.listSubtext {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+/* --- Information View (Customer Info) အတွက် --- */
+.infoText {
+  margin: 8px 0;
+}
+
+.variantText {
+  color: gray;
+  display: block;
+  font-size: 13px;
+}
+
+.totalText {
+  color: green;
+  font-size: 1.2rem;
+}
+
+/* --- Payment Information Card အတွက် (အရေးကြီးဆုံး) --- */
+.actionColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.paymentRow {
+  display: flex;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+
+.paymentRow:last-child {
+  margin-bottom: 0;
+}
+
+.paymentLabel {
+  color: #666;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.paymentValue {
+  word-break: break-word;
+}
+
+.txnRefValue {
+  word-break: break-all;
+}
+
+.paymentStatusSuccess {
+  color: #34df5c;
+}
+
+.loadingText {
+  font-size: 14px;
+  color: #666;
+}
+
+.notFoundText {
+  font-size: 14px;
+  color: #999;
 }
