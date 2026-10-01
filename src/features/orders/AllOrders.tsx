@@ -124,7 +124,7 @@ export const AllOrders = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center' }}>
+                  <td colSpan={6} className={styles.tableCellCenter}>
                     Loading orders...
                   </td>
                 </tr>
@@ -136,7 +136,7 @@ export const AllOrders = () => {
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center' }}>
+                  <td colSpan={6} className={styles.tableCellCenter}>
                     No orders found.
                   </td>
                 </tr>
@@ -145,7 +145,7 @@ export const AllOrders = () => {
                   <tr
                     key={order.orderId}
                     onClick={() => setSelectedOrderNo(order.orderNo)}
-                    style={{ cursor: 'pointer' }}
+                    className={styles.tableRow}
                   >
                     <td style={{ fontWeight: 'bold' }}>{order.orderNo}</td>
                     <td>{order.createdAt?.split(' ')[0]}</td>
@@ -159,15 +159,7 @@ export const AllOrders = () => {
                       </span>
                     </td>
                     <td>
-                      <span
-                        style={{
-                          color:
-                            order.paymentStatus === 'SUCCESS'
-                              ? 'green'
-                              : 'orange',
-                          fontWeight: 'bold',
-                        }}
-                      >
+                      <span className={styles.paymentSuccess}>
                         {order.paymentStatus}
                       </span>
                     </td>
@@ -188,30 +180,19 @@ export const AllOrders = () => {
                 className={`${styles.listItem} ${selectedOrderNo === order.orderNo ? styles.activeOrder : ''}`}
                 onClick={() => setSelectedOrderNo(order.orderNo)}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginBottom: '5px',
-                  }}
-                >
-                  <strong style={{ fontSize: '15px' }}>
+                <div className={styles.listHeader}>
+                  <strong className={styles.customerName}>
                     {order.customerName}
                   </strong>
-                  <span style={{ fontWeight: 'bold' }}>
+                  <span className={styles.amountText}>
                     {order.totalAmount?.toLocaleString()} Ks
                   </span>
                 </div>
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#666',
-                    marginBottom: '8px',
-                  }}
-                >
+                <div className={styles.listSubtext}>
                   {order.orderNo} • {order.createdAt?.split(' ')[0]}
                 </div>
                 <div>
+                  Order Status :
                   <span
                     className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}
                   >
@@ -245,14 +226,14 @@ export const AllOrders = () => {
                   <div>
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Customer Information</h3>
-                      <p style={{ margin: '8px 0' }}>
+                      <p className={styles.infoText}>
                         <strong>Name:</strong> {orderDetails.customerName}
                       </p>
-                      <p style={{ margin: '8px 0' }}>
+                      <p className={styles.infoText}>
                         <strong>Phone:</strong>{' '}
                         {orderDetails.shippingAddress?.phoneNumber || 'N/A'}
                       </p>
-                      <p style={{ margin: '8px 0' }}>
+                      <p className={styles.infoText}>
                         <strong>Address:</strong>{' '}
                         {[
                           orderDetails.shippingAddress?.addressLine1,
@@ -263,7 +244,7 @@ export const AllOrders = () => {
                           .filter(Boolean)
                           .join(', ') || 'N/A'}
                       </p>
-                      <p style={{ margin: '8px 0' }}>
+                      <p className={styles.infoText}>
                         <strong>Date: </strong>
                         {orderDetails.createdAt}
                       </p>
@@ -285,13 +266,7 @@ export const AllOrders = () => {
                               <td>
                                 {item.productName}
                                 {item.variantAttributes && (
-                                  <span
-                                    style={{
-                                      color: 'gray',
-                                      display: 'block',
-                                      fontSize: '13px',
-                                    }}
-                                  >
+                                  <span className={styles.variantText}>
                                     ({formatAttributes(item.variantAttributes)})
                                   </span>
                                 )}
@@ -305,7 +280,7 @@ export const AllOrders = () => {
                       <div className={styles.totalSection}>
                         <h4 style={{ margin: 0 }}>
                           Total:{' '}
-                          <span style={{ color: 'green', fontSize: '1.2rem' }}>
+                          <span className={styles.totalText}>
                             {orderDetails.totalAmount?.toLocaleString()} MMK
                           </span>
                         </h4>
@@ -314,13 +289,7 @@ export const AllOrders = () => {
                   </div>
 
                   {/* Action View (Update Status) */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '24px',
-                    }}
-                  >
+                  <div className={styles.actionColumn}>
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Order Action</h3>
                       <p style={{ marginBottom: '16px' }}>
@@ -365,99 +334,47 @@ export const AllOrders = () => {
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Payment Information</h3>
                       {LoadingPaymentInfo ? (
-                        <p style={{ fontSize: '14px', color: '#666' }}>
+                        <p className={styles.loadingText}>
                           Loading payment info...
                         </p>
                       ) : paymentInfo ? (
                         <div>
-                          <div
-                            style={{
-                              display: 'flex',
-                              marginBottom: '12px',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: '#666',
-                                width: '80px',
-                                flexShrink: 0,
-                              }}
-                            >
-                              Status:
-                            </span>
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>Status:</span>
                             <strong
-                              style={{
-                                color:
-                                  paymentInfo.paymentStatus === 'SUCCESS'
-                                    ? '#34df5c'
-                                    : paymentInfo.paymentStatus === 'FAILED'
-                                      ? '#ec3241'
-                                      : '#f4c52b',
-                              }}
+                              className={
+                                paymentInfo.paymentStatus === 'SUCCESS'
+                                  ? styles.paymentStatusSuccess
+                                  : paymentInfo.paymentStatus === 'FAILED'
+                                    ? styles.paymentStatusFailed
+                                    : styles.paymentStatusPending
+                              }
                             >
                               {paymentInfo.paymentStatus || 'N/A'}
                             </strong>
                           </div>
 
-                          <div
-                            style={{
-                              display: 'flex',
-                              marginBottom: '12px',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: '#666',
-                                width: '80px',
-                                flexShrink: 0,
-                              }}
-                            >
-                              Method:
-                            </span>
-                            <strong style={{ wordBreak: 'break-word' }}>
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>Method:</span>
+                            <strong className={styles.paymentValue}>
                               {paymentInfo.paymentMethod || 'N/A'}
                             </strong>
                           </div>
 
-                          <div
-                            style={{
-                              display: 'flex',
-                              marginBottom: '12px',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: '#666',
-                                width: '80px',
-                                flexShrink: 0,
-                              }}
-                            >
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
                               Txn Ref:
                             </span>
-                            <strong style={{ wordBreak: 'break-all' }}>
+                            <strong className={styles.txnRefValue}>
                               {paymentInfo.transactionRef || 'N/A'}
                             </strong>
                           </div>
 
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: '#666',
-                                width: '80px',
-                                flexShrink: 0,
-                              }}
-                            >
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
                               Paid At:
                             </span>
-                            <strong style={{ wordBreak: 'break-word' }}>
+                            <strong className={styles.paymentValue}>
                               {paymentInfo.paidAt
                                 ? paymentInfo.paidAt.split('T').join(' ')
                                 : '-'}
