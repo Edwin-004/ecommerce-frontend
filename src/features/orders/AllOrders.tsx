@@ -34,8 +34,87 @@ export const AllOrders = () => {
   } = useGetOrderByOrderNoQuery(selectedOrderNo || '', {
     skip: !selectedOrderNo,
   });
+
+  const getCourierPrefix = (name: string) => {
+    switch (name) {
+      case 'J_AND_T':
+        return 'JNT';
+      case 'NINJAVAN':
+        return 'NJA';
+      case 'ROYAL_EXPRESS':
+        return 'RYL';
+      case 'FLASH_EXPRESS':
+        return 'FLS';
+      case 'KMD':
+        return 'KMD';
+      default:
+        return 'TRK';
+    }
+  };
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [showShipmentModal, setShowShipmentModal] = useState<boolean>(false);
+  const [courierName, setCourierName] = useState<string>(''); // Default Enum
+  const [trackingNumber, setTrackingNumber] = useState<string>('');
+  const [courierList, setCourierList] = useState<string[]>([]);
+
+  const handleUpdateClick = () => {
+    if (selectedStatus === 'SHIPPED') {
+      setShowShipmentModal(true); // Modal ကို ဖွင့်ပါ
+    } else {
+      handleStatusUpdate(); // မူလအတိုင်း တန်းပြီး Status ပြောင်းပါ
+    }
+  };
+
+  useEffect(() => {
+    // Modal ပွင့်နေပြီး Courier လည်း ရွေးထားမယ်၊ Order No လည်း ရှိနေမယ်ဆိုရင်
+    if (showShipmentModal && courierName && selectedOrderNo) {
+      const prefix = getCourierPrefix(courierName);
+      const randomDigits = Math.floor(1000 + Math.random() * 9000);
+      const formattedOrderNo = selectedOrderNo.replace(/_/g, '-');
+
+      setTrackingNumber(`${prefix}-${formattedOrderNo}-${randomDigits}`);
+    } else {
+      setTrackingNumber('');
+    }
+  }, [courierName, selectedOrderNo, showShipmentModal]);
+
+  useEffect(() => {
+    const fetchCouriers = async () => {
+      try {
+        const response = await fetch(
+          'http://localhost:8080/api/backoffice/orders/couriers',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setCourierList(data);
+          // Data ရလာပါက ပထမဆုံး Courier ကို Default အဖြစ် ရွေးပေးထားရန်
+          if (data.length > 0) setCourierName(data[0]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch couriers:', error);
+      }
+    };
+    if (token) fetchCouriers();
+  }, [token]);
+
+  // J_AND_T ကဲ့သို့သော Enum String များကို J&T Express ဟု ဖတ်လွယ်အောင် ပြောင်းပေးမည့် Helper
+  const formatCourierName = (name: string) => {
+    if (name === 'J_AND_T') return 'J&T Express';
+    if (name === 'NINJAVAN') return 'Ninjavan';
+    if (name === 'ROYAL_EXPRESS') return 'Royal Express';
+    if (name === 'FLASH_EXPRESS') return 'Flash Express';
+    if (name === 'KMD') return 'KMD Express';
+    return name
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
 
   useEffect(() => {
     if (orderDetails) {
@@ -66,6 +145,8 @@ export const AllOrders = () => {
       alert('Status Updated Successfully!');
 
       // Update အောင်မြင်သွားပါက ညာဘက်ခြမ်း Detail Data ကို အသစ်ပြန်ခေါ် (Refresh) လုပ်ရန်
+      setShowShipmentModal(false); // အောင်မြင်ပါက Modal ကို ပိတ်ပါ
+      setTrackingNumber(''); // Input များကို ရှင်းပါ
       refetchDetails();
       refetchList();
       refetchPaymentInfo();
@@ -319,7 +400,7 @@ export const AllOrders = () => {
                         </select>
 
                         <button
-                          onClick={handleStatusUpdate}
+                          onClick={handleUpdateClick}
                           className={styles.updateBtn}
                           disabled={
                             isUpdating ||
@@ -393,6 +474,63 @@ export const AllOrders = () => {
             ) : (
               <p>Order Data မရှိပါ။</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ==================== Shipment Modal ==================== */}
+      {showShipmentModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h3 className={styles.modalHeaderTitle}>Create Shipment</h3>
+
+            <div className={styles.formGroup}>
+              <label className={styles.inputLabel}>Courier Service:</label>
+              <select
+                value={courierName}
+                onChange={(e) => setCourierName(e.target.value)}
+                className={styles.formControl}
+              >
+                {/* Backend မှ ရလာသော Courier List ကို Dynamic Map ထုတ်ခြင်း */}
+                {courierList.length > 0 ? (
+                  courierList.map((courier) => (
+                    <option key={courier} value={courier}>
+                      {formatCourierName(courier)}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Loading...</option>
+                )}
+              </select>
+            </div>
+
+            <div className={styles.formGroupLast}>
+              <label className={styles.inputLabel}>Tracking Number:</label>
+              <input
+                type="text"
+                value={trackingNumber}
+                readOnly
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                placeholder="Enter waybill number"
+                className={styles.formControl}
+              />
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                onClick={() => setShowShipmentModal(false)}
+                className={styles.cancelBtn}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStatusUpdate}
+                disabled={!trackingNumber.trim() || isUpdating}
+                className={styles.confirmBtn}
+              >
+                {isUpdating ? 'Saving...' : 'Confirm & Ship'}
+              </button>
+            </div>
           </div>
         </div>
       )}
