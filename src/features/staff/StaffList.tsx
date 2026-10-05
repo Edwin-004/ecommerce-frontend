@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import api from '../utils/axiosConfig';
+import api from '../../utils/axiosConfig'; // Folder နှစ်ဆင့် (src ထဲရောက်ရန်) '../../' ကိုသုံးပါ
+import { type RootState } from '../../store'; // Folder နှစ်ဆင့် (src ထဲရောက်ရန်) '../../' ကိုသုံးပါ
 import { useSelector } from 'react-redux'; // <--- အသစ်ထည့်ရန်
-import { type RootState } from '../store'; // <--- အသစ်ထည့်ရန်
 
 interface StaffResponseDTO {
     userId: number;
