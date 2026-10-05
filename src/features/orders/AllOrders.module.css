@@ -288,3 +288,96 @@
   font-size: 14px;
   color: #999;
 }
+
+/* ==================== Shipment Modal ==================== */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.modalHeaderTitle {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formGroupLast {
+  margin-bottom: 24px;
+}
+
+.inputLabel {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #555;
+  font-weight: 500;
+}
+
+.formControl {
+  width: 100%;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  outline: none;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.formControl:focus {
+  border-color: #556ee6;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  background: #fff;
+  cursor: pointer;
+  color: #333;
+  transition: background-color 0.2s;
+}
+
+.cancelBtn:hover {
+  background-color: #f8f9fa;
+}
+
+.confirmBtn {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  background: #556ee6;
+  color: #fff;
+  cursor: pointer;
+}
+
+.confirmBtn:disabled {
+  background: #a5b3f1;
+  cursor: not-allowed;
+}
