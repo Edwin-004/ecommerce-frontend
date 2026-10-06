@@ -1,3 +1,4 @@
+
 import {
   type ChangeEvent,
   type FormEvent,
@@ -15,7 +16,8 @@ import {
 // BACKEND URL
 // =====================================================
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL =
+  'http://localhost:8080';
 
 // =====================================================
 // LOGO URL HELPER
@@ -24,6 +26,7 @@ const API_BASE_URL = 'http://localhost:8080';
 const getLogoUrl = (
   logoUrl?: string | null
 ): string => {
+
   if (!logoUrl) {
     return '';
   }
@@ -51,7 +54,9 @@ interface BrandModalProps {
   show: boolean;
   brand: Brand | null;
   loading: boolean;
+
   onClose: () => void;
+
   onSubmit: (
     data: BrandRequest,
     file: File | null
@@ -90,7 +95,7 @@ export function BrandModal({
     useState<File | null>(null);
 
   const [preview, setPreview] =
-    useState<string>('');
+    useState('');
 
   // =====================================================
   // LOAD BRAND DATA
@@ -114,15 +119,6 @@ export function BrandModal({
           brand.status,
       });
 
-      // IMPORTANT
-      // Convert DB URL:
-      //
-      // /uploads/brand-logos/xxx.jpg
-      //
-      // to:
-      //
-      // http://localhost:8080/uploads/brand-logos/xxx.jpg
-
       setPreview(
         getLogoUrl(
           brand.brandLogoUrl
@@ -132,10 +128,7 @@ export function BrandModal({
     } else {
 
       setForm({
-        brandName: '',
-        brandLogoUrl: '',
-        description: '',
-        status: 'ACTIVE',
+        ...initialForm,
       });
 
       setPreview('');
@@ -191,7 +184,10 @@ export function BrandModal({
       return;
     }
 
-    // Max 5MB
+    // ---------------------------------------------------
+    // MAX FILE SIZE: 5MB
+    // ---------------------------------------------------
+
     const maxSize =
       5 * 1024 * 1024;
 
@@ -209,7 +205,10 @@ export function BrandModal({
       return;
     }
 
-    // Check image type
+    // ---------------------------------------------------
+    // ALLOWED TYPES
+    // ---------------------------------------------------
+
     const allowedTypes = [
       'image/png',
       'image/jpeg',
@@ -231,11 +230,18 @@ export function BrandModal({
       return;
     }
 
+    // ---------------------------------------------------
+    // SET FILE
+    // ---------------------------------------------------
+
     setFile(
       selectedFile
     );
 
-    // Local preview
+    // ---------------------------------------------------
+    // LOCAL PREVIEW
+    // ---------------------------------------------------
+
     const imageUrl =
       URL.createObjectURL(
         selectedFile
@@ -254,6 +260,10 @@ export function BrandModal({
 
     e.preventDefault();
 
+    // ---------------------------------------------------
+    // BRAND NAME VALIDATION
+    // ---------------------------------------------------
+
     if (
       !form.brandName.trim()
     ) {
@@ -264,6 +274,10 @@ export function BrandModal({
 
       return;
     }
+
+    // ---------------------------------------------------
+    // SUBMIT TO PARENT
+    // ---------------------------------------------------
 
     await onSubmit(
       {
@@ -290,7 +304,6 @@ export function BrandModal({
   // =====================================================
 
   return (
-
     <div
       className="modal d-block"
       tabIndex={-1}
@@ -305,9 +318,9 @@ export function BrandModal({
 
         <div className="modal-content border-0 shadow-lg rounded-4">
 
-          {/* =========================
+          {/* =================================================
               HEADER
-          ========================== */}
+          ================================================= */}
 
           <div className="modal-header px-4 py-3">
 
@@ -341,9 +354,9 @@ export function BrandModal({
 
           </div>
 
-          {/* =========================
+          {/* =================================================
               FORM
-          ========================== */}
+          ================================================= */}
 
           <form
             onSubmit={
@@ -351,13 +364,15 @@ export function BrandModal({
             }
           >
 
-            {/* BODY */}
+            {/* =================================================
+                BODY
+            ================================================= */}
 
             <div className="modal-body p-4">
 
-              {/* =====================
+              {/* =================================================
                   LOGO
-              ====================== */}
+              ================================================= */}
 
               <div className="d-flex align-items-center gap-3 mb-4">
 
@@ -379,7 +394,8 @@ export function BrandModal({
                       alt="Brand logo"
                       className="w-100 h-100 p-2"
                       style={{
-                        objectFit: 'contain',
+                        objectFit:
+                          'contain',
                       }}
                       onError={(e) => {
                         e.currentTarget.style.display =
@@ -403,8 +419,11 @@ export function BrandModal({
                     htmlFor="brandLogo"
                     className="btn btn-outline-primary btn-sm"
                   >
+
                     <i className="bi bi-upload me-2" />
+
                     Upload Logo
+
                   </label>
 
                   <input
@@ -418,7 +437,9 @@ export function BrandModal({
                   />
 
                   <div className="small text-secondary mt-2">
+
                     PNG, JPG or WEBP · Max 5MB
+
                   </div>
 
                   {file && (
@@ -437,9 +458,9 @@ export function BrandModal({
 
               </div>
 
-              {/* =====================
+              {/* =================================================
                   BRAND NAME
-              ====================== */}
+              ================================================= */}
 
               <div className="mb-3">
 
@@ -469,19 +490,23 @@ export function BrandModal({
                 />
 
                 <div className="form-text">
+
                   Maximum 100 characters.
+
                 </div>
 
               </div>
 
-              {/* =====================
+              {/* =================================================
                   DESCRIPTION
-              ====================== */}
+              ================================================= */}
 
               <div className="mb-3">
 
                 <label className="form-label fw-semibold">
+
                   Description
+
                 </label>
 
                 <textarea
@@ -499,14 +524,16 @@ export function BrandModal({
 
               </div>
 
-              {/* =====================
+              {/* =================================================
                   STATUS
-              ====================== */}
+              ================================================= */}
 
               <div>
 
                 <label className="form-label fw-semibold">
+
                   Status
+
                 </label>
 
                 <div className="row g-2">
@@ -570,9 +597,9 @@ export function BrandModal({
 
             </div>
 
-            {/* =========================
+            {/* =================================================
                 FOOTER
-            ========================== */}
+            ================================================= */}
 
             <div className="modal-footer px-4">
 
@@ -582,7 +609,9 @@ export function BrandModal({
                 onClick={onClose}
                 disabled={loading}
               >
+
                 Cancel
+
               </button>
 
               <button
@@ -628,3 +657,4 @@ export function BrandModal({
     </div>
   );
 }
+
