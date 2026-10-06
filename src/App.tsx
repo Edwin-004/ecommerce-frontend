@@ -11,6 +11,7 @@ import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
+import { BrandsPage } from './features/brand/BrandsPage';
 import StaffList from './components/StaffList';
 import { Profile } from './components/Profile';
 import './App.css';
@@ -43,6 +44,9 @@ function App() {
 
             {/* Categories */}
             <Route path="/admin/categories" element={<CategoryManagement />} />
+
+            <Route path="/admin/brands" element={<BrandsPage />}
+/>
 
             {/* Staff Management */}
             <Route path="/admin/staff" element={<StaffList />} />

@@ -1,0 +1,91 @@
+.page {
+  min-height: 100vh;
+  background: #f6f7fb;
+}
+
+.statCard {
+  border-radius: 16px !important;
+  transition: all 0.2s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+}
+
+.statIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 21px;
+
+  margin-right: 14px;
+}
+
+.purple {
+  color: #6f42c1;
+  background: #eee5ff;
+}
+
+.green {
+  color: #198754;
+  background: #dff5e9;
+}
+
+.orange {
+  color: #fd7e14;
+  background: #fff0dc;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+
+  object-fit: contain;
+
+  padding: 5px;
+
+  background: white;
+
+  border: 1px solid #e5e7eb;
+
+  border-radius: 12px;
+}
+
+.logoPlaceholder {
+  width: 48px;
+  height: 48px;
+
+  flex-shrink: 0;
+
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #eee5ff;
+  color: #6f42c1;
+
+  font-size: 18px;
+  font-weight: 700;
+}
+
+table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+table td {
+  font-size: 14px;
+}
+
+table tbody tr {
+  transition: background 0.15s ease;
+}

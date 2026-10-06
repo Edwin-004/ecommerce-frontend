@@ -22,6 +22,7 @@ import {
   FiPlusCircle,
   FiFolder,
   FiGrid,
+  FiTag,
 } from "react-icons/fi";
 
 export const Sidebar = () => {
@@ -34,6 +35,7 @@ export const Sidebar = () => {
     location.pathname.startsWith("/admin/variants") ||
     location.pathname.startsWith("/admin/variations") ||
     location.pathname.startsWith("/admin/categories");
+      location.pathname.startsWith("/admin/brands");
 
   const isInventoryActive = location.pathname.startsWith("/admin/inventory");
 
@@ -132,6 +134,16 @@ export const Sidebar = () => {
               <NavLink to="/admin/categories" className={subNavClass}>
                 <FiFolder size={13} />
                 <span>Categories</span>
+              </NavLink>
+                <NavLink
+                to="/admin/brands"
+                className={subNavClass}
+              >
+                <FiTag size={13} />
+
+                <span>
+                  Brands
+                </span>
               </NavLink>
               <NavLink to="/admin/variants" className={subNavClass}>
                 <FiLayers size={13} />
