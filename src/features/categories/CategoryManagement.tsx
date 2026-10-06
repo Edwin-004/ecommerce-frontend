@@ -1,23 +1,31 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  FiLayers, FiFolder, FiGitBranch, FiSearch,
-  FiPlus, FiEdit2, FiTrash2, FiList,
-  FiChevronDown, FiChevronRight, FiRefreshCw,
-  FiX, FiSave
+  FiLayers,
+  FiFolder,
+  FiGitBranch,
+  FiSearch,
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiList,
+  FiChevronDown,
+  FiChevronRight,
+  FiRefreshCw,
+  FiX,
+  FiSave,
 } from "react-icons/fi";
 
 import { categoryApi } from "./categoryApi";
+
 import {
   type CategoryRequestDto,
-  type CategoryResponseDto
+  type CategoryResponseDto,
 } from "../../types/category";
 
 import styles from "./CategoryManagement.module.css";
 
 export const CategoryManagement: React.FC = () => {
-  const CURRENT_USER_ID = 1;
-
   const [viewMode, setViewMode] =
     useState<"flat" | "tree">("flat");
 
@@ -43,71 +51,99 @@ export const CategoryManagement: React.FC = () => {
   const [successMessage, setSuccessMessage] =
     useState<string | null>(null);
 
-  const [expanded, setExpanded] = useState<number[]>([]);
+  const [expanded, setExpanded] =
+    useState<number[]>([]);
+
+  // =========================================================
+  // FORM DATA
+  // =========================================================
 
   const [formData, setFormData] =
     useState<CategoryRequestDto>({
       categoryName: "",
       description: "",
       parentId: null,
-      userId: CURRENT_USER_ID
     });
+
+  // =========================================================
+  // FETCH DATA
+  // =========================================================
 
   const fetchData = async () => {
     setLoading(true);
 
     try {
-      const [flat, tree, all] = await Promise.all([
-        categoryApi.getAllCategories(0, 50),
-        categoryApi.getCategoryTree(),
-        categoryApi.getAllCategories(0, 1000)
-      ]);
+      const [flat, tree, all] =
+        await Promise.all([
+          categoryApi.getAllCategories(0, 50),
+          categoryApi.getCategoryTree(),
+          categoryApi.getAllCategories(0, 1000),
+        ]);
 
       setCategories(flat.content);
       setTreeCategories(tree);
       setFlatAll(all.content);
+
       setErrorMessage(null);
     } catch (err: any) {
       setErrorMessage(
         err.response?.data?.message ||
-        "Failed to load categories."
+          "Failed to load categories."
       );
     } finally {
       setLoading(false);
     }
   };
 
+  // =========================================================
+  // INITIAL LOAD
+  // =========================================================
+
   useEffect(() => {
     fetchData();
   }, []);
 
+  // =========================================================
+  // INPUT CHANGE
+  // =========================================================
+
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement |
-      HTMLTextAreaElement |
-      HTMLSelectElement
+        HTMLTextAreaElement |
+        HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]:
         name === "parentId"
-          ? value ? Number(value) : null
-          : value
+          ? value
+            ? Number(value)
+            : null
+          : value,
     }));
   };
 
+  // =========================================================
+  // RESET FORM
+  // =========================================================
+
   const resetForm = () => {
     setEditingId(null);
+
     setFormData({
       categoryName: "",
       description: "",
       parentId: null,
-      userId: CURRENT_USER_ID
     });
   };
+
+  // =========================================================
+  // CREATE / UPDATE
+  // =========================================================
 
   const handleSubmit = async (
     e: React.FormEvent
@@ -115,7 +151,9 @@ export const CategoryManagement: React.FC = () => {
     e.preventDefault();
 
     if (!formData.categoryName.trim()) {
-      setErrorMessage("Category name is required.");
+      setErrorMessage(
+        "Category name is required."
+      );
       return;
     }
 
@@ -126,29 +164,39 @@ export const CategoryManagement: React.FC = () => {
     try {
       if (editingId !== null) {
         await categoryApi.updateCategory(
-          editingId, formData
+          editingId,
+          formData
         );
+
         setSuccessMessage(
           "Category updated successfully."
         );
       } else {
-        await categoryApi.createCategory(formData);
+        await categoryApi.createCategory(
+          formData
+        );
+
         setSuccessMessage(
           "Category created successfully."
         );
       }
 
       resetForm();
+
       await fetchData();
     } catch (err: any) {
       setErrorMessage(
         err.response?.data?.message ||
-        "Operation failed."
+          "Operation failed."
       );
     } finally {
       setSaving(false);
     }
   };
+
+  // =========================================================
+  // EDIT
+  // =========================================================
 
   const handleEdit = (
     category: CategoryResponseDto
@@ -156,10 +204,14 @@ export const CategoryManagement: React.FC = () => {
     setEditingId(category.categoryId);
 
     setFormData({
-      categoryName: category.categoryName,
-      description: category.description || "",
-      parentId: category.parentId ?? null,
-      userId: CURRENT_USER_ID
+      categoryName:
+        category.categoryName,
+
+      description:
+        category.description || "",
+
+      parentId:
+        category.parentId ?? null,
     });
 
     setErrorMessage(null);
@@ -167,14 +219,24 @@ export const CategoryManagement: React.FC = () => {
 
     window.scrollTo({
       top: 0,
-      behavior: "smooth"
+      behavior: "smooth",
     });
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm(
-      "Are you sure you want to delete this category?"
-    )) return;
+  // =========================================================
+  // DELETE
+  // =========================================================
+
+  const handleDelete = async (
+    id: number
+  ) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this category?"
+      )
+    ) {
+      return;
+    }
 
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -182,7 +244,9 @@ export const CategoryManagement: React.FC = () => {
     try {
       await categoryApi.deleteCategory(id);
 
-      if (editingId === id) resetForm();
+      if (editingId === id) {
+        resetForm();
+      }
 
       setSuccessMessage(
         "Category deleted successfully."
@@ -192,79 +256,135 @@ export const CategoryManagement: React.FC = () => {
     } catch (err: any) {
       setErrorMessage(
         err.response?.data?.message ||
-        "Cannot delete this category."
+          "Cannot delete this category."
       );
     }
   };
 
-  // Prevent selecting self or descendants as parent.
+  // =========================================================
+  // GET DESCENDANT IDS
+  // =========================================================
+
   const getDescendantIds = (
     id: number,
     visited = new Set<number>()
   ): Set<number> => {
-    if (visited.has(id)) return visited;
+    if (visited.has(id)) {
+      return visited;
+    }
+
     visited.add(id);
 
     flatAll
-      .filter(cat => cat.parentId === id)
-      .forEach(cat =>
-        getDescendantIds(cat.categoryId, visited)
+      .filter(
+        (cat) => cat.parentId === id
+      )
+      .forEach((cat) =>
+        getDescendantIds(
+          cat.categoryId,
+          visited
+        )
       );
 
     return visited;
   };
+
+  // =========================================================
+  // AVAILABLE PARENT CATEGORIES
+  // =========================================================
 
   const invalidParentIds =
     editingId !== null
       ? getDescendantIds(editingId)
       : new Set<number>();
 
-  const availableParents = flatAll.filter(
-    cat => !invalidParentIds.has(cat.categoryId)
-  );
+  const availableParents =
+    flatAll.filter(
+      (cat) =>
+        !invalidParentIds.has(
+          cat.categoryId
+        )
+    );
 
-  const filteredCategories = categories.filter(
-    cat =>
-      cat.categoryName
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      (cat.parentName || "")
-        .toLowerCase()
-        .includes(search.toLowerCase())
-  );
+  // =========================================================
+  // FLAT SEARCH
+  // =========================================================
+
+  const filteredCategories =
+    categories.filter((cat) => {
+      const keyword =
+        search.toLowerCase().trim();
+
+      return (
+        cat.categoryName
+          .toLowerCase()
+          .includes(keyword) ||
+        (cat.parentName || "")
+          .toLowerCase()
+          .includes(keyword)
+      );
+    });
+
+  // =========================================================
+  // TREE SEARCH
+  // =========================================================
 
   const matchesSearch = (
     node: CategoryResponseDto
-  ): boolean =>
-    node.categoryName
-      .toLowerCase()
-      .includes(search.toLowerCase()) ||
-    (node.children || []).some(matchesSearch);
+  ): boolean => {
+    const keyword =
+      search.toLowerCase().trim();
 
-  const filteredTree = treeCategories.filter(
-    node => !search || matchesSearch(node)
-  );
+    return (
+      node.categoryName
+        .toLowerCase()
+        .includes(keyword) ||
+      (node.children || []).some(
+        matchesSearch
+      )
+    );
+  };
 
-  const toggleExpand = (id: number) => {
-    setExpanded(prev =>
+  const filteredTree =
+    treeCategories.filter(
+      (node) =>
+        !search ||
+        matchesSearch(node)
+    );
+
+  // =========================================================
+  // TOGGLE TREE
+  // =========================================================
+
+  const toggleExpand = (
+    id: number
+  ) => {
+    setExpanded((prev) =>
       prev.includes(id)
-        ? prev.filter(x => x !== id)
+        ? prev.filter(
+            (x) => x !== id
+          )
         : [...prev, id]
     );
   };
+
+  // =========================================================
+  // RENDER TREE
+  // =========================================================
 
   const renderTree = (
     nodes: CategoryResponseDto[],
     depth = 0
   ): React.ReactNode => (
     <div className={styles.treeList}>
-      {nodes.map(node => {
+      {nodes.map((node) => {
         const hasChildren =
           (node.children?.length || 0) > 0;
 
         const isExpanded =
-          expanded.includes(node.categoryId) ||
-          search.length > 0;
+          expanded.includes(
+            node.categoryId
+          ) || search.length > 0;
 
         return (
           <div
@@ -272,49 +392,84 @@ export const CategoryManagement: React.FC = () => {
             className={styles.treeItem}
           >
             <div className={styles.treeRow}>
-              <div className={styles.treeName}>
+              <div
+                className={styles.treeName}
+              >
                 {hasChildren ? (
                   <button
-                    className={styles.expandBtn}
+                    type="button"
+                    className={
+                      styles.expandBtn
+                    }
                     onClick={() =>
-                      toggleExpand(node.categoryId)
+                      toggleExpand(
+                        node.categoryId
+                      )
                     }
                     aria-label="Toggle category"
                   >
-                    {isExpanded
-                      ? <FiChevronDown />
-                      : <FiChevronRight />}
+                    {isExpanded ? (
+                      <FiChevronDown />
+                    ) : (
+                      <FiChevronRight />
+                    )}
                   </button>
                 ) : (
-                  <span className={styles.expandSpace} />
+                  <span
+                    className={
+                      styles.expandSpace
+                    }
+                  />
                 )}
 
-                <span className={styles.folderIcon}>
+                <span
+                  className={
+                    styles.folderIcon
+                  }
+                >
                   <FiFolder />
                 </span>
 
-                <span>{node.categoryName}</span>
+                <span>
+                  {node.categoryName}
+                </span>
 
                 {depth === 0 && (
-                  <span className={styles.rootBadge}>
+                  <span
+                    className={
+                      styles.rootBadge
+                    }
+                  >
                     Root
                   </span>
                 )}
               </div>
 
-              <div className={styles.actions}>
+              <div
+                className={styles.actions}
+              >
                 <button
-                  className={styles.editBtn}
-                  onClick={() => handleEdit(node)}
+                  type="button"
+                  className={
+                    styles.editBtn
+                  }
+                  onClick={() =>
+                    handleEdit(node)
+                  }
                   title="Edit"
                 >
                   <FiEdit2 />
                 </button>
 
                 <button
-                  className={styles.deleteBtn}
+                  type="button"
+                  className={
+                    styles.deleteBtn
+                  }
                   onClick={() =>
-                    handleDelete(node.categoryId)
+                    handleDelete(
+                      node.categoryId
+                    )
                   }
                   title="Delete"
                 >
@@ -323,40 +478,58 @@ export const CategoryManagement: React.FC = () => {
               </div>
             </div>
 
-            {hasChildren && isExpanded && (
-              <div className={styles.treeChildren}>
-                {renderTree(
-                  node.children || [], depth + 1
-                )}
-              </div>
-            )}
+            {hasChildren &&
+              isExpanded && (
+                <div
+                  className={
+                    styles.treeChildren
+                  }
+                >
+                  {renderTree(
+                    node.children || [],
+                    depth + 1
+                  )}
+                </div>
+              )}
           </div>
         );
       })}
     </div>
   );
 
-  const rootCount = flatAll.filter(
-    cat => cat.parentId == null
-  ).length;
+  // =========================================================
+  // STATISTICS
+  // =========================================================
 
-  const subCount = flatAll.filter(
-    cat => cat.parentId != null
-  ).length;
+  const rootCount =
+    flatAll.filter(
+      (cat) => cat.parentId == null
+    ).length;
+
+  const subCount =
+    flatAll.filter(
+      (cat) => cat.parentId != null
+    ).length;
+
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <div className={styles.container}>
-
       {/* Page Header */}
       <div className={styles.pageHeader}>
         <div>
           <h1>Category Management</h1>
+
           <p>
-            Organize and manage your product categories
+            Organize and manage your
+            product categories
           </p>
         </div>
 
         <button
+          type="button"
           className={styles.refreshBtn}
           onClick={fetchData}
           disabled={loading}
@@ -369,9 +542,12 @@ export const CategoryManagement: React.FC = () => {
       {/* Statistics */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.blue}`}>
+          <div
+            className={`${styles.statIcon} ${styles.blue}`}
+          >
             <FiLayers />
           </div>
+
           <div>
             <h2>{flatAll.length}</h2>
             <p>Total Categories</p>
@@ -379,9 +555,12 @@ export const CategoryManagement: React.FC = () => {
         </div>
 
         <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.green}`}>
+          <div
+            className={`${styles.statIcon} ${styles.green}`}
+          >
             <FiFolder />
           </div>
+
           <div>
             <h2>{rootCount}</h2>
             <p>Root Categories</p>
@@ -389,9 +568,12 @@ export const CategoryManagement: React.FC = () => {
         </div>
 
         <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.purple}`}>
+          <div
+            className={`${styles.statIcon} ${styles.purple}`}
+          >
             <FiGitBranch />
           </div>
+
           <div>
             <h2>{subCount}</h2>
             <p>Subcategories</p>
@@ -399,33 +581,58 @@ export const CategoryManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* Error */}
       {errorMessage && (
         <div className={styles.errorAlert}>
           <span>{errorMessage}</span>
-          <button onClick={() => setErrorMessage(null)}>
+
+          <button
+            type="button"
+            onClick={() =>
+              setErrorMessage(null)
+            }
+          >
             <FiX />
           </button>
         </div>
       )}
 
+      {/* Success */}
       {successMessage && (
-        <div className={styles.successAlert}>
+        <div
+          className={
+            styles.successAlert
+          }
+        >
           <span>{successMessage}</span>
-          <button onClick={() => setSuccessMessage(null)}>
+
+          <button
+            type="button"
+            onClick={() =>
+              setSuccessMessage(null)
+            }
+          >
             <FiX />
           </button>
         </div>
       )}
 
       <div className={styles.mainGrid}>
-
-        {/* Category Form */}
+        {/* CATEGORY FORM */}
         <section className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={styles.headerIcon}>
-              {editingId !== null
-                ? <FiEdit2 />
-                : <FiPlus />}
+          <div
+            className={styles.cardHeader}
+          >
+            <div
+              className={
+                styles.headerIcon
+              }
+            >
+              {editingId !== null ? (
+                <FiEdit2 />
+              ) : (
+                <FiPlus />
+              )}
             </div>
 
             <div>
@@ -434,6 +641,7 @@ export const CategoryManagement: React.FC = () => {
                   ? "Edit Category"
                   : "Create Category"}
               </h3>
+
               <p>
                 {editingId !== null
                   ? "Update category information"
@@ -446,10 +654,21 @@ export const CategoryManagement: React.FC = () => {
             onSubmit={handleSubmit}
             className={styles.form}
           >
-            <div className={styles.formGroup}>
+            {/* Category Name */}
+            <div
+              className={
+                styles.formGroup
+              }
+            >
               <label htmlFor="categoryName">
                 Category Name
-                <span className={styles.required}> *</span>
+                <span
+                  className={
+                    styles.required
+                  }
+                >
+                  {" "}*
+                </span>
               </label>
 
               <input
@@ -457,14 +676,23 @@ export const CategoryManagement: React.FC = () => {
                 name="categoryName"
                 type="text"
                 placeholder="e.g. Electronics"
-                value={formData.categoryName}
-                onChange={handleInputChange}
+                value={
+                  formData.categoryName
+                }
+                onChange={
+                  handleInputChange
+                }
                 maxLength={120}
                 required
               />
             </div>
 
-            <div className={styles.formGroup}>
+            {/* Parent Category */}
+            <div
+              className={
+                styles.formGroup
+              }
+            >
               <label htmlFor="parentId">
                 Parent Category
               </label>
@@ -472,32 +700,50 @@ export const CategoryManagement: React.FC = () => {
               <select
                 id="parentId"
                 name="parentId"
-                value={formData.parentId ?? ""}
-                onChange={handleInputChange}
+                value={
+                  formData.parentId ?? ""
+                }
+                onChange={
+                  handleInputChange
+                }
               >
                 <option value="">
                   No Parent (Root Category)
                 </option>
 
-                {availableParents.map(cat => (
-                  <option
-                    key={cat.categoryId}
-                    value={cat.categoryId}
-                  >
-                    {cat.categoryName}
-                  </option>
-                ))}
+                {availableParents.map(
+                  (cat) => (
+                    <option
+                      key={cat.categoryId}
+                      value={
+                        cat.categoryId
+                      }
+                    >
+                      {cat.categoryName}
+                    </option>
+                  )
+                )}
               </select>
 
               <small>
-                Leave empty to create a root category.
+                Leave empty to create a
+                root category.
               </small>
             </div>
 
-            <div className={styles.formGroup}>
+            {/* Description */}
+            <div
+              className={
+                styles.formGroup
+              }
+            >
               <label htmlFor="description">
                 Description
-                <span className={styles.optional}>
+                <span
+                  className={
+                    styles.optional
+                  }
+                >
                   {" "}(Optional)
                 </span>
               </label>
@@ -507,19 +753,28 @@ export const CategoryManagement: React.FC = () => {
                 name="description"
                 placeholder="Enter category description..."
                 rows={4}
-                value={formData.description}
-                onChange={handleInputChange}
+                value={
+                  formData.description
+                }
+                onChange={
+                  handleInputChange
+                }
               />
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
-              className={styles.submitBtn}
+              className={
+                styles.submitBtn
+              }
               disabled={saving}
             >
-              {editingId !== null
-                ? <FiSave />
-                : <FiPlus />}
+              {editingId !== null ? (
+                <FiSave />
+              ) : (
+                <FiPlus />
+              )}
 
               {saving
                 ? "Saving..."
@@ -528,10 +783,13 @@ export const CategoryManagement: React.FC = () => {
                   : "Create Category"}
             </button>
 
+            {/* Cancel */}
             {editingId !== null && (
               <button
                 type="button"
-                className={styles.cancelBtn}
+                className={
+                  styles.cancelBtn
+                }
                 onClick={resetForm}
               >
                 Cancel Edit
@@ -540,55 +798,80 @@ export const CategoryManagement: React.FC = () => {
           </form>
         </section>
 
-        {/* Category List */}
+        {/* CATEGORY LIST */}
         <section className={styles.card}>
-          <div className={styles.listHeader}>
+          <div
+            className={styles.listHeader}
+          >
             <div>
               <h3>All Categories</h3>
+
               <p>
-                View and manage your categories
+                View and manage your
+                categories
               </p>
             </div>
 
-            <span className={styles.countBadge}>
+            <span
+              className={
+                styles.countBadge
+              }
+            >
               {flatAll.length} Total
             </span>
           </div>
 
+          {/* Toolbar */}
           <div className={styles.toolbar}>
-            <div className={styles.searchBox}>
+            <div
+              className={
+                styles.searchBox
+              }
+            >
               <FiSearch />
 
               <input
                 type="text"
                 placeholder="Search categories..."
                 value={search}
-                onChange={e =>
-                  setSearch(e.target.value)
+                onChange={(e) =>
+                  setSearch(
+                    e.target.value
+                  )
                 }
               />
             </div>
 
-            <div className={styles.viewTabs}>
+            <div
+              className={
+                styles.viewTabs
+              }
+            >
               <button
+                type="button"
                 className={
                   viewMode === "flat"
                     ? styles.activeTab
                     : styles.tabBtn
                 }
-                onClick={() => setViewMode("flat")}
+                onClick={() =>
+                  setViewMode("flat")
+                }
               >
                 <FiList />
                 Flat
               </button>
 
               <button
+                type="button"
                 className={
                   viewMode === "tree"
                     ? styles.activeTab
                     : styles.tabBtn
                 }
-                onClick={() => setViewMode("tree")}
+                onClick={() =>
+                  setViewMode("tree")
+                }
               >
                 <FiGitBranch />
                 Tree
@@ -596,13 +879,24 @@ export const CategoryManagement: React.FC = () => {
             </div>
           </div>
 
+          {/* Content */}
           {loading ? (
-            <div className={styles.emptyState}>
+            <div
+              className={
+                styles.emptyState
+              }
+            >
               Loading categories...
             </div>
           ) : viewMode === "flat" ? (
-            <div className={styles.tableWrapper}>
-              <table className={styles.table}>
+            <div
+              className={
+                styles.tableWrapper
+              }
+            >
+              <table
+                className={styles.table}
+              >
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -613,78 +907,142 @@ export const CategoryManagement: React.FC = () => {
                 </thead>
 
                 <tbody>
-                  {filteredCategories.map(cat => (
-                    <tr key={cat.categoryId}>
-                      <td>
-                        <span className={styles.idText}>
-                          #{cat.categoryId}
-                        </span>
-                      </td>
-
-                      <td>
-                        <div className={styles.categoryCell}>
-                          <span className={styles.categoryIcon}>
-                            <FiFolder />
-                          </span>
-
-                          <span>{cat.categoryName}</span>
-                        </div>
-                      </td>
-
-                      <td>
-                        {cat.parentName ? (
-                          <span className={styles.parentBadge}>
-                            {cat.parentName}
-                          </span>
-                        ) : (
-                          <span className={styles.rootBadge}>
-                            Root
-                          </span>
-                        )}
-                      </td>
-
-                      <td>
-                        <div className={styles.actions}>
-                          <button
-                            className={styles.editBtn}
-                            onClick={() => handleEdit(cat)}
-                            title="Edit category"
-                          >
-                            <FiEdit2 />
-                          </button>
-
-                          <button
-                            className={styles.deleteBtn}
-                            onClick={() =>
-                              handleDelete(cat.categoryId)
+                  {filteredCategories.map(
+                    (cat) => (
+                      <tr
+                        key={
+                          cat.categoryId
+                        }
+                      >
+                        <td>
+                          <span
+                            className={
+                              styles.idText
                             }
-                            title="Delete category"
                           >
-                            <FiTrash2 />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            #{cat.categoryId}
+                          </span>
+                        </td>
+
+                        <td>
+                          <div
+                            className={
+                              styles.categoryCell
+                            }
+                          >
+                            <span
+                              className={
+                                styles.categoryIcon
+                              }
+                            >
+                              <FiFolder />
+                            </span>
+
+                            <span>
+                              {
+                                cat.categoryName
+                              }
+                            </span>
+                          </div>
+                        </td>
+
+                        <td>
+                          {cat.parentName ? (
+                            <span
+                              className={
+                                styles.parentBadge
+                              }
+                            >
+                              {
+                                cat.parentName
+                              }
+                            </span>
+                          ) : (
+                            <span
+                              className={
+                                styles.rootBadge
+                              }
+                            >
+                              Root
+                            </span>
+                          )}
+                        </td>
+
+                        <td>
+                          <div
+                            className={
+                              styles.actions
+                            }
+                          >
+                            <button
+                              type="button"
+                              className={
+                                styles.editBtn
+                              }
+                              onClick={() =>
+                                handleEdit(
+                                  cat
+                                )
+                              }
+                              title="Edit category"
+                            >
+                              <FiEdit2 />
+                            </button>
+
+                            <button
+                              type="button"
+                              className={
+                                styles.deleteBtn
+                              }
+                              onClick={() =>
+                                handleDelete(
+                                  cat.categoryId
+                                )
+                              }
+                              title="Delete category"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
 
-              {filteredCategories.length === 0 && (
-                <div className={styles.emptyState}>
+              {filteredCategories.length ===
+                0 && (
+                <div
+                  className={
+                    styles.emptyState
+                  }
+                >
                   <FiFolder />
-                  <p>No categories found</p>
+
+                  <p>
+                    No categories found
+                  </p>
                 </div>
               )}
             </div>
           ) : (
-            <div className={styles.treeContainer}>
-              {filteredTree.length > 0
-                ? renderTree(filteredTree)
-                : (
-                  <div className={styles.emptyState}>
-                    No categories found
-                  </div>
-                )}
+            <div
+              className={
+                styles.treeContainer
+              }
+            >
+              {filteredTree.length > 0 ? (
+                renderTree(filteredTree)
+              ) : (
+                <div
+                  className={
+                    styles.emptyState
+                  }
+                >
+                  No categories found
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -694,3 +1052,4 @@ export const CategoryManagement: React.FC = () => {
 };
 
 export default CategoryManagement;
+

@@ -13,9 +13,8 @@ export async function apiFetch<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  // JSON request only
-  // FormData အတွက် Content-Type ကို manually မထည့်ရပါ
-  if (!isFormData) {
+  
+  if (!isFormData && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
 

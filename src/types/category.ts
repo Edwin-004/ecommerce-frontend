@@ -1,8 +1,8 @@
+
 export interface CategoryRequestDto {
   categoryName: string;
   description?: string;
   parentId?: number | null;
-  userId: number;
 }
 
 export interface CategoryResponseDto {
@@ -12,8 +12,10 @@ export interface CategoryResponseDto {
   parentId?: number | null;
   parentName?: string | null;
   children?: CategoryResponseDto[];
+
   createdByUserId?: number;
   createdAt?: string;
+
   modifiedByUserId?: number;
   modifiedAt?: string;
 }
@@ -25,3 +27,4 @@ export interface PageResponse<T> {
   size: number;
   number: number;
 }
+

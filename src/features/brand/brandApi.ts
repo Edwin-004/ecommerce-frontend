@@ -1,4 +1,9 @@
+
 import { apiFetch } from '../../utils/api';
+
+// =====================================================
+// TYPES
+// =====================================================
 
 export type BrandStatus =
   | 'ACTIVE'
@@ -29,71 +34,52 @@ export interface PageResponse<T> {
   number: number;
 }
 
+// =====================================================
+// ENDPOINT
+// =====================================================
+
 const ENDPOINT =
   '/api/backoffice/brands';
 
 // =====================================================
 // GET BRANDS
+// SEARCH + STATUS + PAGINATION
 // =====================================================
 
 export async function getBrands(
   page = 0,
   size = 10,
   keyword = '',
-  status: BrandStatus | '' = ''
+  status: BrandStatus | '' = '',
+  sortBy = 'brandName',
+  sortDir: 'asc' | 'desc' = 'asc'
 ): Promise<PageResponse<Brand>> {
-
   const params = new URLSearchParams();
 
-  params.set(
-    'page',
-    String(page)
-  );
+  params.set('page', String(page));
+  params.set('size', String(size));
+  
+  // Spring Data Format: sort=columnName,direction
+  params.set('sort', `${sortBy},${sortDir}`);
 
-  params.set(
-    'size',
-    String(size)
-  );
-
-  params.set(
-    'sort',
-    'brandName,asc'
-  );
-
-  if (keyword.trim()) {
-    params.set(
-      'keyword',
-      keyword.trim()
-    );
+  const trimmedKeyword = keyword.trim();
+  if (trimmedKeyword) {
+    params.set('keyword', trimmedKeyword);
   }
 
   if (status) {
-    params.set(
-      'status',
-      status
-    );
+    params.set('status', status);
   }
 
-  return apiFetch<PageResponse<Brand>>(
-    `${ENDPOINT}?${params.toString()}`
-  );
+  const url = `${ENDPOINT}?${params.toString()}`;
+
+  console.log('GET BRANDS:', url);
+
+  return apiFetch<PageResponse<Brand>>(url);
 }
 
 // =====================================================
-// GET SINGLE BRAND
-// =====================================================
-
-export async function getBrand(
-  id: number
-): Promise<Brand> {
-
-  return apiFetch<Brand>(
-    `${ENDPOINT}/${id}`
-  );
-}
-
-// =====================================================
-// CREATE
+// CREATE BRAND
 // =====================================================
 
 export async function createBrand(
@@ -101,24 +87,36 @@ export async function createBrand(
   file: File | null
 ): Promise<Brand> {
 
-  const formData = new FormData();
+  const formData =
+    new FormData();
 
+  // Backend expects:
+  // @RequestPart("request")
   formData.append(
     'request',
     new Blob(
-      [JSON.stringify(data)],
+      [
+        JSON.stringify(data),
+      ],
       {
         type: 'application/json',
       }
     )
   );
 
+  // Backend expects:
+  // @RequestPart(value = "file", required = false)
   if (file) {
     formData.append(
       'file',
       file
     );
   }
+
+  console.log(
+    'CREATE BRAND REQUEST:',
+    data
+  );
 
   return apiFetch<Brand>(
     ENDPOINT,
@@ -130,21 +128,24 @@ export async function createBrand(
 }
 
 // =====================================================
-// UPDATE
+// UPDATE BRAND
 // =====================================================
 
 export async function updateBrand(
-  id: number,
+  brandId: number,
   data: BrandRequest,
   file: File | null
 ): Promise<Brand> {
 
-  const formData = new FormData();
+  const formData =
+    new FormData();
 
   formData.append(
     'request',
     new Blob(
-      [JSON.stringify(data)],
+      [
+        JSON.stringify(data),
+      ],
       {
         type: 'application/json',
       }
@@ -158,8 +159,14 @@ export async function updateBrand(
     );
   }
 
+  console.log(
+    'UPDATE BRAND:',
+    brandId,
+    data
+  );
+
   return apiFetch<Brand>(
-    `${ENDPOINT}/${id}`,
+    `${ENDPOINT}/${brandId}`,
     {
       method: 'PUT',
       body: formData,
@@ -167,18 +174,3 @@ export async function updateBrand(
   );
 }
 
-// =====================================================
-// DELETE
-// =====================================================
-
-export async function deleteBrand(
-  id: number
-): Promise<void> {
-
-  await apiFetch(
-    `${ENDPOINT}/${id}`,
-    {
-      method: 'DELETE',
-    }
-  );
-}
