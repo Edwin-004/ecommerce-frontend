@@ -139,7 +139,43 @@ export const CreateVariantModal: React.FC<CreateVariantModalProps> = ({
             <div className={styles.formGroup}>
               <label>Select Variation Attributes & Options</label>
               {variations.length === 0 ? (
-                <small style={{ color: '#64748b' }}>No variations created yet. Go to Variations tab to add them.</small>
+                <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', fontSize: '13px' }}>
+                  <p style={{ color: '#64748b', margin: '0 0 8px 0' }}>
+                    No variations found in database yet.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const colorVar = await variantApi.createVariation('Color');
+                        const sizeVar = await variantApi.createVariation('Size');
+                        await variantApi.createVariationOption(colorVar.variationId, 'Black');
+                        await variantApi.createVariationOption(colorVar.variationId, 'Red');
+                        await variantApi.createVariationOption(colorVar.variationId, 'Blue');
+                        await variantApi.createVariationOption(colorVar.variationId, 'White');
+                        await variantApi.createVariationOption(sizeVar.variationId, 'S');
+                        await variantApi.createVariationOption(sizeVar.variationId, 'M');
+                        await variantApi.createVariationOption(sizeVar.variationId, 'L');
+                        await variantApi.createVariationOption(sizeVar.variationId, 'XL');
+                        window.location.reload();
+                      } catch (err: any) {
+                        alert(err.message || 'Failed to initialize attributes');
+                      }
+                    }}
+                    style={{
+                      background: '#eff6ff',
+                      color: '#2563eb',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '6px',
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    + Initialize Standard Color & Size Attributes
+                  </button>
+                </div>
               ) : (
                 <div className={styles.optionSelectorBox}>
                   {variations.map((v) => {
@@ -198,25 +234,25 @@ export const CreateVariantModal: React.FC<CreateVariantModalProps> = ({
             {/* Pricing */}
             <div className={styles.row2}>
               <div className={styles.formGroup}>
-                <label>Selling Price ($) *</label>
+                <label>Selling Price (MMK) *</label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="1"
                   min="0"
                   required
-                  placeholder="149.99"
+                  placeholder="15000"
                   value={sellingPrice}
                   onChange={(e) => setSellingPrice(Number(e.target.value))}
                 />
               </div>
 
               <div className={styles.formGroup}>
-                <label>Cost Price ($)</label>
+                <label>Cost Price (MMK)</label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="1"
                   min="0"
-                  placeholder="90.00"
+                  placeholder="10000"
                   value={costPrice}
                   onChange={(e) => setCostPrice(Number(e.target.value))}
                 />
@@ -307,10 +343,10 @@ export const EditVariantModal: React.FC<EditVariantModalProps> = ({ variant, onC
 
             <div className={styles.row2}>
               <div className={styles.formGroup}>
-                <label>Selling Price ($) *</label>
+                <label>Selling Price (MMK) *</label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="1"
                   required
                   value={sellingPrice}
                   onChange={(e) => setSellingPrice(Number(e.target.value))}
@@ -318,10 +354,10 @@ export const EditVariantModal: React.FC<EditVariantModalProps> = ({ variant, onC
               </div>
 
               <div className={styles.formGroup}>
-                <label>Cost Price ($)</label>
+                <label>Cost Price (MMK)</label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="1"
                   value={costPrice}
                   onChange={(e) => setCostPrice(Number(e.target.value))}
                 />
