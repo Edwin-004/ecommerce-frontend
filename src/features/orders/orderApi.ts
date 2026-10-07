@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { OrderResponseDto } from '../../types/order';
+import type { PaginatedResponse } from '../../types/PaginatedResponse';
 
 export const orderApi = createApi({
   reducerPath: 'orderApi',
@@ -16,8 +17,14 @@ export const orderApi = createApi({
   tagTypes: ['Order'], // Cache မှတ်ထားရန်
   endpoints: (builder) => ({
     // အော်ဒါအားလုံး (သို့) Status အလိုက် ဆွဲထုတ်မည့် API
-    getOrders: builder.query<OrderResponseDto[], string | void>({
-      query: (status) => status ? `/orders?status=${status}` : '/orders',
+    getOrders: builder.query<PaginatedResponse<OrderResponseDto>, { status?: string; page: number; size: number }>({
+      query: ({ status, page, size }) => {
+      let url = `/orders?page=${page}&size=${size}`;
+      if (status) {
+        url += `&status=${status}`;
+      }
+      return url;
+    },
       providesTags: ['Order'],
     }),
 

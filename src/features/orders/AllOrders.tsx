@@ -12,7 +12,16 @@ import { useEffect, useState } from 'react';
 export const AllOrders = () => {
   // RTK Query မှ Data၊ Loading နှင့် Error အခြေအနေများကို တိုက်ရိုက်ဆွဲထုတ်ခြင်း
   // data: orders = [] ဆိုသည်မှာ data မရလာသေးခင် အလွတ် [] ဖြင့်ထားရှိရန်ဖြစ်သည်
-  const { data: orders = [], isLoading, isError } = useGetOrdersQuery();
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 10;
+  const { data, isLoading, isError } = useGetOrdersQuery({
+    page: currentPage,
+    size: pageSize,
+  });
+  // data ထဲတွင် ယခုအခါ data.content အဖြစ် ပြောင်းသွားပါမည်
+  const orders = data?.content || [];
+  const totalPages = data?.totalPages || 0;
+
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null);
   const { data: paymentInfo, isLoading: LoadingPaymentInfo } =
     useGetPaymentByOrderNoQuery(selectedOrderNo || '', {
@@ -218,6 +227,50 @@ export const AllOrders = () => {
               )}
             </tbody>
           </table>
+          {/* ================= Pagination Controls (အသစ်ထပ်တိုးရန်) ================= */}
+          {totalPages > 1 && (
+            <div
+              className={styles.paginationContainer}
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                marginTop: '16px',
+                gap: '16px',
+              }}
+            >
+              <span style={{ fontSize: '14px', color: '#666' }}>
+                Page {currentPage + 1} of {totalPages}
+              </span>
+              <div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 0))
+                  }
+                  disabled={currentPage === 0}
+                  style={{
+                    padding: '6px 12px',
+                    marginRight: '8px',
+                    cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+                  }
+                  disabled={data?.last || currentPage === totalPages - 1}
+                  style={{
+                    padding: '6px 12px',
+                    cursor: data?.last ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* ==================== View ၂။ Split View (ရွေးချယ်ထားချိန်) ==================== */
@@ -343,7 +396,7 @@ export const AllOrders = () => {
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Order Action</h3>
                       <p style={{ marginBottom: '16px' }}>
-                        Current Status:{' '}
+                        Status:{' '}
                         <span
                           className={`${styles.badge} ${getStatusBadgeClass(orderDetails.orderStatus)}`}
                         >
@@ -352,9 +405,6 @@ export const AllOrders = () => {
                       </p>
 
                       <div className={styles.statusUpdateBox}>
-                        <label style={{ fontSize: '14px', fontWeight: '500' }}>
-                          Update Status to:
-                        </label>
                         <select
                           value={selectedStatus}
                           onChange={(e) => setSelectedStatus(e.target.value)}
