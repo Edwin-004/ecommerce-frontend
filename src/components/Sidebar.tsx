@@ -1,8 +1,5 @@
 import { useState } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../features/auth/authSlice";
-import { type RootState } from "../store";
+import { NavLink, useLocation } from "react-router-dom";
 import styles from "./Sidebar.module.css";
 
 import {
@@ -14,45 +11,31 @@ import {
   FiPackage,
   FiBox,
   FiUsers,
-  FiBarChart2,
-  FiLogOut,
   FiLayers,
-  FiSliders,
-  FiAlertTriangle,
-  FiPlusCircle,
   FiFolder,
-  FiGrid,
   FiTag,
+  FiGrid,
+  FiShoppingBag,
 } from "react-icons/fi";
 
 export const Sidebar = () => {
   const [open, setOpen] = useState(true);
   const location = useLocation();
 
-  // Dropdown expansion states
- 
+  // Active check for Catalog items
   const isCatalogActive =
-  location.pathname.startsWith("/admin/products") ||
-  location.pathname.startsWith("/admin/variants") ||
-  location.pathname.startsWith("/admin/variations") ||
-  location.pathname.startsWith("/admin/categories") ||
-  location.pathname.startsWith("/admin/brands") ||
-  location.pathname.startsWith("/admin/tags");
+    location.pathname.startsWith("/admin/products") ||
+    location.pathname.startsWith("/admin/categories") ||
+    location.pathname.startsWith("/admin/brands") ||
+    location.pathname.startsWith("/admin/tags") ||
+    location.pathname.startsWith("/admin/variants") ||
+    location.pathname.startsWith("/admin/variations");
 
   const isInventoryActive = location.pathname.startsWith("/admin/inventory");
 
+  // Keep Catalog expanded by default or when an active child is selected
   const [catalogOpen, setCatalogOpen] = useState<boolean>(true);
   const [inventoryOpen, setInventoryOpen] = useState<boolean>(true);
-
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  const { username, role } = useSelector((state: RootState) => state.auth);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
-  };
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.link} ${styles.active}` : styles.link;
@@ -60,53 +43,52 @@ export const Sidebar = () => {
   const subNavClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.subLink} ${styles.subActive}` : styles.subLink;
 
-  const formatRole = (r: string | null) => {
-    if (r === 'ADMIN') return 'Administrator';
-    if (r === 'INVENTORY_STAFF') return 'Inventory Staff';
-    if (r === 'SALES_STAFF') return 'Sales Staff';
-    return r || 'Staff';
-  };
-
   return (
     <aside className={`${styles.sidebar} ${!open ? styles.close : ""}`}>
       {/* Brand Header */}
       <div className={styles.header}>
         <div className={styles.brandContainer}>
           <div className={styles.logoBadge}>
-            <FiGrid size={20} />
+            <FiShoppingBag size={20} />
           </div>
           {open && (
             <div className={styles.brandText}>
-              <h2>ECOMMERCE</h2>
-              <span>Back-Office Portal</span>
+              <h2>Ecommerce</h2>
+              <span>Admin Portal</span>
             </div>
           )}
         </div>
 
-        <button 
+        <button
+          type="button"
           className={styles.toggleBtn}
           onClick={() => setOpen(!open)}
           title={open ? "Collapse sidebar" : "Expand sidebar"}
+          aria-label="Toggle Sidebar"
         >
-          {open ? <FiChevronLeft /> : <FiMenu />}
+          {open ? <FiChevronLeft size={16} /> : <FiMenu size={16} />}
         </button>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation Sections */}
       <nav className={styles.navContainer}>
-        {open && <div className={styles.navSectionTitle}>Overview</div>}
+        {/* ================= 1. OVERVIEW ================= */}
+        {open && <div className={styles.navSectionTitle}>OVERVIEW</div>}
         <NavLink to="/admin/dashboard" className={navClass}>
           <FiHome className={styles.linkIcon} />
           {open && <span>Dashboard</span>}
         </NavLink>
 
-        {open && <div className={styles.navSectionTitle}>Catalog & Stock</div>}
+        {/* ================= 2. CATALOG & STOCK ================= */}
+        {open && <div className={styles.navSectionTitle}>CATALOG & STOCK</div>}
 
-        {/* 1. Catalog Dropdown */}
+        {/* Product Catalog Dropdown */}
         <div className={styles.dropdownGroup}>
           <button
             type="button"
-            className={`${styles.dropdownToggle} ${isCatalogActive ? styles.parentActive : ""}`}
+            className={`${styles.dropdownToggle} ${
+              isCatalogActive ? styles.parentActive : ""
+            }`}
             onClick={() => {
               if (!open) setOpen(true);
               setCatalogOpen(!catalogOpen);
@@ -118,7 +100,9 @@ export const Sidebar = () => {
             </div>
             {open && (
               <FiChevronDown
-                className={`${styles.chevron} ${catalogOpen ? styles.chevronRotated : ""}`}
+                className={`${styles.chevron} ${
+                  catalogOpen ? styles.chevronRotated : ""
+                }`}
               />
             )}
           </button>
@@ -126,49 +110,40 @@ export const Sidebar = () => {
           {open && catalogOpen && (
             <div className={styles.submenu}>
               <NavLink to="/admin/products" end className={subNavClass}>
-                <FiPackage size={13} />
+                <FiPackage size={14} className={styles.subIcon} />
                 <span>Product List</span>
               </NavLink>
-              <NavLink to="/admin/products/new" className={subNavClass}>
-                <FiPlusCircle size={13} />
-                <span>Create Product</span>
-              </NavLink>
+
               <NavLink to="/admin/categories" className={subNavClass}>
-                <FiFolder size={13} />
+                <FiFolder size={14} className={styles.subIcon} />
                 <span>Categories</span>
               </NavLink>
-                <NavLink
-                to="/admin/brands"
-                className={subNavClass}
-              >
-                <FiTag size={13} />
 
-                <span>
-                  Brands
-                </span>
+              <NavLink to="/admin/brands" className={subNavClass}>
+                <FiGrid size={14} className={styles.subIcon} />
+                <span>Brands</span>
               </NavLink>
 
-              {/* Tags */} 
-              <NavLink to="/admin/tags" className={subNavClass} > <FiTag size={13} /> 
-              <span>Tags</span> </NavLink>
+              <NavLink to="/admin/tags" className={subNavClass}>
+                <FiTag size={14} className={styles.subIcon} />
+                <span>Tags</span>
+              </NavLink>
+
               <NavLink to="/admin/variants" className={subNavClass}>
-                <FiLayers size={13} />
-                
-                <span>Variants & SKUs</span>
-              </NavLink>
-              <NavLink to="/admin/variations" className={subNavClass}>
-                <FiSliders size={13} />
-                <span>Variations & Options</span>
+                <FiLayers size={14} className={styles.subIcon} />
+                <span>Variants & Options</span>
               </NavLink>
             </div>
           )}
         </div>
 
-        {/* 2. Inventory Dropdown */}
+        {/* Stock Management (Inventory) */}
         <div className={styles.dropdownGroup}>
           <button
             type="button"
-            className={`${styles.dropdownToggle} ${isInventoryActive ? styles.parentActive : ""}`}
+            className={`${styles.dropdownToggle} ${
+              isInventoryActive ? styles.parentActive : ""
+            }`}
             onClick={() => {
               if (!open) setOpen(true);
               setInventoryOpen(!inventoryOpen);
@@ -180,26 +155,32 @@ export const Sidebar = () => {
             </div>
             {open && (
               <FiChevronDown
-                className={`${styles.chevron} ${inventoryOpen ? styles.chevronRotated : ""}`}
+                className={`${styles.chevron} ${
+                  inventoryOpen ? styles.chevronRotated : ""
+                }`}
               />
             )}
           </button>
 
           {open && inventoryOpen && (
             <div className={styles.submenu}>
-              <NavLink to="/admin/inventory" className={subNavClass}>
-                <FiBox size={13} />
+              <NavLink to="/admin/inventory" end className={subNavClass}>
+                <FiBox size={14} className={styles.subIcon} />
                 <span>Stock Management</span>
               </NavLink>
-              <NavLink to="/admin/inventory?tab=low-stock" className={subNavClass}>
-                <FiAlertTriangle size={13} />
+              <NavLink
+                to="/admin/inventory?tab=low-stock"
+                className={subNavClass}
+              >
+                <span className={styles.warningDot} />
                 <span>Low Stock Alerts</span>
               </NavLink>
             </div>
           )}
         </div>
 
-        {open && <div className={styles.navSectionTitle}>Operations</div>}
+        {/* ================= 3. OPERATIONS ================= */}
+        {open && <div className={styles.navSectionTitle}>OPERATIONS</div>}
 
         {/* Orders */}
         <NavLink to="/admin/orders" className={navClass}>
@@ -212,38 +193,7 @@ export const Sidebar = () => {
           <FiUsers className={styles.linkIcon} />
           {open && <span>Staff Management</span>}
         </NavLink>
-
-        {/* Reports */}
-        <NavLink to="/admin/reports" className={navClass}>
-          <FiBarChart2 className={styles.linkIcon} />
-          {open && <span>Reports & Analytics</span>}
-        </NavLink>
       </nav>
-
-      {/* Footer Profile & Logout */}
-      <div className={styles.footer}>
-        {open && (
-          <div className={styles.userCard} onClick={() => navigate('/admin/profile')}>
-            <div className={styles.userAvatar}>
-              {(username || 'A').charAt(0).toUpperCase()}
-              <span className={styles.onlineDot}></span>
-            </div>
-            <div className={styles.userInfo}>
-              <span className={styles.userName}>{username || 'Administrator'}</span>
-              <span className={styles.userRole}>{formatRole(role)}</span>
-            </div>
-          </div>
-        )}
-
-        <button 
-          className={styles.logoutBtn} 
-          onClick={handleLogout}
-          title="Sign out of account"
-        >
-          <FiLogOut className={styles.logoutIcon} />
-          {open && <span>Sign Out</span>}
-        </button>
-      </div>
     </aside>
   );
 };
