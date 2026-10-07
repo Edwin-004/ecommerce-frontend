@@ -12,8 +12,10 @@ import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
 import { BrandsPage } from './features/brand/BrandsPage';
+import TagManagement from "./features/tags/TagManagement";
 import StaffList from './components/StaffList';
 import { Profile } from './components/Profile';
+
 import './App.css';
 
 function App() {
@@ -47,6 +49,8 @@ function App() {
 
             <Route path="/admin/brands" element={<BrandsPage />}
 />
+            {/* Tags */} 
+            <Route path="/admin/tags" element={<TagManagement />} />
 
             {/* Staff Management */}
             <Route path="/admin/staff" element={<StaffList />} />

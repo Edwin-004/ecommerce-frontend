@@ -30,12 +30,14 @@ export const Sidebar = () => {
   const location = useLocation();
 
   // Dropdown expansion states
+ 
   const isCatalogActive =
-    location.pathname.startsWith("/admin/products") ||
-    location.pathname.startsWith("/admin/variants") ||
-    location.pathname.startsWith("/admin/variations") ||
-    location.pathname.startsWith("/admin/categories");
-      location.pathname.startsWith("/admin/brands");
+  location.pathname.startsWith("/admin/products") ||
+  location.pathname.startsWith("/admin/variants") ||
+  location.pathname.startsWith("/admin/variations") ||
+  location.pathname.startsWith("/admin/categories") ||
+  location.pathname.startsWith("/admin/brands") ||
+  location.pathname.startsWith("/admin/tags");
 
   const isInventoryActive = location.pathname.startsWith("/admin/inventory");
 
@@ -145,8 +147,13 @@ export const Sidebar = () => {
                   Brands
                 </span>
               </NavLink>
+
+              {/* Tags */} 
+              <NavLink to="/admin/tags" className={subNavClass} > <FiTag size={13} /> 
+              <span>Tags</span> </NavLink>
               <NavLink to="/admin/variants" className={subNavClass}>
                 <FiLayers size={13} />
+                
                 <span>Variants & SKUs</span>
               </NavLink>
               <NavLink to="/admin/variations" className={subNavClass}>
