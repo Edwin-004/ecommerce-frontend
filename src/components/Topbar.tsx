@@ -38,6 +38,7 @@ export const Topbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Role ကို အပြည့်အစုံဖော်ပြပေးမည့် Function
   const formatRole = (roleStr: string | null) => {
     if (roleStr === "BUSINESS_OWNER" || roleStr === "OWNER")
       return "Business Owner";
@@ -47,18 +48,8 @@ export const Topbar = () => {
     return roleStr || "Staff";
   };
 
-  const firstLetter = username ? username.charAt(0).toUpperCase() : "A";
-
-  const handleSignOut = () => {
-    setDropdownOpen(false);
-    dispatch(logout());
-    navigate("/login");
-  };
-
-  const handleProfileSettings = () => {
-    setDropdownOpen(false);
-    navigate("/admin/profile");
-  };
+  // ပရိုဖိုင်ပုံစံ Avatar အတွက် နာမည်၏ ပထမဆုံးစာလုံးကို ယူခြင်း (မရှိလျှင် 'U' ဖြစ်မည်)
+  const firstLetter = username ? username.charAt(0).toUpperCase() : 'U';
 
   return (
     <header className={styles.topbar}>
@@ -86,78 +77,20 @@ export const Topbar = () => {
           <span className={styles.notificationDot} />
         </button>
 
-        {/* Profile Avatar Trigger + Dropdown */}
-        <div className={styles.profileContainer} ref={dropdownRef}>
-          <button
-            type="button"
-            className={styles.profileTrigger}
-            onClick={() => setDropdownOpen((prev) => !prev)}
-            aria-expanded={dropdownOpen}
-            aria-haspopup="true"
-          >
-            <div className={styles.avatar}>{firstLetter}</div>
+        {/* နှိပ်လို့ရကြောင်းသိစေရန် onClick နှင့် cursor: pointer ထည့်ပေးထားပါသည် */}
+        <div 
+          className={styles.profile} 
+          onClick={() => navigate('/admin/profile')}
+          style={{ cursor: 'pointer' }}
+          title="Go to My Profile"
+        >
+          <div className={styles.avatar}>{firstLetter}</div>
 
-            <div className={styles.profileInfo}>
-              <span className={styles.profileName}>{username || "Admin"}</span>
-              <span className={styles.profileRole}>{formatRole(role)}</span>
-            </div>
-
-            <FiChevronDown
-              className={`${styles.chevron} ${
-                dropdownOpen ? styles.chevronRotated : ""
-              }`}
-            />
-          </button>
-
-          {/* Floating Dropdown Menu */}
-          {dropdownOpen && (
-            <div className={styles.dropdownMenu}>
-              {/* User Header */}
-              <div className={styles.dropdownHeader}>
-                <div className={styles.dropdownAvatar}>{firstLetter}</div>
-                <div className={styles.dropdownUserMeta}>
-                  <p className={styles.dropdownUserName}>
-                    {username || "Administrator"}
-                  </p>
-                  <p className={styles.dropdownUserEmail}>
-                    {email || "admin@ecommerce.com"}
-                  </p>
-                  <span className={styles.roleBadge}>
-                    <FiShield size={11} />
-                    {formatRole(role)}
-                  </span>
-                </div>
-              </div>
-
-              <div className={styles.dropdownDivider} />
-
-              {/* Profile Settings Option */}
-              <button
-                type="button"
-                className={styles.dropdownItem}
-                onClick={handleProfileSettings}
-              >
-                <div className={styles.itemIconWrapper}>
-                  <FiUser size={16} />
-                </div>
-                <span>Profile Settings</span>
-              </button>
-
-              <div className={styles.dropdownDivider} />
-
-              {/* Sign Out Option */}
-              <button
-                type="button"
-                className={`${styles.dropdownItem} ${styles.logoutItem}`}
-                onClick={handleSignOut}
-              >
-                <div className={`${styles.itemIconWrapper} ${styles.logoutIcon}`}>
-                  <FiLogOut size={16} />
-                </div>
-                <span>Sign Out</span>
-              </button>
-            </div>
-          )}
+          <div>
+            {/* Redux မှ ရရှိလာသော အချက်အလက်များကို ဤနေရာတွင် Dynamic ပြပေးထားပါသည် */}
+            <h4>{username || 'Admin'}</h4>
+            <p>{formatRole(role)}</p>
+          </div>
         </div>
       </div>
     </header>
