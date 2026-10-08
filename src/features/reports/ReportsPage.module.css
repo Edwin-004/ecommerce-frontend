@@ -1,121 +1,317 @@
-.container {
-  padding: 24px;
-  max-width: 1200px;
+/* Design System Variables */
+:root {
+  --color-sales: #6366f1;       /* Indigo */
+  --color-sales-bg: #e0e7ff;
+  
+  --color-category: #0ea5e9;    /* Sky Blue */
+  --color-category-bg: #e0f2fe;
+  
+  --color-trending: #f59e0b;    /* Amber */
+  --color-trending-bg: #fef3c7;
+  
+  --color-refund: #ec4899;      /* Pink */
+  --color-refund-bg: #fce7f3;
+  
+  --color-alert: #ef4444;       /* Red */
+  --color-alert-bg: #fee2e2;
+
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --bg-input: #f8fafc;
+  --border-color: #e2e8f0;
+}
+
+/* Base container */
+.pageContainer {
+  padding: 40px;
+  max-width: 1400px;
   margin: 0 auto;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: var(--text-main);
+  background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  min-height: 100vh;
+  animation: fadeIn 0.6s ease-out;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.header h1 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1a1a1a;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.globalControls select {
-  margin-left: 12px;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
+/* Header section */
+.headerSection {
+  margin-bottom: 48px;
+  position: relative;
 }
 
-.grid {
+.headerSection::after {
+  content: '';
+  position: absolute;
+  bottom: -16px;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #6366f1, #ec4899);
+  border-radius: 4px;
+}
+
+.titleArea h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0 0 10px 0;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+
+.titleArea p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+
+/* Grid Layout */
+.reportGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 32px;
 }
 
-.card {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+/* Card Styling - The "Fluid & Bold" Concept */
+.reportCard {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: slideUp 0.6s ease-out backwards;
+  position: relative;
+  overflow: hidden;
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+.reportCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--text-muted);
+  transition: all 0.4s ease;
+  opacity: 0.3;
 }
 
+/* Distinct Card Top Borders on Hover */
+.reportCard.cardSales:hover::before { background: var(--color-sales); opacity: 1; height: 6px; }
+.reportCard.cardCategory:hover::before { background: var(--color-category); opacity: 1; height: 6px; }
+.reportCard.cardTrending:hover::before { background: var(--color-trending); opacity: 1; height: 6px; }
+.reportCard.cardRefund:hover::before { background: var(--color-refund); opacity: 1; height: 6px; }
+.reportCard.cardAlert:hover::before { background: var(--color-alert); opacity: 1; height: 6px; }
+
+/* Staggered load */
+.reportCard:nth-child(1) { animation-delay: 0.05s; }
+.reportCard:nth-child(2) { animation-delay: 0.15s; }
+.reportCard:nth-child(3) { animation-delay: 0.25s; }
+.reportCard:nth-child(4) { animation-delay: 0.35s; }
+.reportCard:nth-child(5) { animation-delay: 0.45s; }
+
+.reportCard:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  background: #ffffff;
+}
+
+/* Card Header & Icons */
 .cardHeader {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 18px;
+  margin-bottom: 16px;
 }
 
-.icon {
-  font-size: 24px;
-  color: #007bff;
-}
-
-.cardHeader h2 {
-  font-size: 18px;
-  margin: 0;
-  color: #333;
-}
-
-.card p {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 20px;
-  flex-grow: 1;
-}
-
-.controls {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  height: 38px;
-  align-items: center;
-}
-
-.controls input {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  flex: 1;
-  width: 100%;
-}
-
-.controls label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.placeholder {
-  color: #999;
-  font-size: 13px;
-  font-style: italic;
-}
-
-.button {
+.iconWrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  font-size: 26px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-muted);
+  background: #f1f5f9;
 }
 
-.button:hover {
-  background-color: #0056b3;
+/* Dynamic Bold Icons on Hover */
+.reportCard.cardSales:hover .iconWrapper { background: var(--color-sales); color: white; transform: rotate(-5deg) scale(1.1); box-shadow: 0 10px 15px -3px var(--color-sales-bg); }
+.reportCard.cardCategory:hover .iconWrapper { background: var(--color-category); color: white; transform: rotate(5deg) scale(1.1); box-shadow: 0 10px 15px -3px var(--color-category-bg); }
+.reportCard.cardTrending:hover .iconWrapper { background: var(--color-trending); color: white; transform: rotate(-5deg) scale(1.1); box-shadow: 0 10px 15px -3px var(--color-trending-bg); }
+.reportCard.cardRefund:hover .iconWrapper { background: var(--color-refund); color: white; transform: rotate(5deg) scale(1.1); box-shadow: 0 10px 15px -3px var(--color-refund-bg); }
+.reportCard.cardAlert:hover .iconWrapper { background: var(--color-alert); color: white; transform: rotate(-5deg) scale(1.1); box-shadow: 0 10px 15px -3px var(--color-alert-bg); }
+
+.cardHeader h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+  transition: color 0.3s;
+}
+
+.reportCard.cardSales:hover h3 { color: var(--color-sales); }
+.reportCard.cardCategory:hover h3 { color: var(--color-category); }
+.reportCard.cardTrending:hover h3 { color: var(--color-trending); }
+.reportCard.cardRefund:hover h3 { color: var(--color-refund); }
+.reportCard.cardAlert:hover h3 { color: var(--color-alert); }
+
+.cardDescription {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 28px 0;
+  flex-grow: 1;
+}
+
+/* Form Controls */
+.inputGroup {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.dateInputWrapper, .numberInputWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.inputLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.styledInput {
+  padding: 12px 14px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-main);
+  background-color: var(--bg-input);
+  transition: all 0.3s ease;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.styledInput:focus {
+  outline: none;
+  background-color: #ffffff;
+  border-color: var(--color-sales);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f1f5f9;
+  color: var(--text-muted);
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 28px;
+  width: max-content;
+  border: 1px solid #e2e8f0;
+}
+
+/* Export Action Row */
+.exportActionRow {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  margin-top: auto;
+}
+
+.cardFormatSelect {
+  appearance: none;
+  background-color: var(--bg-input);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 0 36px 0 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px auto;
+  flex: 0 0 auto;
+}
+
+.cardFormatSelect:hover, .cardFormatSelect:focus {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  outline: none;
+}
+
+/* Bold Fluid Buttons */
+.downloadBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: var(--bg-input);
+  color: var(--text-main);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+/* Fluid Hover Effects for Buttons based on Card Theme */
+.reportCard.cardSales:hover .downloadBtn { background: var(--color-sales); color: white; box-shadow: 0 10px 20px -5px var(--color-sales-bg); }
+.reportCard.cardCategory:hover .downloadBtn { background: var(--color-category); color: white; box-shadow: 0 10px 20px -5px var(--color-category-bg); }
+.reportCard.cardTrending:hover .downloadBtn { background: var(--color-trending); color: white; box-shadow: 0 10px 20px -5px var(--color-trending-bg); }
+.reportCard.cardRefund:hover .downloadBtn { background: var(--color-refund); color: white; box-shadow: 0 10px 20px -5px var(--color-refund-bg); }
+.reportCard.cardAlert:hover .downloadBtn { background: var(--color-alert); color: white; box-shadow: 0 10px 20px -5px var(--color-alert-bg); }
+
+.downloadBtn:active {
+  transform: scale(0.97);
+}
+
+.downloadBtn:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.downloadBtn svg {
+  font-size: 1.2rem;
+  transition: transform 0.3s;
+}
+
+.downloadBtn:hover svg {
+  transform: translateY(-2px);
 }

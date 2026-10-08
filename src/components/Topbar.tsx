@@ -10,7 +10,7 @@ export const Topbar = () => {
   // Redux မှ လက်ရှိ Login ဝင်ထားသူ၏ နာမည်နှင့် ရာထူးကို ဆွဲယူခြင်း
   const { username, role } = useSelector((state: RootState) => state.auth);
 
-  // Role ကို ဖတ်ရလွယ်အောင် ပြောင်းပေးမည့် Function
+  // Role ကို အပြည့်အစုံဖော်ပြပေးမည့် Function
   const formatRole = (roleStr: string | null) => {
     if (roleStr === 'ADMIN') return 'Administrator';
     if (roleStr === 'INVENTORY_STAFF') return 'Inventory Staff';
@@ -18,7 +18,7 @@ export const Topbar = () => {
     return roleStr || 'System User';
   };
 
-  // နာမည်ရဲ့ ပထမဆုံး စာလုံးကို ယူပြီး Avatar အဝိုင်းလေးထဲတွင် ပြရန် (မရှိလျှင် 'U' ဟုပြမည်)
+  // ပရိုဖိုင်ပုံစံ Avatar အတွက် နာမည်၏ ပထမဆုံးစာလုံးကို ယူခြင်း (မရှိလျှင် 'U' ဖြစ်မည်)
   const firstLetter = username ? username.charAt(0).toUpperCase() : 'U';
 
   return (
@@ -34,7 +34,7 @@ export const Topbar = () => {
           <FiBell size={20}/>
         </button>
 
-        {/* ဤနေရာတွင် onClick နှင့် cursor: pointer ကို ထည့်သွင်းထားပါသည် */}
+        {/* နှိပ်လို့ရကြောင်းသိစေရန် onClick နှင့် cursor: pointer ထည့်ပေးထားပါသည် */}
         <div 
           className={styles.profile} 
           onClick={() => navigate('/admin/profile')}
@@ -44,7 +44,7 @@ export const Topbar = () => {
           <div className={styles.avatar}>{firstLetter}</div>
 
           <div>
-            {/* Redux မှ ရလာသော နာမည်နှင့် ရာထူးကို Dynamic အစားထိုးခြင်း */}
+            {/* Redux မှ ရရှိလာသော အချက်အလက်များကို ဤနေရာတွင် Dynamic ပြပေးထားပါသည် */}
             <h4>{username || 'Admin'}</h4>
             <p>{formatRole(role)}</p>
           </div>

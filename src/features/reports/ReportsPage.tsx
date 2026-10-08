@@ -1,148 +1,276 @@
 import React, { useState } from 'react';
-import { FiDownload, FiBarChart2, FiPieChart, FiTrendingUp, FiAlertCircle, FiRefreshCcw } from 'react-icons/fi';
+import { 
+  FiDownload, 
+  FiBarChart2, 
+  FiPieChart, 
+  FiTrendingUp, 
+  FiRefreshCcw,
+  FiAlertTriangle 
+} from 'react-icons/fi';
 import styles from './ReportsPage.module.css';
-import api from '../../utils/axiosConfig';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8080/api/backoffice/reports';
 
 export const ReportsPage = () => {
-  const [startDate, setStartDate] = useState('2026-10-01');
-  const [endDate, setEndDate] = useState('2026-10-31');
-  const [limit, setLimit] = useState(10);
-  const [format, setFormat] = useState('pdf');
+  const [salesStartDate, setSalesStartDate] = useState('2026-10-01');
+  const [salesEndDate, setSalesEndDate] = useState('2026-10-31');
+  const [formatDaily, setFormatDaily] = useState('pdf');
+  
+  const [refundStartDate, setRefundStartDate] = useState('2026-10-01');
+  const [refundEndDate, setRefundEndDate] = useState('2026-10-31');
+  const [formatRefund, setFormatRefund] = useState('pdf');
+  
+  const [topSellingLimit, setTopSellingLimit] = useState(10);
+  const [formatTopSelling, setFormatTopSelling] = useState('pdf');
+  
+  const [formatCategory, setFormatCategory] = useState('pdf');
+  const [formatLowStock, setFormatLowStock] = useState('pdf');
+  
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
 
-  const downloadReport = async (url: string) => {
+  const downloadReport = async (path: string, reportName: string, exportFormat: string) => {
     try {
-      const response = await api.get(url, { responseType: 'blob' });
-      const blob = new Blob([response.data], { 
-        type: format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      setIsDownloading(reportName);
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.get(`${API_BASE_URL}${path}`, { 
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${token}` }
       });
+      
+      const blob = new Blob([response.data], { 
+        type: exportFormat === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      const extension = format === 'pdf' ? 'pdf' : 'xlsx';
+      const extension = exportFormat === 'pdf' ? 'pdf' : 'xlsx';
       
-      let filename = 'report';
-      if(url.includes('daily')) filename = 'daily-sales';
-      else if(url.includes('categories')) filename = 'category-summary';
-      else if(url.includes('top-selling')) filename = 'top-selling';
-      else if(url.includes('refunds')) filename = 'refund-summary';
-      else if(url.includes('low-stock')) filename = 'low-stock';
-
-      link.setAttribute('download', `${filename}.${extension}`);
+      link.setAttribute('download', `${reportName}.${extension}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('Failed to download report', error);
-      alert('Failed to download the report. Please try again or check your permissions.');
+      alert('We encountered an error while fetching your report. Please check your network connection or permissions and try again.');
+    } finally {
+      setIsDownloading(null);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>System Reports</h1>
-        <div className={styles.globalControls}>
-          <label>
-            Export Format:
-            <select value={format} onChange={(e) => setFormat(e.target.value)}>
-              <option value="pdf">PDF</option>
-              <option value="excel">Excel</option>
-            </select>
-          </label>
+    <div className={styles.pageContainer}>
+      <header className={styles.headerSection}>
+        <div className={styles.titleArea}>
+          <h1>Reports & Analytics</h1>
+          <p>Generate and export comprehensive insights for your e-commerce operations.</p>
         </div>
       </header>
 
-      <div className={styles.grid}>
+      <div className={styles.reportGrid}>
+        
         {/* 1. Daily Product Sales Report */}
-        <div className={styles.card}>
+        <div className={`${styles.reportCard} ${styles.cardSales}`}>
           <div className={styles.cardHeader}>
-            <FiBarChart2 className={styles.icon} />
-            <h2>Daily Product Sales</h2>
+            <div className={styles.iconWrapper}><FiBarChart2 /></div>
+            <h3>Daily Product Sales</h3>
           </div>
-          <p>Generate a report of daily product sales within a date range.</p>
-          <div className={styles.controls}>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <p className={styles.cardDescription}>
+            Track daily revenue and units sold across your entire catalog within a specific timeframe.
+          </p>
+          <div className={styles.inputGroup}>
+            <div className={styles.dateInputWrapper}>
+              <span className={styles.inputLabel}>Start Date</span>
+              <input 
+                type="date" 
+                className={styles.styledInput} 
+                value={salesStartDate} 
+                onChange={(e) => setSalesStartDate(e.target.value)} 
+              />
+            </div>
+            <div className={styles.dateInputWrapper}>
+              <span className={styles.inputLabel}>End Date</span>
+              <input 
+                type="date" 
+                className={styles.styledInput} 
+                value={salesEndDate} 
+                onChange={(e) => setSalesEndDate(e.target.value)} 
+              />
+            </div>
           </div>
-          <button 
-            className={styles.button}
-            onClick={() => downloadReport(`/reports/daily-product-sales?startDate=${startDate}&endDate=${endDate}&format=${format}`)}>
-            <FiDownload /> Download Report
-          </button>
+          <div className={styles.exportActionRow}>
+            <select 
+              className={styles.cardFormatSelect} 
+              value={formatDaily} 
+              onChange={(e) => setFormatDaily(e.target.value)}
+            >
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
+            </select>
+            <button 
+              className={styles.downloadBtn}
+              disabled={isDownloading === 'daily-sales'}
+              onClick={() => downloadReport(`/daily-product-sales?startDate=${salesStartDate}&endDate=${salesEndDate}&format=${formatDaily}`, 'daily-sales', formatDaily)}
+            >
+              <FiDownload /> {isDownloading === 'daily-sales' ? 'Processing...' : 'Export'}
+            </button>
+          </div>
         </div>
 
         {/* 2. Category Summary Report */}
-        <div className={styles.card}>
+        <div className={`${styles.reportCard} ${styles.cardCategory}`}>
           <div className={styles.cardHeader}>
-            <FiPieChart className={styles.icon} />
-            <h2>Category Summary</h2>
+            <div className={styles.iconWrapper}><FiPieChart /></div>
+            <h3>Category Summary</h3>
           </div>
-          <p>Get a summary of products categorized by their active/inactive status.</p>
-          <div className={styles.controls}>
-            <span className={styles.placeholder}>No date range required</span>
+          <p className={styles.cardDescription}>
+            Get a high-level overview of product distribution, active item counts, and statuses across all categories.
+          </p>
+          <div className={styles.badge}>
+            Instant Snapshot (No parameters required)
           </div>
-          <button 
-            className={styles.button}
-            onClick={() => downloadReport(`/reports/categories?format=${format}`)}>
-            <FiDownload /> Download Report
-          </button>
+          <div className={styles.exportActionRow}>
+            <select 
+              className={styles.cardFormatSelect} 
+              value={formatCategory} 
+              onChange={(e) => setFormatCategory(e.target.value)}
+            >
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
+            </select>
+            <button 
+              className={styles.downloadBtn}
+              disabled={isDownloading === 'category-summary'}
+              onClick={() => downloadReport(`/categories?format=${formatCategory}`, 'category-summary', formatCategory)}
+            >
+              <FiDownload /> {isDownloading === 'category-summary' ? 'Processing...' : 'Export'}
+            </button>
+          </div>
         </div>
 
         {/* 3. Top Selling Products Report */}
-        <div className={styles.card}>
+        <div className={`${styles.reportCard} ${styles.cardTrending}`}>
           <div className={styles.cardHeader}>
-            <FiTrendingUp className={styles.icon} />
-            <h2>Top Selling Products</h2>
+            <div className={styles.iconWrapper}><FiTrendingUp /></div>
+            <h3>Top Performing Products</h3>
           </div>
-          <p>View the top-performing products by total quantity sold.</p>
-          <div className={styles.controls}>
-            <label>
-              Limit:
-              <input type="number" min="1" max="100" value={limit} onChange={(e) => setLimit(Number(e.target.value))} />
-            </label>
+          <p className={styles.cardDescription}>
+            Identify your most popular products ranked by overall sales volume to boost your marketing strategy.
+          </p>
+          <div className={styles.inputGroup}>
+            <div className={styles.numberInputWrapper}>
+              <span className={styles.inputLabel}>Number of Products to show</span>
+              <input 
+                type="number" 
+                className={styles.styledInput} 
+                min="1" 
+                max="100" 
+                value={topSellingLimit} 
+                onChange={(e) => setTopSellingLimit(Number(e.target.value))} 
+              />
+            </div>
           </div>
-          <button 
-            className={styles.button}
-            onClick={() => downloadReport(`/reports/top-selling?limitCount=${limit}&format=${format}`)}>
-            <FiDownload /> Download Report
-          </button>
+          <div className={styles.exportActionRow}>
+            <select 
+              className={styles.cardFormatSelect} 
+              value={formatTopSelling} 
+              onChange={(e) => setFormatTopSelling(e.target.value)}
+            >
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
+            </select>
+            <button 
+              className={styles.downloadBtn}
+              disabled={isDownloading === 'top-selling'}
+              onClick={() => downloadReport(`/top-selling?limitCount=${topSellingLimit}&format=${formatTopSelling}`, 'top-selling', formatTopSelling)}
+            >
+              <FiDownload /> {isDownloading === 'top-selling' ? 'Processing...' : 'Export'}
+            </button>
+          </div>
         </div>
 
         {/* 4. Refund Summary Report */}
-        <div className={styles.card}>
+        <div className={`${styles.reportCard} ${styles.cardRefund}`}>
           <div className={styles.cardHeader}>
-            <FiRefreshCcw className={styles.icon} />
-            <h2>Refund Summary</h2>
+            <div className={styles.iconWrapper}><FiRefreshCcw /></div>
+            <h3>Refund & Return Analysis</h3>
           </div>
-          <p>Analyze refund and return requests within a specific period.</p>
-          <div className={styles.controls}>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <p className={styles.cardDescription}>
+            Review customer refund requests, return reasons, and financial impact over a selected period.
+          </p>
+          <div className={styles.inputGroup}>
+            <div className={styles.dateInputWrapper}>
+              <span className={styles.inputLabel}>Start Date</span>
+              <input 
+                type="date" 
+                className={styles.styledInput} 
+                value={refundStartDate} 
+                onChange={(e) => setRefundStartDate(e.target.value)} 
+              />
+            </div>
+            <div className={styles.dateInputWrapper}>
+              <span className={styles.inputLabel}>End Date</span>
+              <input 
+                type="date" 
+                className={styles.styledInput} 
+                value={refundEndDate} 
+                onChange={(e) => setRefundEndDate(e.target.value)} 
+              />
+            </div>
           </div>
-          <button 
-            className={styles.button}
-            onClick={() => downloadReport(`/reports/refunds?startDate=${startDate}&endDate=${endDate}&format=${format}`)}>
-            <FiDownload /> Download Report
-          </button>
+          <div className={styles.exportActionRow}>
+            <select 
+              className={styles.cardFormatSelect} 
+              value={formatRefund} 
+              onChange={(e) => setFormatRefund(e.target.value)}
+            >
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
+            </select>
+            <button 
+              className={styles.downloadBtn}
+              disabled={isDownloading === 'refund-summary'}
+              onClick={() => downloadReport(`/refund-summary?startDate=${refundStartDate}&endDate=${refundEndDate}&format=${formatRefund}`, 'refund-summary', formatRefund)}
+            >
+              <FiDownload /> {isDownloading === 'refund-summary' ? 'Processing...' : 'Export'}
+            </button>
+          </div>
         </div>
 
         {/* 5. Low Stock Alert Report */}
-        <div className={styles.card}>
+        <div className={`${styles.reportCard} ${styles.cardAlert}`}>
           <div className={styles.cardHeader}>
-            <FiAlertCircle className={styles.icon} />
-            <h2>Low Stock Alert</h2>
+            <div className={styles.iconWrapper}><FiAlertTriangle /></div>
+            <h3>Critical Inventory Alerts</h3>
           </div>
-          <p>Identify products that are low on stock or completely out of stock.</p>
-          <div className={styles.controls}>
-            <span className={styles.placeholder}>Real-time inventory check</span>
+          <p className={styles.cardDescription}>
+            Instantly view items that have fallen below their minimum reorder thresholds to prevent stockouts.
+          </p>
+          <div className={styles.badge}>
+            Live Stock Check (Real-time data)
           </div>
-          <button 
-            className={styles.button}
-            onClick={() => downloadReport(`/reports/low-stock?format=${format}`)}>
-            <FiDownload /> Download Report
-          </button>
+          <div className={styles.exportActionRow}>
+            <select 
+              className={styles.cardFormatSelect} 
+              value={formatLowStock} 
+              onChange={(e) => setFormatLowStock(e.target.value)}
+            >
+              <option value="pdf">PDF</option>
+              <option value="excel">Excel</option>
+            </select>
+            <button 
+              className={styles.downloadBtn}
+              disabled={isDownloading === 'low-stock'}
+              onClick={() => downloadReport(`/low-stock?format=${formatLowStock}`, 'low-stock', formatLowStock)}
+            >
+              <FiDownload /> {isDownloading === 'low-stock' ? 'Processing...' : 'Export'}
+            </button>
+          </div>
         </div>
+        
       </div>
     </div>
   );
