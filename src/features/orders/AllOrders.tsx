@@ -2,38 +2,35 @@ import {
   useGetOrdersQuery,
   useGetOrderByOrderNoQuery,
   useGetPaymentByOrderNoQuery,
+  useGetCouriersQuery,
+  useCreateShipmentMutation,
+  useUpdateOrderStatusMutation,
 } from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
 import styles from './AllOrders.module.css';
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 
 export const AllOrders = () => {
   // RTK Query မှ Data၊ Loading နှင့် Error အခြေအနေများကို တိုက်ရိုက်ဆွဲထုတ်ခြင်း
   // data: orders = [] ဆိုသည်မှာ data မရလာသေးခင် အလွတ် [] ဖြင့်ထားရှိရန်ဖြစ်သည်
-  const {
-    data: orders = [],
-    isLoading,
-    isError,
-    refetch: refetchList,
-  } = useGetOrdersQuery();
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 10;
+  const { data, isLoading, isError } = useGetOrdersQuery({
+    page: currentPage,
+    size: pageSize,
+  });
+  // data ထဲတွင် ယခုအခါ data.content အဖြစ် ပြောင်းသွားပါမည်
+  const orders = data?.content || [];
+  const totalPages = data?.totalPages || 0;
+
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null);
-  const {
-    data: paymentInfo,
-    isLoading: LoadingPaymentInfo,
-    refetch: refetchPaymentInfo,
-  } = useGetPaymentByOrderNoQuery(selectedOrderNo || '', {
-    skip: !selectedOrderNo,
-  });
-  const token =
-    useSelector((state: any) => state.auth.token) ||
-    localStorage.getItem('token');
-  const {
-    data: orderDetails,
-    isLoading: loadingDetails,
-    refetch: refetchDetails,
-  } = useGetOrderByOrderNoQuery(selectedOrderNo || '', {
-    skip: !selectedOrderNo,
-  });
+  const { data: paymentInfo, isLoading: LoadingPaymentInfo } =
+    useGetPaymentByOrderNoQuery(selectedOrderNo || '', {
+      skip: !selectedOrderNo,
+    });
+  const { data: orderDetails, isLoading: loadingDetails } =
+    useGetOrderByOrderNoQuery(selectedOrderNo || '', {
+      skip: !selectedOrderNo,
+    });
 
   const getCourierPrefix = (name: string) => {
     switch (name) {
@@ -52,11 +49,16 @@ export const AllOrders = () => {
     }
   };
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [showShipmentModal, setShowShipmentModal] = useState<boolean>(false);
   const [courierName, setCourierName] = useState<string>(''); // Default Enum
   const [trackingNumber, setTrackingNumber] = useState<string>('');
-  const [courierList, setCourierList] = useState<string[]>([]);
+  // const [courierList, setCourierList] = useState<string[]>([]);
+  const { data: courierList = [] } = useGetCouriersQuery();
+  const [createShipment, { isLoading: isCreatingShipment }] =
+    useCreateShipmentMutation();
+  const [updateOrderStatusApi, { isLoading: isUpdatingStatus }] =
+    useUpdateOrderStatusMutation();
+  const isUpdating = isCreatingShipment || isUpdatingStatus;
 
   const handleUpdateClick = () => {
     if (selectedStatus === 'SHIPPED') {
@@ -80,28 +82,10 @@ export const AllOrders = () => {
   }, [courierName, selectedOrderNo, showShipmentModal]);
 
   useEffect(() => {
-    const fetchCouriers = async () => {
-      try {
-        const response = await fetch(
-          'http://localhost:8080/api/backoffice/orders/couriers',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setCourierList(data);
-          // Data ရလာပါက ပထမဆုံး Courier ကို Default အဖြစ် ရွေးပေးထားရန်
-          if (data.length > 0) setCourierName(data[0]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch couriers:', error);
-      }
-    };
-    if (token) fetchCouriers();
-  }, [token]);
+    if (courierList.length > 0 && !courierName) {
+      setCourierName(courierList[0]);
+    }
+  }, [courierList, courierName]);
 
   // J_AND_T ကဲ့သို့သော Enum String များကို J&T Express ဟု ဖတ်လွယ်အောင် ပြောင်းပေးမည့် Helper
   const formatCourierName = (name: string) => {
@@ -125,37 +109,31 @@ export const AllOrders = () => {
   const handleStatusUpdate = async () => {
     if (!selectedOrderNo) return;
 
-    setIsUpdating(true);
     try {
-      // Backend သို့ PATCH Request ပို့ခြင်း
-      const response = await fetch(
-        `http://localhost:8080/api/backoffice/orders/${selectedOrderNo}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ newStatus: selectedStatus }),
-        }
-      );
-
-      if (!response.ok) throw new Error('Status Update Failed!');
+      if (selectedStatus === 'SHIPPED') {
+        // Shipment API ခေါ်ခြင်း (POST)
+        await createShipment({
+          orderNo: selectedOrderNo,
+          courierName,
+          trackingNumber,
+        }).unwrap();
+      } else {
+        // ရိုးရိုး Status ပြောင်းသည့် API ခေါ်ခြင်း (PATCH)
+        await updateOrderStatusApi({
+          orderNo: selectedOrderNo,
+          newStatus: selectedStatus,
+        }).unwrap();
+      }
 
       alert('Status Updated Successfully!');
-
-      // Update အောင်မြင်သွားပါက ညာဘက်ခြမ်း Detail Data ကို အသစ်ပြန်ခေါ် (Refresh) လုပ်ရန်
-      setShowShipmentModal(false); // အောင်မြင်ပါက Modal ကို ပိတ်ပါ
-      setTrackingNumber(''); // Input များကို ရှင်းပါ
-      refetchDetails();
-      refetchList();
-      refetchPaymentInfo();
+      setShowShipmentModal(false);
+      setTrackingNumber('');
     } catch (error) {
+      console.log('Error updating status:', error);
       alert('Status Update unsuccessful! Please try again.');
-    } finally {
-      setIsUpdating(false);
     }
   };
+
   // Status ပေါ်မူတည်၍ အရောင်ရွေးပေးမည့် Helper Method
   const getStatusBadgeClass = (status: string) => {
     switch (status.toUpperCase()) {
@@ -249,6 +227,50 @@ export const AllOrders = () => {
               )}
             </tbody>
           </table>
+          {/* ================= Pagination Controls (အသစ်ထပ်တိုးရန်) ================= */}
+          {totalPages > 1 && (
+            <div
+              className={styles.paginationContainer}
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                marginTop: '16px',
+                gap: '16px',
+              }}
+            >
+              <span style={{ fontSize: '14px', color: '#666' }}>
+                Page {currentPage + 1} of {totalPages}
+              </span>
+              <div>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 0))
+                  }
+                  disabled={currentPage === 0}
+                  style={{
+                    padding: '6px 12px',
+                    marginRight: '8px',
+                    cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+                  }
+                  disabled={data?.last || currentPage === totalPages - 1}
+                  style={{
+                    padding: '6px 12px',
+                    cursor: data?.last ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* ==================== View ၂။ Split View (ရွေးချယ်ထားချိန်) ==================== */
@@ -374,7 +396,7 @@ export const AllOrders = () => {
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Order Action</h3>
                       <p style={{ marginBottom: '16px' }}>
-                        Current Status:{' '}
+                        Status:{' '}
                         <span
                           className={`${styles.badge} ${getStatusBadgeClass(orderDetails.orderStatus)}`}
                         >
@@ -383,9 +405,6 @@ export const AllOrders = () => {
                       </p>
 
                       <div className={styles.statusUpdateBox}>
-                        <label style={{ fontSize: '14px', fontWeight: '500' }}>
-                          Update Status to:
-                        </label>
                         <select
                           value={selectedStatus}
                           onChange={(e) => setSelectedStatus(e.target.value)}
@@ -510,7 +529,6 @@ export const AllOrders = () => {
                 type="text"
                 value={trackingNumber}
                 readOnly
-                onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="Enter waybill number"
                 className={styles.formControl}
               />

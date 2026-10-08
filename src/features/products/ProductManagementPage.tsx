@@ -79,6 +79,9 @@ export const ProductManagementPage: React.FC = () => {
 
   // View Modal state
   const [viewProduct, setViewProduct] = useState<ProductItem | null>(null);
+  const [viewProductImages, setViewProductImages] = useState<any[]>([]);
+  const [activeImageIdx, setActiveImageIdx] = useState<number>(0);
+  const [viewVariants, setViewVariants] = useState<any[]>([]);
 
   // New Attribute Modal state
   const [showAttrModal, setShowAttrModal] = useState<boolean>(false);
@@ -93,6 +96,35 @@ export const ProductManagementPage: React.FC = () => {
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  useEffect(() => {
+    if (viewProduct?.productId) {
+      setActiveImageIdx(0);
+      Promise.allSettled([
+        productManagementApi.getProductImages(viewProduct.productId),
+        productManagementApi.getProductVariants(),
+      ]).then(([imgsRes, varsRes]) => {
+        if (imgsRes.status === 'fulfilled' && Array.isArray(imgsRes.value)) {
+          setViewProductImages(imgsRes.value);
+        } else {
+          setViewProductImages([]);
+        }
+
+        if (varsRes.status === 'fulfilled' && Array.isArray(varsRes.value)) {
+          const matching = varsRes.value.filter(
+            (v: any) => v.product?.productId === viewProduct.productId
+          );
+          setViewVariants(matching);
+        } else {
+          setViewVariants([]);
+        }
+      });
+    } else {
+      setViewProductImages([]);
+      setViewVariants([]);
+      setActiveImageIdx(0);
+    }
+  }, [viewProduct]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -814,24 +846,35 @@ export const ProductManagementPage: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
+            padding: '20px',
+            backdropFilter: 'blur(3px)',
           }}
+          onClick={() => setViewProduct(null)}
         >
           <div
             style={{
               background: 'white',
               borderRadius: '16px',
-              padding: '24px',
-              width: '480px',
-              maxWidth: '90%',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              width: '540px',
+              maxWidth: '100%',
+              maxHeight: '90vh',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}
+            onClick={(e) => e.stopPropagation()}
           >
+            {/* Sticky Header */}
             <div
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '16px',
+                padding: '18px 24px',
+                borderBottom: '1px solid #f1f5f9',
+                background: 'white',
+                zIndex: 10,
               }}
             >
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
@@ -839,43 +882,136 @@ export const ProductManagementPage: React.FC = () => {
               </h3>
               <button
                 onClick={() => setViewProduct(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '8px',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  color: '#64748b',
+                  transition: 'all 0.15s',
+                }}
+                title="Close"
               >
                 <FiX />
               </button>
             </div>
 
-            {viewProduct.imageUrl && (
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-                <img
-                  src={getAssetUrl(viewProduct.imageUrl)}
-                  alt={viewProduct.productName}
-                  style={{
-                    maxHeight: '160px',
-                    maxWidth: '100%',
-                    borderRadius: '8px',
-                    objectFit: 'contain',
-                    border: '1px solid #e2e8f0',
-                  }}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
+            {/* Scrollable Content Body */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+            {/* Image Preview & Gallery */}
+            {(() => {
+              const currentImg =
+                viewProductImages.length > 0
+                  ? viewProductImages[activeImageIdx]?.imageUrl
+                  : viewProduct.imageUrl;
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
+              return (
+                <div style={{ marginBottom: '16px' }}>
+                  {currentImg ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                      <img
+                        src={getAssetUrl(currentImg)}
+                        alt={viewProduct.productName}
+                        style={{
+                          height: '180px',
+                          maxWidth: '100%',
+                          borderRadius: '10px',
+                          objectFit: 'contain',
+                          border: '1px solid #e2e8f0',
+                          background: '#f8fafc',
+                        }}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        height: '120px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#f8fafc',
+                        borderRadius: '10px',
+                        border: '1px dashed #cbd5e1',
+                        color: '#94a3b8',
+                      }}
+                    >
+                      <FiPackage size={32} />
+                    </div>
+                  )}
+
+                  {/* Multi-Image Thumbnails */}
+                  {viewProductImages.length > 1 && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '8px',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        overflowX: 'auto',
+                        padding: '4px 0',
+                      }}
+                    >
+                      {viewProductImages.map((img, idx) => (
+                        <div
+                          key={img.imageId || idx}
+                          onClick={() => setActiveImageIdx(idx)}
+                          style={{
+                            width: '46px',
+                            height: '46px',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            border:
+                              activeImageIdx === idx
+                                ? '2px solid #2563eb'
+                                : '1px solid #e2e8f0',
+                            cursor: 'pointer',
+                            opacity: activeImageIdx === idx ? 1 : 0.6,
+                            transition: 'all 0.15s ease-in-out',
+                          }}
+                        >
+                          <img
+                            src={getAssetUrl(img.imageUrl)}
+                            alt={`Thumb ${idx + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
               <div>
                 <strong style={{ color: '#64748b' }}>Name:</strong>{' '}
                 <span style={{ color: '#0f172a', fontWeight: 600 }}>{viewProduct.productName}</span>
               </div>
               <div>
-                <strong style={{ color: '#64748b' }}>SKU:</strong>{' '}
-                <span style={{ fontFamily: 'monospace', color: '#2563eb' }}>{viewProduct.sku || 'N/A'}</span>
+                <strong style={{ color: '#64748b' }}>Primary SKU:</strong>{' '}
+                <span style={{ fontFamily: 'monospace', color: '#2563eb', fontWeight: 600 }}>
+                  {viewProduct.sku || (viewVariants[0]?.sku ?? 'N/A')}
+                </span>
               </div>
               <div>
                 <strong style={{ color: '#64748b' }}>Price:</strong>{' '}
-                <span>{(viewProduct.sellingPrice || 0).toLocaleString()} MMK</span>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                  {(
+                    viewProduct.sellingPrice ||
+                    Number(viewVariants[0]?.sellingPrice) ||
+                    0
+                  ).toLocaleString()}{' '}
+                  MMK
+                </span>
               </div>
               <div>
                 <strong style={{ color: '#64748b' }}>Stock:</strong>{' '}
@@ -887,7 +1023,7 @@ export const ProductManagementPage: React.FC = () => {
               </div>
               <div>
                 <strong style={{ color: '#64748b' }}>Brand:</strong>{' '}
-                <span>{viewProduct.brandName || 'N/A'}</span>
+                <span>{viewProduct.brandName || 'Standard'}</span>
               </div>
               <div>
                 <strong style={{ color: '#64748b' }}>Status:</strong>{' '}
@@ -901,7 +1037,51 @@ export const ProductManagementPage: React.FC = () => {
               )}
             </div>
 
-            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+            {/* Associated Variants / SKUs Breakdown */}
+            {viewVariants.length > 0 && (
+              <div style={{ marginTop: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Product Variants & SKUs ({viewVariants.length})
+                </div>
+                <div style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                  <table style={{ width: '100%', fontSize: '12px', textAlign: 'left', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', color: '#64748b', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ padding: '6px 10px' }}>SKU</th>
+                        <th style={{ padding: '6px 10px' }}>Price</th>
+                        <th style={{ padding: '6px 10px' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewVariants.map((v) => (
+                        <tr key={v.variantId} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: '#2563eb' }}>{v.sku}</td>
+                          <td style={{ padding: '6px 10px', fontWeight: 600 }}>
+                            {Number(v.sellingPrice || 0).toLocaleString()} MMK
+                          </td>
+                          <td style={{ padding: '6px 10px' }}>
+                            <span className={styles.statusPillActive}>● {v.status}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: '14px 24px',
+                borderTop: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                background: '#f8fafc',
+              }}
+            >
               <button
                 className={styles.btnActionOutline}
                 onClick={() => setViewProduct(null)}

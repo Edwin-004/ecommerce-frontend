@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   FiBox,
   FiAlertTriangle,
@@ -11,6 +12,7 @@ import {
   FiClock,
   FiCheckCircle,
   FiPackage,
+  FiDownload,
 } from 'react-icons/fi';
 import styles from './Inventory.module.css';
 import { inventoryApi } from './inventoryApi';
@@ -23,13 +25,25 @@ import {
 } from './InventoryModals';
 
 export const InventoryPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
   const [activeTab, setActiveTab] = useState<'ALL' | 'LOW_STOCK' | 'TRANSACTIONS'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [txnTypeFilter, setTxnTypeFilter] = useState('ALL');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync tab with URL query parameter (?tab=low-stock)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'low-stock') {
+      setActiveTab('LOW_STOCK');
+    } else if (tabParam === 'transactions') {
+      setActiveTab('TRANSACTIONS');
+    }
+  }, [searchParams]);
 
   // Modal states
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -87,7 +101,35 @@ export const InventoryPage: React.FC = () => {
   const lowStockCount = useMemo(() => items.filter((item) => item.status === 'LOW_STOCK').length, [items]);
   const outOfStockCount = useMemo(() => items.filter((item) => item.status === 'OUT_OF_STOCK').length, [items]);
 
-  // Filtered Items based on active tab and search (latest first)
+  // CSV Export
+  const handleExportCsv = () => {
+    if (items.length === 0) {
+      alert('No inventory data to export');
+      return;
+    }
+    const headers = ['Variant ID', 'SKU', 'Product Name', 'Price (MMK)', 'Physical Qty', 'Reserved', 'Available', 'Reorder Level', 'Status'];
+    const rows = filteredItems.map((item) => [
+      item.variantId,
+      `"${item.sku || ''}"`,
+      `"${item.productName || ''}"`,
+      item.sellingPrice || 0,
+      item.quantity || 0,
+      item.reservedQuantity || 0,
+      item.availableQuantity || 0,
+      item.reorderLevel || 10,
+      item.status || 'NORMAL',
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `inventory_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Filtered Items based on active tab, status, and search (latest first)
   const filteredItems = useMemo(() => {
     return [...items]
       .sort((a, b) => (b.inventoryId || 0) - (a.inventoryId || 0))
@@ -96,27 +138,38 @@ export const InventoryPage: React.FC = () => {
           (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
           (item.productName && item.productName.toLowerCase().includes(searchQuery.toLowerCase()));
 
+        const matchesStatus =
+          statusFilter === 'ALL' || item.status === statusFilter;
+
         if (activeTab === 'LOW_STOCK') {
-          return matchesSearch && (item.status === 'LOW_STOCK' || item.status === 'OUT_OF_STOCK');
+          return matchesSearch && matchesStatus && (item.status === 'LOW_STOCK' || item.status === 'OUT_OF_STOCK');
         }
-        return matchesSearch;
+        return matchesSearch && matchesStatus;
       });
-  }, [items, activeTab, searchQuery]);
+  }, [items, activeTab, searchQuery, statusFilter]);
 
   return (
     <div className={styles.container}>
-      {/* Page Header */}
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Inventory & Stock Management</h1>
-          <p className={styles.subtitle}>
-            Monitor variant stock levels, handle restocks, log write-offs, and track inventory audits
-          </p>
+      {/* Page Top Header */}
+      <div className={styles.pageTopHeader}>
+        <div className={styles.headerLeft}>
+          <div className={styles.iconBadge}>
+            <FiBox />
+          </div>
+          <div>
+            <h1 className={styles.mainTitle}>Stock Management</h1>
+            <p className={styles.mainSubtitle}>
+              Monitor real-time physical inventory, process restocks, write-offs, and audit trails
+            </p>
+          </div>
         </div>
 
         <div className={styles.headerActions}>
+          <button className={styles.btnExportCsv} onClick={handleExportCsv}>
+            <FiDownload size={14} /> Export CSV
+          </button>
           <button className={styles.btnSecondary} onClick={loadData} disabled={loading}>
-            <FiRefreshCw className={loading ? 'spin' : ''} /> Refresh
+            <FiRefreshCw className={loading ? 'spin' : ''} size={14} /> Refresh
           </button>
         </div>
       </div>
@@ -187,14 +240,35 @@ export const InventoryPage: React.FC = () => {
         </div>
 
         {activeTab !== 'TRANSACTIONS' ? (
-          <div className={styles.searchBox}>
-            <FiSearch color="#94a3b8" />
-            <input
-              type="text"
-              placeholder="Search by SKU or Product..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div className={styles.searchBox}>
+              <FiSearch color="#94a3b8" />
+              <input
+                type="text"
+                placeholder="Search by SKU or Product..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                background: '#f8fafc',
+                fontSize: '13px',
+                color: '#334155',
+                outline: 'none',
+              }}
+            >
+              <option value="ALL">All Status</option>
+              <option value="NORMAL">Normal</option>
+              <option value="LOW_STOCK">Low Stock</option>
+              <option value="OUT_OF_STOCK">Out of Stock</option>
+            </select>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -208,6 +282,7 @@ export const InventoryPage: React.FC = () => {
               <option value="RESTOCK">Restock</option>
               <option value="WRITE_OFF">Write-Off</option>
               <option value="ADJUSTMENT">Adjustment</option>
+              <option value="INITIAL_STOCK">Initial Setup</option>
             </select>
           </div>
         )}
@@ -219,80 +294,123 @@ export const InventoryPage: React.FC = () => {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Variant ID</th>
-                <th>SKU</th>
-                <th>Product Name</th>
-                <th>Selling Price</th>
-                <th>Physical Qty</th>
-                <th>Reserved</th>
-                <th>Available</th>
-                <th>Reorder Level</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'center' }}>Actions</th>
+                <th>VARIANT & SKU</th>
+                <th>PRODUCT</th>
+                <th>SELLING PRICE</th>
+                <th>PHYSICAL STOCK</th>
+                <th>RESERVED</th>
+                <th>AVAILABLE</th>
+                <th>REORDER LEVEL</th>
+                <th>STATUS</th>
+                <th style={{ textAlign: 'center' }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className={styles.emptyState}>
+                  <td colSpan={9} className={styles.emptyState}>
                     <FiBox />
-                    <p>No inventory records found.</p>
+                    <p style={{ margin: '8px 0 16px 0', fontWeight: 500 }}>No inventory records found matching your filters.</p>
+                    <button className={styles.btnPrimary} onClick={loadData}>
+                      <FiRefreshCw /> Reload Stock Records
+                    </button>
                   </td>
                 </tr>
               ) : (
                 filteredItems.map((item) => (
                   <tr key={item.inventoryId || item.variantId}>
-                    <td style={{ color: '#64748b' }}>#{item.variantId}</td>
-                    <td><span className={styles.skuTag}>{item.sku}</span></td>
-                    <td style={{ fontWeight: 600 }}>{item.productName || '-'}</td>
-                    <td>{item.sellingPrice ? `$${item.sellingPrice.toFixed(2)}` : '-'}</td>
-                    <td style={{ fontWeight: 700, fontSize: '15px' }}>{item.quantity}</td>
-                    <td style={{ color: '#64748b' }}>{item.reservedQuantity}</td>
-                    <td style={{ color: '#16a34a', fontWeight: 600 }}>{item.availableQuantity}</td>
-                    <td style={{ color: '#64748b' }}>{item.reorderLevel} units</td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <span className={styles.skuTag}>{item.sku}</span>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>#{item.variantId}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className={styles.productCell}>
+                        <div className={styles.productThumb}>
+                          <FiPackage />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.productName || 'Unnamed'}</div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>Variant ID #{item.variantId}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                        {(item.sellingPrice || 0).toLocaleString()} MMK
+                      </span>
+                    </td>
+                    <td>
+                      <div className={styles.stockBarContainer}>
+                        <span style={{
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          color: (item.quantity || 0) === 0 ? '#ef4444' : (item.quantity || 0) <= (item.reorderLevel || 10) ? '#d97706' : '#0f172a'
+                        }}>
+                          {item.quantity ?? 0} units
+                        </span>
+                        <div className={styles.stockBarBg}>
+                          <div
+                            className={styles.stockBarFill}
+                            style={{
+                              width: `${Math.min(100, ((item.quantity || 0) / 40) * 100)}%`,
+                              background: (item.quantity || 0) === 0 ? '#ef4444' : (item.quantity || 0) <= (item.reorderLevel || 10) ? '#f59e0b' : '#10b981'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ color: '#64748b' }}>{item.reservedQuantity ?? 0}</td>
+                    <td>
+                      <span style={{ color: '#16a34a', fontWeight: 600 }}>
+                        {item.availableQuantity ?? Math.max(0, (item.quantity || 0) - (item.reservedQuantity || 0))}
+                      </span>
+                    </td>
+                    <td style={{ color: '#64748b' }}>{item.reorderLevel ?? 10} units</td>
                     <td>
                       <span className={`${styles.badge} ${
                         item.status === 'NORMAL' ? styles.badgeNormal :
                         item.status === 'LOW_STOCK' ? styles.badgeLowStock : styles.badgeOutOfStock
                       }`}>
-                        {item.status === 'NORMAL' && <FiCheckCircle />}
-                        {item.status === 'LOW_STOCK' && <FiAlertTriangle />}
-                        {item.status === 'OUT_OF_STOCK' && <FiAlertCircle />}
-                        {item.status}
+                        {item.status === 'NORMAL' && <FiCheckCircle size={12} />}
+                        {item.status === 'LOW_STOCK' && <FiAlertTriangle size={12} />}
+                        {item.status === 'OUT_OF_STOCK' && <FiAlertCircle size={12} />}
+                        {item.status === 'NORMAL' ? 'In Stock' : item.status === 'LOW_STOCK' ? 'Low Stock' : 'Out of Stock'}
                       </span>
                     </td>
-                    <td>
+                    <td style={{ textAlign: 'center' }}>
                       <div className={styles.actionGroup}>
                         <button
                           className={`${styles.btnAction} ${styles.btnRestock}`}
-                          title="Restock"
+                          title="Restock units"
                           onClick={() => { setSelectedItem(item); setActiveModal('RESTOCK'); }}
                         >
-                          <FiPlusCircle /> Restock
+                          <FiPlusCircle size={13} /> Restock
                         </button>
 
                         <button
                           className={`${styles.btnAction} ${styles.btnWriteOff}`}
-                          title="Write-off damaged goods"
+                          title="Write-off damaged units"
                           onClick={() => { setSelectedItem(item); setActiveModal('WRITE_OFF'); }}
                         >
-                          <FiMinusCircle /> Write-off
+                          <FiMinusCircle size={13} /> Write-off
                         </button>
 
                         <button
                           className={`${styles.btnAction} ${styles.btnAdjust}`}
-                          title="Adjust count"
+                          title="Adjust count after physical audit"
                           onClick={() => { setSelectedItem(item); setActiveModal('ADJUST'); }}
                         >
-                          <FiSliders /> Adjust
+                          <FiSliders size={13} /> Adjust
                         </button>
 
                         <button
                           className={`${styles.btnAction} ${styles.btnHistory}`}
-                          title="Audit Trail"
+                          title="Audit History"
                           onClick={() => { setSelectedItem(item); setActiveModal('HISTORY'); }}
                         >
-                          <FiClock /> History
+                          <FiClock size={13} /> History
                         </button>
                       </div>
                     </td>
