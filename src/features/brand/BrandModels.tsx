@@ -16,8 +16,18 @@ import {
 // BACKEND URL
 // =====================================================
 
-const API_BASE_URL =
-  'http://localhost:8080';
+const API_BASE_URL = 'http://localhost:8080';
+
+// =====================================================
+// CATEGORY
+// =====================================================
+
+export interface Category {
+  categoryId: number;
+  categoryName: string;
+  parentId?: number | null;
+  parentName?: string | null;
+}
 
 // =====================================================
 // LOGO URL HELPER
@@ -26,12 +36,10 @@ const API_BASE_URL =
 const getLogoUrl = (
   logoUrl?: string | null
 ): string => {
-
   if (!logoUrl) {
     return '';
   }
 
-  // Already full URL
   if (
     logoUrl.startsWith('http://') ||
     logoUrl.startsWith('https://')
@@ -40,9 +48,7 @@ const getLogoUrl = (
   }
 
   return `${API_BASE_URL}${
-    logoUrl.startsWith('/')
-      ? ''
-      : '/'
+    logoUrl.startsWith('/') ? '' : '/'
   }${logoUrl}`;
 };
 
@@ -54,6 +60,8 @@ interface BrandModalProps {
   show: boolean;
   brand: Brand | null;
   loading: boolean;
+
+  categories: Category[];
 
   onClose: () => void;
 
@@ -72,6 +80,7 @@ const initialForm: BrandRequest = {
   brandLogoUrl: '',
   description: '',
   status: 'ACTIVE',
+  categoryIds: [],
 };
 
 // =====================================================
@@ -82,14 +91,13 @@ export function BrandModal({
   show,
   brand,
   loading,
+  categories,
   onClose,
   onSubmit,
 }: BrandModalProps) {
 
   const [form, setForm] =
-    useState<BrandRequest>(
-      initialForm
-    );
+    useState<BrandRequest>(initialForm);
 
   const [file, setFile] =
     useState<File | null>(null);
@@ -106,8 +114,7 @@ export function BrandModal({
     if (brand) {
 
       setForm({
-        brandName:
-          brand.brandName,
+        brandName: brand.brandName,
 
         brandLogoUrl:
           brand.brandLogoUrl ?? '',
@@ -117,6 +124,9 @@ export function BrandModal({
 
         status:
           brand.status,
+
+        categoryIds:
+          brand.categoryIds ?? [],
       });
 
       setPreview(
@@ -129,6 +139,7 @@ export function BrandModal({
 
       setForm({
         ...initialForm,
+        categoryIds: [],
       });
 
       setPreview('');
@@ -170,6 +181,38 @@ export function BrandModal({
   };
 
   // =====================================================
+  // CATEGORY CHANGE
+  // =====================================================
+
+  const handleCategoryChange = (
+    categoryId: number
+  ) => {
+
+    setForm((prev) => {
+
+      const currentIds =
+        prev.categoryIds ?? [];
+
+      const exists =
+        currentIds.includes(categoryId);
+
+      const nextIds = exists
+        ? currentIds.filter(
+            (id) => id !== categoryId
+          )
+        : [
+            ...currentIds,
+            categoryId,
+          ];
+
+      return {
+        ...prev,
+        categoryIds: nextIds,
+      };
+    });
+  };
+
+  // =====================================================
   // FILE CHANGE
   // =====================================================
 
@@ -183,10 +226,6 @@ export function BrandModal({
     if (!selectedFile) {
       return;
     }
-
-    // ---------------------------------------------------
-    // MAX FILE SIZE: 5MB
-    // ---------------------------------------------------
 
     const maxSize =
       5 * 1024 * 1024;
@@ -204,10 +243,6 @@ export function BrandModal({
 
       return;
     }
-
-    // ---------------------------------------------------
-    // ALLOWED TYPES
-    // ---------------------------------------------------
 
     const allowedTypes = [
       'image/png',
@@ -230,17 +265,7 @@ export function BrandModal({
       return;
     }
 
-    // ---------------------------------------------------
-    // SET FILE
-    // ---------------------------------------------------
-
-    setFile(
-      selectedFile
-    );
-
-    // ---------------------------------------------------
-    // LOCAL PREVIEW
-    // ---------------------------------------------------
+    setFile(selectedFile);
 
     const imageUrl =
       URL.createObjectURL(
@@ -260,10 +285,6 @@ export function BrandModal({
 
     e.preventDefault();
 
-    // ---------------------------------------------------
-    // BRAND NAME VALIDATION
-    // ---------------------------------------------------
-
     if (
       !form.brandName.trim()
     ) {
@@ -274,10 +295,6 @@ export function BrandModal({
 
       return;
     }
-
-    // ---------------------------------------------------
-    // SUBMIT TO PARENT
-    // ---------------------------------------------------
 
     await onSubmit(
       {
@@ -293,6 +310,9 @@ export function BrandModal({
         brandLogoUrl:
           form.brandLogoUrl?.trim() ||
           '',
+
+        categoryIds:
+          form.categoryIds ?? [],
       },
 
       file
@@ -327,19 +347,15 @@ export function BrandModal({
             <div>
 
               <h5 className="modal-title fw-bold mb-1">
-
                 {brand
                   ? 'Edit Brand'
                   : 'Create Brand'}
-
               </h5>
 
               <small className="text-secondary">
-
                 {brand
                   ? 'Update brand information'
                   : 'Add a new brand to your store'}
-
               </small>
 
             </div>
@@ -359,14 +375,8 @@ export function BrandModal({
           ================================================= */}
 
           <form
-            onSubmit={
-              handleSubmit
-            }
+            onSubmit={handleSubmit}
           >
-
-            {/* =================================================
-                BODY
-            ================================================= */}
 
             <div className="modal-body p-4">
 
@@ -375,8 +385,6 @@ export function BrandModal({
               ================================================= */}
 
               <div className="d-flex align-items-center gap-3 mb-4">
-
-                {/* PREVIEW */}
 
                 <div
                   className="rounded-4 border bg-light d-flex align-items-center justify-content-center overflow-hidden"
@@ -394,8 +402,7 @@ export function BrandModal({
                       alt="Brand logo"
                       className="w-100 h-100 p-2"
                       style={{
-                        objectFit:
-                          'contain',
+                        objectFit: 'contain',
                       }}
                       onError={(e) => {
                         e.currentTarget.style.display =
@@ -411,19 +418,14 @@ export function BrandModal({
 
                 </div>
 
-                {/* UPLOAD */}
-
                 <div>
 
                   <label
                     htmlFor="brandLogo"
                     className="btn btn-outline-primary btn-sm"
                   >
-
                     <i className="bi bi-upload me-2" />
-
                     Upload Logo
-
                   </label>
 
                   <input
@@ -431,27 +433,18 @@ export function BrandModal({
                     type="file"
                     className="d-none"
                     accept="image/png,image/jpeg,image/webp"
-                    onChange={
-                      handleFileChange
-                    }
+                    onChange={handleFileChange}
                   />
 
                   <div className="small text-secondary mt-2">
-
                     PNG, JPG or WEBP · Max 5MB
-
                   </div>
 
                   {file && (
-
                     <div className="small text-primary mt-1">
-
                       <i className="bi bi-paperclip me-1" />
-
                       {file.name}
-
                     </div>
-
                   )}
 
                 </div>
@@ -465,13 +458,10 @@ export function BrandModal({
               <div className="mb-3">
 
                 <label className="form-label fw-semibold">
-
                   Brand Name
-
                   <span className="text-danger ms-1">
                     *
                   </span>
-
                 </label>
 
                 <input
@@ -479,20 +469,101 @@ export function BrandModal({
                   name="brandName"
                   className="form-control"
                   placeholder="e.g. Nike"
-                  value={
-                    form.brandName
-                  }
-                  onChange={
-                    handleChange
-                  }
+                  value={form.brandName}
+                  onChange={handleChange}
                   maxLength={100}
                   required
                 />
 
                 <div className="form-text">
-
                   Maximum 100 characters.
+                </div>
 
+              </div>
+
+              {/* =================================================
+                  CATEGORY
+              ================================================= */}
+
+              <div className="mb-3">
+
+                <label className="form-label fw-semibold">
+                  Categories
+                </label>
+
+                {categories.length === 0 ? (
+
+                  <div className="border rounded-3 p-3 text-secondary small">
+                    No categories available.
+                  </div>
+
+                ) : (
+
+                  <div
+                    className="border rounded-3 p-3"
+                    style={{
+                      maxHeight: 220,
+                      overflowY: 'auto',
+                    }}
+                  >
+
+                    <div className="row g-2">
+
+                      {categories.map((category) => {
+
+                        const checked =
+                          (
+                            form.categoryIds ?? []
+                          ).includes(
+                            category.categoryId
+                          );
+
+                        return (
+
+                          <div
+                            className="col-md-6"
+                            key={category.categoryId}
+                          >
+
+                            <label
+                              className={`d-flex align-items-center gap-2 border rounded-3 p-2 ${
+                                checked
+                                  ? 'border-primary bg-primary-subtle'
+                                  : ''
+                              }`}
+                              style={{
+                                cursor: 'pointer',
+                              }}
+                            >
+
+                              <input
+                                type="checkbox"
+                                className="form-check-input m-0"
+                                checked={checked}
+                                onChange={() =>
+                                  handleCategoryChange(
+                                    category.categoryId
+                                  )
+                                }
+                              />
+
+                              <span>
+                                {category.categoryName}
+                              </span>
+
+                            </label>
+
+                          </div>
+                        );
+                      })}
+
+                    </div>
+
+                  </div>
+                )}
+
+                <div className="form-text">
+                  Select one or more categories.
                 </div>
 
               </div>
@@ -504,9 +575,7 @@ export function BrandModal({
               <div className="mb-3">
 
                 <label className="form-label fw-semibold">
-
                   Description
-
                 </label>
 
                 <textarea
@@ -517,9 +586,7 @@ export function BrandModal({
                   value={
                     form.description ?? ''
                   }
-                  onChange={
-                    handleChange
-                  }
+                  onChange={handleChange}
                 />
 
               </div>
@@ -531,9 +598,7 @@ export function BrandModal({
               <div>
 
                 <label className="form-label fw-semibold">
-
                   Status
-
                 </label>
 
                 <div className="row g-2">
@@ -557,8 +622,7 @@ export function BrandModal({
                             : ''
                         }`}
                         style={{
-                          cursor:
-                            'pointer',
+                          cursor: 'pointer',
                         }}
                       >
 
@@ -567,28 +631,21 @@ export function BrandModal({
                           name="status"
                           value={item}
                           checked={
-                            form.status ===
-                            item
+                            form.status === item
                           }
-                          onChange={
-                            handleChange
-                          }
+                          onChange={handleChange}
                           className="form-check-input me-2"
                         />
 
                         <span className="fw-semibold">
-
-                          {item ===
-                          'ACTIVE'
+                          {item === 'ACTIVE'
                             ? 'Active'
                             : 'Inactive'}
-
                         </span>
 
                       </label>
 
                     </div>
-
                   ))}
 
                 </div>
@@ -609,9 +666,7 @@ export function BrandModal({
                 onClick={onClose}
                 disabled={loading}
               >
-
                 Cancel
-
               </button>
 
               <button

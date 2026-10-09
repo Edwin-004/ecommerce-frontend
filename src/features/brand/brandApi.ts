@@ -9,28 +9,59 @@ export type BrandStatus =
   | 'ACTIVE'
   | 'INACTIVE';
 
+// =====================================================
+// BRAND RESPONSE
+// =====================================================
+
 export interface Brand {
   brandId: number;
+
   brandName: string;
+
   brandLogoUrl: string | null;
+
   description: string | null;
+
   status: BrandStatus;
+
   createdAt: string;
+
   modifiedAt: string;
+
+  // Brand -> Categories
+  categoryIds: number[];
 }
+
+// =====================================================
+// BRAND REQUEST
+// =====================================================
 
 export interface BrandRequest {
   brandName: string;
+
   brandLogoUrl: string;
+
   description: string;
+
   status: BrandStatus;
+
+  // Selected category IDs
+  categoryIds: number[];
 }
+
+// =====================================================
+// PAGE RESPONSE
+// =====================================================
 
 export interface PageResponse<T> {
   content: T[];
+
   totalElements: number;
+
   totalPages: number;
+
   size: number;
+
   number: number;
 }
 
@@ -54,28 +85,58 @@ export async function getBrands(
   sortBy = 'brandName',
   sortDir: 'asc' | 'desc' = 'asc'
 ): Promise<PageResponse<Brand>> {
-  const params = new URLSearchParams();
 
-  params.set('page', String(page));
-  params.set('size', String(size));
-  
-  // Spring Data Format: sort=columnName,direction
-  params.set('sort', `${sortBy},${sortDir}`);
+  const params =
+    new URLSearchParams();
 
-  const trimmedKeyword = keyword.trim();
+  params.set(
+    'page',
+    String(page)
+  );
+
+  params.set(
+    'size',
+    String(size)
+  );
+
+  // Spring Data format:
+  // sort=columnName,direction
+
+  params.set(
+    'sort',
+    `${sortBy},${sortDir}`
+  );
+
+  const trimmedKeyword =
+    keyword.trim();
+
   if (trimmedKeyword) {
-    params.set('keyword', trimmedKeyword);
+
+    params.set(
+      'keyword',
+      trimmedKeyword
+    );
   }
 
   if (status) {
-    params.set('status', status);
+
+    params.set(
+      'status',
+      status
+    );
   }
 
-  const url = `${ENDPOINT}?${params.toString()}`;
+  const url =
+    `${ENDPOINT}?${params.toString()}`;
 
-  console.log('GET BRANDS:', url);
+  console.log(
+    'GET BRANDS:',
+    url
+  );
 
-  return apiFetch<PageResponse<Brand>>(url);
+  return apiFetch<
+    PageResponse<Brand>
+  >(url);
 }
 
 // =====================================================
@@ -90,8 +151,9 @@ export async function createBrand(
   const formData =
     new FormData();
 
-  // Backend expects:
+  // Backend:
   // @RequestPart("request")
+
   formData.append(
     'request',
     new Blob(
@@ -104,9 +166,14 @@ export async function createBrand(
     )
   );
 
-  // Backend expects:
-  // @RequestPart(value = "file", required = false)
+  // Backend:
+  // @RequestPart(
+  //     value = "file",
+  //     required = false
+  // )
+
   if (file) {
+
     formData.append(
       'file',
       file
@@ -153,6 +220,7 @@ export async function updateBrand(
   );
 
   if (file) {
+
     formData.append(
       'file',
       file
