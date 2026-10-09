@@ -15,7 +15,7 @@ import { BrandsPage } from './features/brand/BrandsPage';
 import TagManagement from "./features/tags/TagManagement";
 import StaffList from './components/StaffList';
 import { Profile } from './components/Profile';
-
+import { ReportsPage } from './features/reports/ReportsPage';
 import './App.css';
 
 function App() {
@@ -54,6 +54,9 @@ function App() {
 
             {/* Staff Management */}
             <Route path="/admin/staff" element={<StaffList />} />
+
+            {/* Reports */}
+            <Route path="/admin/reports" element={<ReportsPage />} />
 
             {/* Orders Management */}
             <Route path="/admin/orders" element={<AllOrders />} />
