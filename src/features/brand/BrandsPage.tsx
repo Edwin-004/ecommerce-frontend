@@ -18,6 +18,7 @@ import {
 import styles from './Brands.module.css';
 
 const API_BASE_URL = 'http://localhost:8080';
+const PAGE_SIZE = 10;
 
 // =====================================================
 // LOGO URL
@@ -26,9 +27,7 @@ const API_BASE_URL = 'http://localhost:8080';
 const getLogoUrl = (
   logoUrl?: string | null
 ): string | null => {
-  if (!logoUrl) {
-    return null;
-  }
+  if (!logoUrl) return null;
 
   if (
     logoUrl.startsWith('http://') ||
@@ -57,7 +56,6 @@ const getCategories = async (): Promise<Category[]> => {
 
   const data = await response.json();
 
-  // Backend returns Page<CategoryResponseDto>
   if (Array.isArray(data)) {
     return data;
   }
@@ -71,61 +69,30 @@ const getCategories = async (): Promise<Category[]> => {
 
 export function BrandsPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
-
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // =====================================================
-  // PAGINATION
-  // =====================================================
-
+  // Pagination
   const [page, setPage] = useState(0);
-
-  const PAGE_SIZE = 10;
-
   const [totalPages, setTotalPages] = useState(0);
-
   const [totalElements, setTotalElements] = useState(0);
 
-  // =====================================================
-  // SEARCH & STATUS
-  // =====================================================
-
+  // Search and status
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [status, setStatus] = useState<BrandStatus | ''>('');
 
-  const [debouncedSearch, setDebouncedSearch] =
-    useState('');
-
-  const [status, setStatus] =
-    useState<BrandStatus | ''>('');
-
-  // =====================================================
-  // SORTING
-  // =====================================================
-
+  // Sorting
   const [sortBy, setSortBy] = useState('brandName');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
-  const [sortDir, setSortDir] =
-    useState<'asc' | 'desc'>('asc');
-
-  // =====================================================
-  // LOADING
-  // =====================================================
-
+  // Loading
   const [loading, setLoading] = useState(false);
-
   const [saving, setSaving] = useState(false);
+  const [categoryLoading, setCategoryLoading] = useState(false);
 
-  const [categoryLoading, setCategoryLoading] =
-    useState(false);
-
-  // =====================================================
-  // MODAL
-  // =====================================================
-
+  // Modal
   const [showModal, setShowModal] = useState(false);
-
-  const [editingBrand, setEditingBrand] =
-    useState<Brand | null>(null);
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
 
   // =====================================================
   // LOAD CATEGORIES
@@ -140,20 +107,13 @@ export function BrandsPage() {
 
         const result = await getCategories();
 
-        if (cancelled) {
-          return;
+        if (!cancelled) {
+          setCategories(result);
         }
-
-        setCategories(result);
       } catch (error) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
-        console.error(
-          'Failed to load categories:',
-          error
-        );
+        console.error('Failed to load categories:', error);
 
         alert(
           error instanceof Error
@@ -167,7 +127,7 @@ export function BrandsPage() {
       }
     };
 
-    loadCategories();
+    void loadCategories();
 
     return () => {
       cancelled = true;
@@ -207,24 +167,15 @@ export function BrandsPage() {
           sortDir
         );
 
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
         setBrands(result.content);
-
         setTotalPages(result.totalPages);
-
         setTotalElements(result.totalElements);
       } catch (error) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
-        console.error(
-          'Failed to load brands:',
-          error
-        );
+        console.error('Failed to load brands:', error);
 
         alert(
           error instanceof Error
@@ -238,18 +189,12 @@ export function BrandsPage() {
       }
     };
 
-    loadBrands();
+    void loadBrands();
 
     return () => {
       cancelled = true;
     };
-  }, [
-    page,
-    debouncedSearch,
-    status,
-    sortBy,
-    sortDir,
-  ]);
+  }, [page, debouncedSearch, status, sortBy, sortDir]);
 
   // =====================================================
   // SORT
@@ -257,8 +202,8 @@ export function BrandsPage() {
 
   const handleSort = (field: string) => {
     if (sortBy === field) {
-      setSortDir((prev) =>
-        prev === 'asc' ? 'desc' : 'asc'
+      setSortDir((previous) =>
+        previous === 'asc' ? 'desc' : 'asc'
       );
     } else {
       setSortBy(field);
@@ -271,10 +216,6 @@ export function BrandsPage() {
   // =====================================================
   // SEARCH
   // =====================================================
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-  };
 
   const handleClearSearch = () => {
     setSearch('');
@@ -306,16 +247,14 @@ export function BrandsPage() {
   };
 
   const closeModal = () => {
-    if (saving) {
-      return;
-    }
+    if (saving) return;
 
     setShowModal(false);
     setEditingBrand(null);
   };
 
   // =====================================================
-  // SAVE
+  // SAVE / CREATE / UPDATE
   // =====================================================
 
   const handleSave = async (
@@ -338,7 +277,8 @@ export function BrandsPage() {
       setShowModal(false);
       setEditingBrand(null);
 
-      const result = await getBrands(
+      // Refresh current page after create or edit.
+      let result = await getBrands(
         page,
         PAGE_SIZE,
         debouncedSearch,
@@ -347,16 +287,18 @@ export function BrandsPage() {
         sortDir
       );
 
+      // If the current page became empty after editing,
+      // go back to the first page.
+      if (result.content.length === 0 && page > 0) {
+        setPage(0);
+        return;
+      }
+
       setBrands(result.content);
-
       setTotalPages(result.totalPages);
-
       setTotalElements(result.totalElements);
     } catch (error) {
-      console.error(
-        'Failed to save brand:',
-        error
-      );
+      console.error('Failed to save brand:', error);
 
       alert(
         error instanceof Error
@@ -375,26 +317,17 @@ export function BrandsPage() {
   const getCategoryNames = (
     categoryIds?: number[]
   ): string[] => {
-    if (
-      !categoryIds ||
-      categoryIds.length === 0
-    ) {
-      return [];
-    }
+    if (!categoryIds?.length) return [];
 
     return categoryIds
       .map((categoryId) => {
         const category = categories.find(
-          (item) =>
-            item.categoryId === categoryId
+          (item) => item.categoryId === categoryId
         );
 
         return category?.categoryName;
       })
-      .filter(
-        (name): name is string =>
-          Boolean(name)
-      );
+      .filter((name): name is string => Boolean(name));
   };
 
   // =====================================================
@@ -402,11 +335,11 @@ export function BrandsPage() {
   // =====================================================
 
   const activeCount = brands.filter(
-    (b) => b.status === 'ACTIVE'
+    (brand) => brand.status === 'ACTIVE'
   ).length;
 
   const inactiveCount = brands.filter(
-    (b) => b.status === 'INACTIVE'
+    (brand) => brand.status === 'INACTIVE'
   ).length;
 
   // =====================================================
@@ -451,10 +384,7 @@ export function BrandsPage() {
           <button
             className="btn btn-primary px-4 py-2"
             onClick={openCreate}
-            disabled={
-              loading ||
-              categoryLoading
-            }
+            disabled={loading || categoryLoading || saving}
           >
             <i className="bi bi-plus-lg me-2" />
             Add Brand
@@ -464,15 +394,10 @@ export function BrandsPage() {
         {/* STATS */}
 
         <div className="row g-3 mb-4">
-
           <div className="col-md-4">
-            <div
-              className={`${styles.statCard} card border-0 shadow-sm`}
-            >
+            <div className={`${styles.statCard} card border-0 shadow-sm`}>
               <div className="card-body d-flex align-items-center">
-                <div
-                  className={`${styles.statIcon} ${styles.purple}`}
-                >
+                <div className={`${styles.statIcon} ${styles.purple}`}>
                   <i className="bi bi-tags" />
                 </div>
 
@@ -490,13 +415,9 @@ export function BrandsPage() {
           </div>
 
           <div className="col-md-4">
-            <div
-              className={`${styles.statCard} card border-0 shadow-sm`}
-            >
+            <div className={`${styles.statCard} card border-0 shadow-sm`}>
               <div className="card-body d-flex align-items-center">
-                <div
-                  className={`${styles.statIcon} ${styles.green}`}
-                >
+                <div className={`${styles.statIcon} ${styles.green}`}>
                   <i className="bi bi-check-circle" />
                 </div>
 
@@ -514,13 +435,9 @@ export function BrandsPage() {
           </div>
 
           <div className="col-md-4">
-            <div
-              className={`${styles.statCard} card border-0 shadow-sm`}
-            >
+            <div className={`${styles.statCard} card border-0 shadow-sm`}>
               <div className="card-body d-flex align-items-center">
-                <div
-                  className={`${styles.statIcon} ${styles.orange}`}
-                >
+                <div className={`${styles.statIcon} ${styles.orange}`}>
                   <i className="bi bi-pause-circle" />
                 </div>
 
@@ -536,7 +453,6 @@ export function BrandsPage() {
               </div>
             </div>
           </div>
-
         </div>
 
         {/* TABLE CARD */}
@@ -547,10 +463,8 @@ export function BrandsPage() {
 
           <div className="card-header bg-white border-0 p-3">
             <div className="row g-2">
-
               <div className="col-md">
                 <div className="input-group">
-
                   <span className="input-group-text bg-white">
                     <i className="bi bi-search" />
                   </span>
@@ -558,12 +472,10 @@ export function BrandsPage() {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Search brand name or description..."
+                    placeholder="Search brand, category or description..."
                     value={search}
-                    onChange={(e) =>
-                      handleSearchChange(
-                        e.target.value
-                      )
+                    onChange={(event) =>
+                      setSearch(event.target.value)
                     }
                   />
 
@@ -572,11 +484,11 @@ export function BrandsPage() {
                       type="button"
                       className="btn btn-outline-secondary"
                       onClick={handleClearSearch}
+                      aria-label="Clear search"
                     >
                       <i className="bi bi-x-lg" />
                     </button>
                   )}
-
                 </div>
               </div>
 
@@ -584,26 +496,15 @@ export function BrandsPage() {
                 <select
                   className="form-select"
                   value={status}
-                  onChange={(e) =>
-                    handleStatusChange(
-                      e.target.value
-                    )
+                  onChange={(event) =>
+                    handleStatusChange(event.target.value)
                   }
                 >
-                  <option value="">
-                    All Status
-                  </option>
-
-                  <option value="ACTIVE">
-                    Active
-                  </option>
-
-                  <option value="INACTIVE">
-                    Inactive
-                  </option>
+                  <option value="">All Status</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
                 </select>
               </div>
-
             </div>
           </div>
 
@@ -611,40 +512,27 @@ export function BrandsPage() {
 
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
-
               <thead className="table-light">
                 <tr>
-
-                  <th
-                    className="ps-4"
-                    style={{ width: '60px' }}
-                  >
+                  <th className="ps-4" style={{ width: '60px' }}>
                     #
                   </th>
 
                   <th
                     style={{ cursor: 'pointer' }}
-                    onClick={() =>
-                      handleSort('brandName')
-                    }
+                    onClick={() => handleSort('brandName')}
                   >
                     Brand
                     {renderSortIcon('brandName')}
                   </th>
 
-                  <th>
-                    Category
-                  </th>
+                  <th>Category</th>
 
-                  <th>
-                    Description
-                  </th>
+                  <th>Description</th>
 
                   <th
                     style={{ cursor: 'pointer' }}
-                    onClick={() =>
-                      handleSort('status')
-                    }
+                    onClick={() => handleSort('status')}
                   >
                     Status
                     {renderSortIcon('status')}
@@ -653,18 +541,13 @@ export function BrandsPage() {
                   <th className="text-end px-4">
                     Actions
                   </th>
-
                 </tr>
               </thead>
 
               <tbody>
-
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="text-center py-5"
-                    >
+                    <td colSpan={6} className="text-center py-5">
                       <div className="spinner-border text-primary" />
 
                       <div className="text-secondary mt-2">
@@ -672,14 +555,9 @@ export function BrandsPage() {
                       </div>
                     </td>
                   </tr>
-
                 ) : brands.length === 0 ? (
-
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="text-center py-5"
-                    >
+                    <td colSpan={6} className="text-center py-5">
                       <i className="bi bi-inbox fs-1 text-secondary" />
 
                       <h6 className="mt-3">
@@ -693,143 +571,113 @@ export function BrandsPage() {
                       </p>
                     </td>
                   </tr>
-
                 ) : (
+                  brands.map((brand, index) => {
+                    const logoUrl = getLogoUrl(brand.brandLogoUrl);
 
-                  brands.map(
-                    (brand, index) => {
+                    const rowNumber = page * PAGE_SIZE + index + 1;
 
-                      const logoUrl =
-                        getLogoUrl(
-                          brand.brandLogoUrl
-                        );
+                    const categoryNames = getCategoryNames(
+                      brand.categoryIds
+                    );
 
-                      const rowNumber =
-                        page * PAGE_SIZE +
-                        index +
-                        1;
+                    return (
+                      <tr key={brand.brandId}>
+                        {/* NUMBER */}
 
-                      const categoryNames =
-                        getCategoryNames(
-                          brand.categoryIds
-                        );
+                        <td className="ps-4 fw-medium text-secondary">
+                          {rowNumber}
+                        </td>
 
-                      return (
-                        <tr
-                          key={brand.brandId}
-                        >
+                        {/* BRAND */}
 
-                          {/* NUMBER */}
-
-                          <td className="ps-4 fw-medium text-secondary">
-                            {rowNumber}
-                          </td>
-
-                          {/* BRAND */}
-
-                          <td>
-                            <div className="d-flex align-items-center gap-3">
-
-                              {logoUrl ? (
-                                <img
-                                  src={logoUrl}
-                                  alt={brand.brandName}
-                                  className={styles.logo}
-                                  onError={(e) => {
-                                    e.currentTarget.style.display =
-                                      'none';
-                                  }}
-                                />
-                              ) : (
-                                <div
-                                  className={
-                                    styles.logoPlaceholder
-                                  }
-                                >
-                                  {brand.brandName
-                                    .charAt(0)
-                                    .toUpperCase()}
-                                </div>
-                              )}
-
-                              <div>
-                                <div className="fw-semibold">
-                                  {brand.brandName}
-                                </div>
+                        <td>
+                          <div className="d-flex align-items-center gap-3">
+                            {logoUrl ? (
+                              <img
+                                src={logoUrl}
+                                alt={brand.brandName}
+                                className={styles.logo}
+                                onError={(event) => {
+                                  event.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className={styles.logoPlaceholder}>
+                                {brand.brandName
+                                  .charAt(0)
+                                  .toUpperCase()}
                               </div>
+                            )}
 
+                            <div className="fw-semibold">
+                              {brand.brandName}
                             </div>
-                          </td>
+                          </div>
+                        </td>
 
-                          {/* CATEGORY */}
+                        {/* CATEGORY */}
 
-                          <td>
-                            {categoryNames.length > 0 ? (
-                              <div className="d-flex flex-wrap gap-1">
-                                {categoryNames.map(
-                                  (name) => (
-                                    <span
-                                      key={name}
-                                      className="badge text-bg-light border"
-                                    >
-                                      {name}
-                                    </span>
-                                  )
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-secondary">
-                                No category
-                              </span>
-                            )}
-                          </td>
-
-                          {/* DESCRIPTION */}
-
-                          <td>
+                        <td>
+                          {categoryNames.length > 0 ? (
+                            <div className="d-flex flex-wrap gap-1">
+                              {categoryNames.map((name) => (
+                                <span
+                                  key={name}
+                                  className="badge text-bg-light border"
+                                >
+                                  {name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
                             <span className="text-secondary">
-                              {brand.description ||
-                                'No description'}
+                              No category
                             </span>
-                          </td>
+                          )}
+                        </td>
 
-                          {/* STATUS */}
+                        {/* DESCRIPTION */}
 
-                          <td>
-                            {brand.status === 'ACTIVE' ? (
-                              <span className="badge rounded-pill text-bg-success">
-                                <i className="bi bi-check-circle me-1" />
-                                Active
-                              </span>
-                            ) : (
-                              <span className="badge rounded-pill text-bg-secondary">
-                                <i className="bi bi-pause-circle me-1" />
-                                Inactive
-                              </span>
-                            )}
-                          </td>
+                        <td>
+                          <span className="text-secondary">
+                            {brand.description || 'No description'}
+                          </span>
+                        </td>
 
-                          {/* ACTIONS */}
+                        {/* STATUS */}
 
-                          <td className="text-end px-4">
-                            <button
-                              className="btn btn-sm btn-light"
-                              onClick={() =>
-                                openEdit(brand)
-                              }
-                              title="Edit"
-                              disabled={saving}
-                            >
-                              <i className="bi bi-pencil" />
-                            </button>
-                          </td>
+                        <td>
+                          {brand.status === 'ACTIVE' ? (
+                            <span className="badge rounded-pill text-bg-success">
+                              <i className="bi bi-check-circle me-1" />
+                              Active
+                            </span>
+                          ) : (
+                            <span className="badge rounded-pill text-bg-secondary">
+                              <i className="bi bi-pause-circle me-1" />
+                              Inactive
+                            </span>
+                          )}
+                        </td>
 
-                        </tr>
-                      );
-                    }
-                  )
+                        {/* ACTIONS */}
+
+                        <td className="text-end px-4">
+                          <button
+                            className="btn btn-sm btn-light"
+                            onClick={() => openEdit(brand)}
+                            title="Edit"
+                            aria-label={`Edit ${brand.brandName}`}
+                            disabled={saving}
+                          >
+                            <i className="bi bi-pencil" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
-
               </tbody>
             </table>
           </div>
@@ -838,66 +686,48 @@ export function BrandsPage() {
 
           {totalPages > 0 && (
             <div className="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
-
               <small className="text-secondary">
                 Page {page + 1} of {totalPages}
               </small>
 
               <div className="d-flex gap-2">
-
                 <button
                   className="btn btn-outline-secondary btn-sm"
-                  disabled={
-                    page === 0 ||
-                    loading
-                  }
+                  disabled={page === 0 || loading}
                   onClick={() =>
-                    setPage(
-                      (prev) => prev - 1
-                    )
+                    setPage((previous) => previous - 1)
                   }
+                  aria-label="Previous page"
                 >
                   <i className="bi bi-chevron-left" />
                 </button>
 
                 <button
                   className="btn btn-outline-secondary btn-sm"
-                  disabled={
-                    page >= totalPages - 1 ||
-                    loading
-                  }
+                  disabled={page >= totalPages - 1 || loading}
                   onClick={() =>
-                    setPage(
-                      (prev) => prev + 1
-                    )
+                    setPage((previous) => previous + 1)
                   }
+                  aria-label="Next page"
                 >
                   <i className="bi bi-chevron-right" />
                 </button>
-
               </div>
             </div>
           )}
-
         </div>
       </div>
 
-      {/* =====================================================
-          MODAL
-      ===================================================== */}
+      {/* CREATE / EDIT MODAL */}
 
       <BrandModal
         show={showModal}
         brand={editingBrand}
-        loading={
-          saving ||
-          categoryLoading
-        }
+        loading={saving || categoryLoading}
         categories={categories}
         onClose={closeModal}
         onSubmit={handleSave}
       />
-
     </div>
   );
 }
