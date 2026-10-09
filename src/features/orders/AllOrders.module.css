@@ -381,3 +381,45 @@
   background: #a5b3f1;
   cursor: not-allowed;
 }
+
+/* ==================== Pagination ==================== */
+.paginationContainer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 16px;
+  gap: 16px;
+}
+
+.pageInfoText {
+  font-size: 14px;
+  color: #666;
+}
+
+.paginationControls {
+  display: flex;
+  gap: 8px; /* Button နှစ်ခုကြား ခွာရန် */
+}
+
+.paginationBtn {
+  padding: 6px 12px;
+  border: 1px solid #ced4da;
+  background-color: #fff;
+  border-radius: 4px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.paginationBtn:hover:not(:disabled) {
+  background-color: #f8f9fa;
+  border-color: #b3b9bf;
+}
+
+/* Disabled ဖြစ်နေချိန်တွင် အလိုအလျောက် အလုပ်လုပ်မည့် CSS */
+.paginationBtn:disabled {
+  cursor: not-allowed;
+  background-color: #e9ecef;
+  color: #999;
+  border-color: #e9ecef;
+}
