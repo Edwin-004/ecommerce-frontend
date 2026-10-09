@@ -229,30 +229,17 @@ export const AllOrders = () => {
           </table>
           {/* ================= Pagination Controls (အသစ်ထပ်တိုးရန်) ================= */}
           {totalPages > 1 && (
-            <div
-              className={styles.paginationContainer}
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'center',
-                marginTop: '16px',
-                gap: '16px',
-              }}
-            >
-              <span style={{ fontSize: '14px', color: '#666' }}>
+            <div className={styles.paginationContainer}>
+              <span className={styles.pageInfoText}>
                 Page {currentPage + 1} of {totalPages}
               </span>
-              <div>
+              <div className={styles.paginationControls}>
                 <button
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(prev - 1, 0))
                   }
                   disabled={currentPage === 0}
-                  style={{
-                    padding: '6px 12px',
-                    marginRight: '8px',
-                    cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
-                  }}
+                  className={styles.paginationBtn}
                 >
                   Previous
                 </button>
@@ -261,10 +248,7 @@ export const AllOrders = () => {
                     setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
                   }
                   disabled={data?.last || currentPage === totalPages - 1}
-                  style={{
-                    padding: '6px 12px',
-                    cursor: data?.last ? 'not-allowed' : 'pointer',
-                  }}
+                  className={styles.paginationBtn}
                 >
                   Next
                 </button>
@@ -430,7 +414,7 @@ export const AllOrders = () => {
                         </button>
                       </div>
                     </div>
-                    {/* ၂။ Payment Information Card (အသစ်ထပ်တိုးရန်) */}
+                    {/* ၂။ Payment Information Card*/}
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Payment Information</h3>
                       {LoadingPaymentInfo ? (
@@ -484,6 +468,56 @@ export const AllOrders = () => {
                       ) : (
                         <p style={{ fontSize: '14px', color: '#999' }}>
                           Payment data not found.
+                        </p>
+                      )}
+                    </div>
+                    {/* ၃။ Shipment Information Card */}
+                    <div className={styles.card}>
+                      <h3 className={styles.cardTitle}>Shipment Information</h3>
+
+                      {orderDetails.shipment ? (
+                        <div>
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
+                              Courier:
+                            </span>
+                            <strong className={styles.paymentValue}>
+                              {formatCourierName(
+                                orderDetails.shipment.courierName
+                              )}
+                            </strong>
+                          </div>
+
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
+                              Tracking:
+                            </span>
+                            <strong
+                              className={styles.txnRefValue}
+                              style={{ color: '#556ee6' }}
+                            >
+                              {orderDetails.shipment.trackingNumber || 'N/A'}
+                            </strong>
+                          </div>
+
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
+                              Shipped At:
+                            </span>
+                            <strong className={styles.paymentValue}>
+                              {orderDetails.shipment.shippedAt
+                                ? orderDetails.shipment.shippedAt
+                                    .split('T')
+                                    .join(' ')
+                                : '-'}
+                            </strong>
+                          </div>
+                        </div>
+                      ) : (
+                        <p
+                          style={{ fontSize: '14px', color: '#999', margin: 0 }}
+                        >
+                          Shipment not created yet.
                         </p>
                       )}
                     </div>
