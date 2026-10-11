@@ -12,11 +12,12 @@ import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
 import { BrandsPage } from './features/brand/BrandsPage';
-import TagManagement from "./features/tags/TagManagement";
+import TagManagement from './features/tags/TagManagement';
 import StaffList from './components/StaffList';
 import { Profile } from './components/Profile';
 import { ReportsPage } from './features/reports/ReportsPage';
 import './App.css';
+import { ShippingRates } from './features/shipping/ShippingRates';
 
 function App() {
   return (
@@ -47,9 +48,8 @@ function App() {
             {/* Categories */}
             <Route path="/admin/categories" element={<CategoryManagement />} />
 
-            <Route path="/admin/brands" element={<BrandsPage />}
-/>
-            {/* Tags */} 
+            <Route path="/admin/brands" element={<BrandsPage />} />
+            {/* Tags */}
             <Route path="/admin/tags" element={<TagManagement />} />
 
             {/* Staff Management */}
@@ -60,6 +60,9 @@ function App() {
 
             {/* Orders Management */}
             <Route path="/admin/orders" element={<AllOrders />} />
+
+            {/* Shipping Rates Management */}
+            <Route path="/admin/shipping-rates" element={<ShippingRates />} />
 
             {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
             <Route

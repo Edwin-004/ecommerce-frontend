@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import styles from "./Sidebar.module.css";
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import styles from './Sidebar.module.css';
 
 import {
   FiMenu,
@@ -16,7 +16,8 @@ import {
   FiTag,
   FiGrid,
   FiShoppingBag,
-} from "react-icons/fi";
+  FiTruck,
+} from 'react-icons/fi';
 
 export const Sidebar = () => {
   const [open, setOpen] = useState(true);
@@ -24,14 +25,14 @@ export const Sidebar = () => {
 
   // Active check for Catalog items
   const isCatalogActive =
-    location.pathname.startsWith("/admin/products") ||
-    location.pathname.startsWith("/admin/categories") ||
-    location.pathname.startsWith("/admin/brands") ||
-    location.pathname.startsWith("/admin/tags") ||
-    location.pathname.startsWith("/admin/variants") ||
-    location.pathname.startsWith("/admin/variations");
+    location.pathname.startsWith('/admin/products') ||
+    location.pathname.startsWith('/admin/categories') ||
+    location.pathname.startsWith('/admin/brands') ||
+    location.pathname.startsWith('/admin/tags') ||
+    location.pathname.startsWith('/admin/variants') ||
+    location.pathname.startsWith('/admin/variations');
 
-  const isInventoryActive = location.pathname.startsWith("/admin/inventory");
+  const isInventoryActive = location.pathname.startsWith('/admin/inventory');
 
   // Keep Catalog expanded by default or when an active child is selected
   const [catalogOpen, setCatalogOpen] = useState<boolean>(true);
@@ -44,7 +45,7 @@ export const Sidebar = () => {
     isActive ? `${styles.subLink} ${styles.subActive}` : styles.subLink;
 
   return (
-    <aside className={`${styles.sidebar} ${!open ? styles.close : ""}`}>
+    <aside className={`${styles.sidebar} ${!open ? styles.close : ''}`}>
       {/* Brand Header */}
       <div className={styles.header}>
         <div className={styles.brandContainer}>
@@ -63,7 +64,7 @@ export const Sidebar = () => {
           type="button"
           className={styles.toggleBtn}
           onClick={() => setOpen(!open)}
-          title={open ? "Collapse sidebar" : "Expand sidebar"}
+          title={open ? 'Collapse sidebar' : 'Expand sidebar'}
           aria-label="Toggle Sidebar"
         >
           {open ? <FiChevronLeft size={16} /> : <FiMenu size={16} />}
@@ -87,7 +88,7 @@ export const Sidebar = () => {
           <button
             type="button"
             className={`${styles.dropdownToggle} ${
-              isCatalogActive ? styles.parentActive : ""
+              isCatalogActive ? styles.parentActive : ''
             }`}
             onClick={() => {
               if (!open) setOpen(true);
@@ -101,7 +102,7 @@ export const Sidebar = () => {
             {open && (
               <FiChevronDown
                 className={`${styles.chevron} ${
-                  catalogOpen ? styles.chevronRotated : ""
+                  catalogOpen ? styles.chevronRotated : ''
                 }`}
               />
             )}
@@ -142,7 +143,7 @@ export const Sidebar = () => {
           <button
             type="button"
             className={`${styles.dropdownToggle} ${
-              isInventoryActive ? styles.parentActive : ""
+              isInventoryActive ? styles.parentActive : ''
             }`}
             onClick={() => {
               if (!open) setOpen(true);
@@ -156,7 +157,7 @@ export const Sidebar = () => {
             {open && (
               <FiChevronDown
                 className={`${styles.chevron} ${
-                  inventoryOpen ? styles.chevronRotated : ""
+                  inventoryOpen ? styles.chevronRotated : ''
                 }`}
               />
             )}
@@ -186,6 +187,12 @@ export const Sidebar = () => {
         <NavLink to="/admin/orders" className={navClass}>
           <FiShoppingCart className={styles.linkIcon} />
           {open && <span>Orders</span>}
+        </NavLink>
+
+        {/* Shipping rate */}
+        <NavLink to="/admin/shipping-rates" className={navClass}>
+          <FiTruck className={styles.linkIcon} />
+          {open && <span>Shipping Rates</span>}
         </NavLink>
 
         {/* Staff Management */}
