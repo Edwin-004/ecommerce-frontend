@@ -10,8 +10,6 @@ import styles from './AllOrders.module.css';
 import { useEffect, useState } from 'react';
 
 export const AllOrders = () => {
-  // RTK Query မှ Data၊ Loading နှင့် Error အခြေအနေများကို တိုက်ရိုက်ဆွဲထုတ်ခြင်း
-  // data: orders = [] ဆိုသည်မှာ data မရလာသေးခင် အလွတ် [] ဖြင့်ထားရှိရန်ဖြစ်သည်
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
   const { data, isLoading, isError } = useGetOrdersQuery({

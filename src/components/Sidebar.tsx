@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import styles from "./Sidebar.module.css";
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import styles from './Sidebar.module.css';
 
 import {
   FiChevronDown,
@@ -14,21 +14,22 @@ import {
   FiTag,
   FiGrid,
   FiShoppingBag,
-} from "react-icons/fi";
+  FiTruck,
+} from 'react-icons/fi';
 
 export const Sidebar = () => {
   const location = useLocation();
 
   // Active check for Catalog items
   const isCatalogActive =
-    location.pathname.startsWith("/admin/products") ||
-    location.pathname.startsWith("/admin/categories") ||
-    location.pathname.startsWith("/admin/brands") ||
-    location.pathname.startsWith("/admin/tags") ||
-    location.pathname.startsWith("/admin/variants") ||
-    location.pathname.startsWith("/admin/variations");
+    location.pathname.startsWith('/admin/products') ||
+    location.pathname.startsWith('/admin/categories') ||
+    location.pathname.startsWith('/admin/brands') ||
+    location.pathname.startsWith('/admin/tags') ||
+    location.pathname.startsWith('/admin/variants') ||
+    location.pathname.startsWith('/admin/variations');
 
-  const isInventoryActive = location.pathname.startsWith("/admin/inventory");
+  const isInventoryActive = location.pathname.startsWith('/admin/inventory');
 
   // Keep Catalog expanded by default or when an active child is selected
   const [catalogOpen, setCatalogOpen] = useState<boolean>(true);
@@ -72,7 +73,7 @@ export const Sidebar = () => {
           <button
             type="button"
             className={`${styles.dropdownToggle} ${
-              isCatalogActive ? styles.parentActive : ""
+              isCatalogActive ? styles.parentActive : ''
             }`}
             onClick={() => setCatalogOpen(!catalogOpen)}
           >
@@ -122,7 +123,7 @@ export const Sidebar = () => {
           <button
             type="button"
             className={`${styles.dropdownToggle} ${
-              isInventoryActive ? styles.parentActive : ""
+              isInventoryActive ? styles.parentActive : ''
             }`}
             onClick={() => setInventoryOpen(!inventoryOpen)}
           >
@@ -161,6 +162,12 @@ export const Sidebar = () => {
         <NavLink to="/admin/orders" className={navClass}>
           <FiShoppingCart className={styles.linkIcon} />
           <span>Orders</span>
+        </NavLink>
+
+        {/* Shipping rate */}
+        <NavLink to="/admin/shipping-rates" className={navClass}>
+          <FiTruck className={styles.linkIcon} />
+          {open && <span>Shipping Rates</span>}
         </NavLink>
 
         {/* Staff Management */}
