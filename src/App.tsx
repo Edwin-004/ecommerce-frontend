@@ -11,7 +11,7 @@ import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
-import StaffList from './components/StaffList';
+import { StaffList } from "./features/staff/StaffList";
 import { Profile } from './components/Profile';
 import './App.css';
 

@@ -1,0 +1,179 @@
+/* StaffList.css */
+.staff-container {
+    padding: 24px;
+    background-color: #f4f7fe;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header */
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.header-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+.header-subtitle {
+    color: #6b7280;
+    font-size: 14px;
+    margin-top: 4px;
+}
+.btn-add {
+    background-color: #16a34a;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+.btn-add:hover { background-color: #15803d; }
+
+/* Summary Cards */
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.card {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.icon-box {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.icon-blue { background-color: #eff6ff; color: #2563eb; }
+.icon-green { background-color: #f0fdf4; color: #16a34a; }
+.icon-purple { background-color: #faf5ff; color: #9333ea; }
+.icon-red { background-color: #fef2f2; color: #dc2626; }
+.card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+.card-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin: 4px 0 0 0;
+}
+
+/* Table Area */
+.table-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid #f3f4f6;
+    overflow: hidden;
+}
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #f3f4f6;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.tabs {
+    display: flex;
+    gap: 8px;
+}
+.tab-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: #f9fafb;
+    color: #4b5563;
+    transition: all 0.2s;
+}
+.tab-btn.active {
+    background: #2563eb;
+    color: white;
+}
+.tab-btn:hover:not(.active) { background: #f3f4f6; }
+.search-input {
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    outline: none;
+    width: 250px;
+    font-size: 14px;
+}
+.search-input:focus { border-color: #3b82f6; }
+.table-responsive { overflow-x: auto; }
+
+/* Table Styles */
+.staff-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+.staff-table th {
+    padding: 14px 24px;
+    background-color: #f9fafb;
+    color: #6b7280;
+    font-size: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #f3f4f6;
+    font-weight: 600;
+}
+.staff-table td {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    font-size: 14px;
+}
+.staff-table tr:hover { background-color: #f9fafb; }
+
+/* Badges & Buttons */
+.badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+.badge-admin { background-color: #faf5ff; color: #9333ea; }
+.badge-staff { background-color: #eff6ff; color: #2563eb; }
+.badge-active { background-color: #f0fdf4; color: #16a34a; border-radius: 12px; }
+.badge-inactive { background-color: #fef2f2; color: #dc2626; border-radius: 12px; }
+
+.action-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: background-color 0.2s;
+}
+.btn-edit { background-color: #eff6ff; color: #2563eb; }
+.btn-edit:hover { background-color: #dbeafe; }
+.btn-suspend { background-color: #fef2f2; color: #dc2626; margin-right: 0; }
+.btn-suspend:hover { background-color: #fee2e2; }

@@ -1,220 +1,398 @@
-import React, { useEffect, useState } from 'react';
-import api from '../../utils/axiosConfig'; // Folder နှစ်ဆင့် (src ထဲရောက်ရန်) '../../' ကိုသုံးပါ
-import { type RootState } from '../../store'; // Folder နှစ်ဆင့် (src ထဲရောက်ရန်) '../../' ကိုသုံးပါ
-import { useSelector } from 'react-redux'; // <--- အသစ်ထည့်ရန်
+import React, { useState } from 'react';
+
+import './StaffList.css';
+
+
 
 interface StaffResponseDTO {
+
     userId: number;
+
     userName: string;
+
     email: string;
+
     roleName: string;
+
     status: string;
+
     createdAt: string;
+
 }
 
-const StaffList: React.FC = () => {
-    // Redux မှ လက်ရှိ Login ဝင်ထားသူ၏ role ကို ရယူခြင်း
-    const { role } = useSelector((state: RootState) => state.auth);
 
-    const [staffList, setStaffList] = useState<StaffResponseDTO[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
 
-    const [showForm, setShowForm] = useState<boolean>(false);
-    const [editingStaffId, setEditingStaffId] = useState<number | null>(null); 
-    
-    const [formData, setFormData] = useState({
-        userName: '',
-        email: '',
-        password: '',
-        roleName: 'INVENTORY_STAFF'
+export const StaffList: React.FC = () => {
+
+    // Backend မှ ရလာမည့် Data များအတွက် နမူနာ
+
+    const [staffList, setStaffList] = useState<StaffResponseDTO[]>([
+
+        { userId: 1, userName: 'System Admin', email: 'admin@ecommerce.com', roleName: 'ADMIN', status: 'ACTIVE', createdAt: '9/14/2026' },
+
+        { userId: 2, userName: 'Inventory Manager', email: 'inventory@ecommerce.com', roleName: 'INVENTORY_STAFF', status: 'ACTIVE', createdAt: '9/23/2026' },
+
+        { userId: 3, userName: 'Sales Representative', email: 'sales@ecommerce.com', roleName: 'SALES_STAFF', status: 'ACTIVE', createdAt: '9/23/2026' },
+
+        { userId: 4, userName: 'Kaung Kaung', email: 'kaung222@gmail.com', roleName: 'INVENTORY_STAFF', status: 'INACTIVE', createdAt: '9/26/2026' },
+
+    ]);
+
+
+
+    // UI အသက်ဝင်စေရန် State များ ထည့်ခြင်း
+
+    const [activeTab, setActiveTab] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+
+    const [searchQuery, setSearchQuery] = useState('');
+
+
+
+    // Tab နှင့် Search ပေါ်မူတည်၍ Data ကို စစ်ထုတ်ခြင်း (Filtering)
+
+    const filteredStaff = staffList.filter((staff) => {
+
+        const matchesTab = activeTab === 'ALL' || staff.status === activeTab;
+
+        const matchesSearch = staff.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+
+                              staff.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+        return matchesTab && matchesSearch;
+
     });
-    const [formError, setFormError] = useState<string | null>(null);
 
-    const fetchStaff = async () => {
-        try {
-            const response = await api.get('/staff');
-            setStaffList(response.data);
-            setLoading(false);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Staff စာရင်း ခေါ်ယူရာတွင် အမှားအယွင်းဖြစ်ပေါ်နေပါသည်။');
-            setLoading(false);
+
+
+    // ခလုတ်များ နှိပ်သည့်အခါ အလုပ်လုပ်မည့် Function များ (ယခုလောလောဆယ် Alert ပြထားပါသည်)
+
+    const handleAddNew = () => {
+
+        alert("Add New Staff Form ကို ဖွင့်ပါမည်။");
+
+    };
+
+
+
+    const handleEdit = (id: number, name: string) => {
+
+        alert(`${name} (ID: ${id}) ကို ပြင်ဆင်ပါမည်။`);
+
+    };
+
+
+
+    const handleSuspend = (id: number, name: string) => {
+
+        if(window.confirm(`${name} ကို Suspend လုပ်မှာ သေချာပြီလား?`)) {
+
+            alert(`${name} ကို Suspend လုပ်လိုက်ပါပြီ။ (Backend သို့ API လှမ်းခေါ်ရန် ဤနေရာတွင် ရေးပါ)`);
+
         }
+
     };
 
-    useEffect(() => {
-        fetchStaff();
-    }, []);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setFormError(null);
-        try {
-            if (editingStaffId) {
-                await api.put(`/staff/${editingStaffId}`, formData);
-                alert("Staff အချက်အလက်များကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။");
-            } else {
-                await api.post('/staff', formData);
-                alert("Staff အသစ် အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။");
-            }
-            resetForm();
-            fetchStaff();
-        } catch (err: any) {
-            setFormError(err.response?.data?.message || "လုပ်ဆောင်ရာတွင် အမှားအယွင်းဖြစ်နေပါသည်။");
-        }
-    };
-
-    const handleEdit = (staff: StaffResponseDTO) => {
-        setFormData({
-            userName: staff.userName,
-            email: staff.email,
-            password: '', 
-            roleName: staff.roleName
-        });
-        setEditingStaffId(staff.userId);
-        setShowForm(true);
-    };
-
-    const handleToggleStatus = async (staff: StaffResponseDTO) => {
-        const isCurrentlyActive = staff.status === 'ACTIVE';
-        const actionText = isCurrentlyActive ? 'ပိတ် (Inactive)' : 'ပြန်ဖွင့် (Active)';
-        const newStatus = isCurrentlyActive ? 'INACTIVE' : 'ACTIVE';
-
-        const confirmAction = window.confirm(`ဤအကောင့်ကို ${actionText} လုပ်ရန် သေချာပါသလား?`);
-        
-        if (confirmAction) {
-            try {
-                await api.put(`/staff/${staff.userId}/status?status=${newStatus}`);
-                alert(`အကောင့်ကို ${newStatus} အဖြစ် အောင်မြင်စွာ ပြောင်းလဲလိုက်ပါပြီ။`);
-                fetchStaff();
-            } catch (err: any) {
-                alert(err.response?.data?.message || "Status ပြောင်းရာတွင် အမှားအယွင်းဖြစ်နေပါသည်။");
-            }
-        }
-    };
-
-    const resetForm = () => {
-        setShowForm(false);
-        setEditingStaffId(null);
-        setFormData({ userName: '', email: '', password: '', roleName: 'INVENTORY_STAFF' });
-        setFormError(null);
-    };
-
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
     return (
-        <div style={{ padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2>Staff Management</h2>
-                
-                {/* ADMIN ဖြစ်မှသာ Add New Staff ခလုတ်ကို ပြမည် */}
-                {role === 'ADMIN' && (
-                    <button 
-                        onClick={() => showForm ? resetForm() : setShowForm(true)} 
-                        style={{ padding: '10px 15px', background: showForm ? '#f44336' : '#4CAF50', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
-                    >
-                        {showForm ? 'Cancel' : '+ Add New Staff'}
-                    </button>
-                )}
+
+        <div className="staff-container">
+
+            {/* Header Section */}
+
+            <div className="header-section">
+
+                <div>
+
+                    <h2 className="header-title">Staff Management</h2>
+
+                    <p className="header-subtitle">Manage system users, roles, and account statuses</p>
+
+                </div>
+
+                <button className="btn-add" onClick={handleAddNew}>
+
+                    + Add New Staff
+
+                </button>
+
             </div>
 
-            {/* ADMIN ဖြစ်မှသာ Form ကို ပြမည် */}
-            {role === 'ADMIN' && showForm && (
-                <div style={{ background: '#f9f9f9', padding: '20px', marginBottom: '20px', border: '1px solid #ddd', borderRadius: '4px' }}>
-                    <h3>{editingStaffId ? 'Edit Staff Account' : 'Create New Staff Account'}</h3>
-                    {formError && <p style={{ color: 'red' }}>{formError}</p>}
-                    
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                        <div>
-                            <label>Name:</label><br/>
-                            <input type="text" name="userName" value={formData.userName} onChange={handleInputChange} required style={{ padding: '8px' }}/>
-                        </div>
-                        <div>
-                            <label>Email:</label><br/>
-                            <input type="email" name="email" value={formData.email} onChange={handleInputChange} required style={{ padding: '8px' }}/>
-                        </div>
-                        <div>
-                            <label>Password: {editingStaffId && <span style={{ fontSize: '12px', color: 'gray' }}>(အသစ်မပြောင်းလိုပါက အလွတ်ထားပါ)</span>}</label><br/>
-                            <input type="password" name="password" value={formData.password} onChange={handleInputChange} required={!editingStaffId} style={{ padding: '8px' }}/>
-                        </div>
-                        <div>
-                            <label>Role:</label><br/>
-                            <select name="roleName" value={formData.roleName} onChange={handleInputChange} style={{ padding: '8px' }}>
-                                <option value="INVENTORY_STAFF">Inventory Staff</option>
-                                <option value="SALES_STAFF">Sales Staff</option>
-                            </select>
-                        </div>
-                        <button type="submit" style={{ padding: '9px 15px', background: '#008CBA', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
-                            {editingStaffId ? 'Update Staff' : 'Save Staff'}
-                        </button>
-                    </form>
+
+
+            {/* Summary Cards */}
+
+            <div className="summary-cards">
+
+                <div className="card">
+
+                    <div className="icon-box icon-blue">👥</div>
+
+                    <div>
+
+                        <p className="card-value">{staffList.length}</p>
+
+                        <p className="card-label">Total Staff</p>
+
+                    </div>
+
                 </div>
-            )}
 
-            <table border={1} cellPadding={10} style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                    <tr style={{ background: '#f2f2f2' }}>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Created At</th>
-                        {/* ADMIN ဖြစ်မှသာ Actions ခေါင်းစဉ်ကို ပြမည် */}
-                        {role === 'ADMIN' && <th>Actions</th>}
-                    </tr>
-                </thead>
-                <tbody>
-                    {staffList.map((staff) => (
-                        <tr key={staff.userId}>
-                            <td>{staff.userId}</td>
-                            <td>{staff.userName}</td>
-                            <td>{staff.email}</td>
-                            <td>{staff.roleName}</td>
-                            <td>
-                                <span style={{ color: staff.status === 'ACTIVE' ? 'green' : 'red', fontWeight: 'bold' }}>
-                                    {staff.status}
-                                </span>
-                            </td>
-                            <td>{new Date(staff.createdAt).toLocaleDateString()}</td>
-                            
-                            {/* ADMIN ဖြစ်မှသာ Edit နှင့် Status ခလုတ်များကို ပြမည် */}
-                            {role === 'ADMIN' && (
-                                <td>
-                                    <button onClick={() => handleEdit(staff)} style={{ marginRight: '10px', padding: '5px 10px', background: '#ff9800', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '3px' }}>
-                                        Edit
-                                    </button>
-                                    
-                                    <button 
-                                        onClick={() => handleToggleStatus(staff)} 
-                                        style={{ 
-                                            padding: '5px 10px', 
-                                            color: 'white', 
-                                            background: staff.status === 'ACTIVE' ? '#f44336' : '#4CAF50', 
-                                            border: 'none', 
-                                            cursor: 'pointer', 
-                                            borderRadius: '3px',
-                                            width: '100px'
-                                        }}
-                                    >
-                                        {staff.status === 'ACTIVE' ? 'Set Inactive' : 'Set Active'}
-                                    </button>
-                                </td>
+               
+
+                <div className="card">
+
+                    <div className="icon-box icon-green">✅</div>
+
+                    <div>
+
+                        <p className="card-value">
+
+                            {staffList.filter(s => s.status === 'ACTIVE').length}
+
+                        </p>
+
+                        <p className="card-label">Active Accounts</p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div className="card">
+
+                    <div className="icon-box icon-purple">🛡️</div>
+
+                    <div>
+
+                        <p className="card-value">
+
+                            {staffList.filter(s => s.roleName === 'ADMIN').length}
+
+                        </p>
+
+                        <p className="card-label">Administrators</p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div className="card">
+
+                    <div className="icon-box icon-red">🚫</div>
+
+                    <div>
+
+                        <p className="card-value">
+
+                            {staffList.filter(s => s.status !== 'ACTIVE').length}
+
+                        </p>
+
+                        <p className="card-label">Inactive Staff</p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            {/* Table Area */}
+
+            <div className="table-section">
+
+               
+
+                <div className="table-controls">
+
+                    <div className="tabs">
+
+                        <button
+
+                            className={`tab-btn ${activeTab === 'ALL' ? 'active' : ''}`}
+
+                            onClick={() => setActiveTab('ALL')}
+
+                        >
+
+                            All Staff
+
+                        </button>
+
+                        <button
+
+                            className={`tab-btn ${activeTab === 'ACTIVE' ? 'active' : ''}`}
+
+                            onClick={() => setActiveTab('ACTIVE')}
+
+                        >
+
+                            Active
+
+                        </button>
+
+                        <button
+
+                            className={`tab-btn ${activeTab === 'INACTIVE' ? 'active' : ''}`}
+
+                            onClick={() => setActiveTab('INACTIVE')}
+
+                        >
+
+                            Inactive
+
+                        </button>
+
+                    </div>
+
+                   
+
+                    <div>
+
+                        <input
+
+                            type="text"
+
+                            placeholder="🔍 Search staff..."
+
+                            className="search-input"
+
+                            value={searchQuery}
+
+                            onChange={(e) => setSearchQuery(e.target.value)}
+
+                        />
+
+                    </div>
+
+                </div>
+
+
+
+                <div className="table-responsive">
+
+                    <table className="staff-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>ID</th>
+
+                                <th>Name</th>
+
+                                <th>Email</th>
+
+                                <th>Role</th>
+
+                                <th>Status</th>
+
+                                <th>Created At</th>
+
+                                <th>Actions</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {filteredStaff.length > 0 ? (
+
+                                filteredStaff.map((staff) => (
+
+                                    <tr key={staff.userId}>
+
+                                        <td>{staff.userId}</td>
+
+                                        <td style={{ fontWeight: '500' }}>{staff.userName}</td>
+
+                                        <td>{staff.email}</td>
+
+                                        <td>
+
+                                            <span className={`badge ${staff.roleName === 'ADMIN' ? 'badge-admin' : 'badge-staff'}`}>
+
+                                                {staff.roleName}
+
+                                            </span>
+
+                                        </td>
+
+                                        <td>
+
+                                            <span className={`badge ${staff.status === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}`}>
+
+                                                {staff.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+
+                                            </span>
+
+                                        </td>
+
+                                        <td>{staff.createdAt}</td>
+
+                                        <td>
+
+                                            <button
+
+                                                className="action-btn btn-edit"
+
+                                                onClick={() => handleEdit(staff.userId, staff.userName)}
+
+                                            >
+
+                                                Edit
+
+                                            </button>
+
+                                            <button
+
+                                                className="action-btn btn-suspend"
+
+                                                onClick={() => handleSuspend(staff.userId, staff.userName)}
+
+                                            >
+
+                                                Suspend
+
+                                            </button>
+
+                                        </td>
+
+                                    </tr>
+
+                                ))
+
+                            ) : (
+
+                                <tr>
+
+                                    <td colSpan={7} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
+
+                                        No staff found matching your criteria.
+
+                                    </td>
+
+                                </tr>
+
                             )}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-};
 
-export default StaffList;
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    );
+
+}; 
+
