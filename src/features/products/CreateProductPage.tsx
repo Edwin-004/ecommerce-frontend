@@ -6,6 +6,9 @@ import {
   type CategoryItem,
   type BrandItem,
 } from './productManagementApi';
+import { inventoryApi } from '../inventory/inventoryApi';
+import { tagApi } from '../tags/tagApi';
+import { variantApi } from '../variants/variantApi';
 import {
   FiPackage,
   FiInfo,
@@ -17,6 +20,7 @@ import {
   FiPlus,
   FiX,
   FiCheck,
+  FiTag,
 } from 'react-icons/fi';
 
 const COLOR_MAP: Record<string, string> = {
@@ -67,6 +71,16 @@ export const CreateProductPage: React.FC = () => {
   const [brands, setBrands] = useState<BrandItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedBrand, setSelectedBrand] = useState<string>('');
+
+  // Tags
+  const [allTags, setAllTags] = useState<Array<{ tagId: number; tagName: string }>>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+
+  const toggleTag = (tagId: number) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    );
+  };
 
   // Images
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -167,6 +181,28 @@ export const CreateProductPage: React.FC = () => {
         const varNames = vars.value.map((v: any) => v.name);
         setAvailableAttributes((prev) => [
           ...Array.from(new Set([...prev, ...varNames])),
+        ]);
+      }
+
+      // Fetch available tags
+      try {
+        const tagRes = await tagApi.getAllTags(0, 100);
+        if (tagRes && tagRes.content && tagRes.content.length > 0) {
+          setAllTags(tagRes.content.map((t: any) => ({ tagId: t.tagId, tagName: t.tagName })));
+        } else {
+          setAllTags([
+            { tagId: 1, tagName: 'new arrivals' },
+            { tagId: 2, tagName: 'summer' },
+            { tagId: 3, tagName: 'trending' },
+            { tagId: 4, tagName: 'best seller' },
+          ]);
+        }
+      } catch (tagErr) {
+        console.warn('Failed to load tags:', tagErr);
+        setAllTags([
+          { tagId: 1, tagName: 'new arrivals' },
+          { tagId: 2, tagName: 'summer' },
+          { tagId: 3, tagName: 'trending' },
         ]);
       }
     } catch (err) {
@@ -317,9 +353,26 @@ export const CreateProductPage: React.FC = () => {
         }
       }
 
-      // 3. Create Variants if enabled
+      // 2.1 Assign Product Tags
+      if (selectedTagIds.length > 0 && createdProduct?.productId) {
+        try {
+          await productManagementApi.assignProductTags(createdProduct.productId, selectedTagIds);
+        } catch (tagErr) {
+          console.warn('Product tag assignment skipped:', tagErr);
+        }
+      }
+
+      // 3. Create Variants if enabled, or default variant for simple product
       if (hasVariants && attributes.length > 0) {
         try {
+          // Pre-fetch DB options for mapping
+          let dbOptions: any[] = [];
+          try {
+            dbOptions = await variantApi.getVariationOptions();
+          } catch {
+            dbOptions = [];
+          }
+
           // Generate combinations from attributes
           const firstAttr = attributes[0];
           const secondAttr = attributes[1];
@@ -329,16 +382,71 @@ export const CreateProductPage: React.FC = () => {
               const val2 = secondAttr && secondAttr.values.length > 0 ? secondAttr.values[0] : '';
               const skuCode = `${productName.slice(0, 3).toUpperCase()}-${val1.slice(0, 3).toUpperCase()}${val2 ? '-' + val2.slice(0, 3).toUpperCase() : ''}-${Math.floor(100 + Math.random() * 900)}`;
 
-              await productManagementApi.createProductVariant({
+              const createdVar = await productManagementApi.createProductVariant({
                 product: { productId: prodId },
                 sku: skuCode,
                 sellingPrice: Number(price),
                 status: 'ACTIVE',
               });
+
+              if (createdVar?.variantId) {
+                // Map Variant Option Values
+                if (dbOptions.length > 0) {
+                  try {
+                    const opt1 = dbOptions.find((o) => o.value.toLowerCase() === val1.toLowerCase());
+                    if (opt1) {
+                      await productManagementApi.assignOptionToVariant(createdVar.variantId, opt1.optionId);
+                    }
+                    if (val2) {
+                      const opt2 = dbOptions.find((o) => o.value.toLowerCase() === val2.toLowerCase());
+                      if (opt2) {
+                        await productManagementApi.assignOptionToVariant(createdVar.variantId, opt2.optionId);
+                      }
+                    }
+                  } catch (optMapErr) {
+                    console.warn('Variant option mapping skipped:', optMapErr);
+                  }
+                }
+
+                try {
+                  await inventoryApi.initializeInventory({
+                    variantId: createdVar.variantId,
+                    initialQuantity: Number(quantity) > 0 ? Number(quantity) : 25,
+                    reorderLevel: 10,
+                  });
+                } catch (invErr) {
+                  console.warn('Inventory init skipped:', invErr);
+                }
+              }
             }
           }
         } catch (varErr) {
           console.warn('Variant auto-generation skipped:', varErr);
+        }
+      } else if (createdProduct?.productId) {
+        try {
+          const cleanName = productName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PROD';
+          const skuCode = `${cleanName}-${Math.floor(1000 + Math.random() * 9000)}`;
+          const createdVar = await productManagementApi.createProductVariant({
+            product: { productId: createdProduct.productId },
+            sku: skuCode,
+            sellingPrice: Number(price),
+            status: 'ACTIVE',
+          });
+
+          if (createdVar?.variantId) {
+            try {
+              await inventoryApi.initializeInventory({
+                variantId: createdVar.variantId,
+                initialQuantity: Number(quantity) > 0 ? Number(quantity) : 25,
+                reorderLevel: 10,
+              });
+            } catch (invErr) {
+              console.warn('Inventory init skipped:', invErr);
+            }
+          }
+        } catch (singleVarErr) {
+          console.warn('Default variant creation skipped:', singleVarErr);
         }
       }
 
@@ -490,15 +598,14 @@ export const CreateProductPage: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Select Brand *</label>
+              <label>Select Brand (Optional)</label>
               <div className={styles.categoryBrandRow}>
                 <select
-                  required
                   className={styles.inputField}
                   value={selectedBrand}
                   onChange={(e) => setSelectedBrand(e.target.value)}
                 >
-                  <option value="">Select Brand</option>
+                  <option value="">Select Brand (Optional)</option>
                   {brands.map((b) => (
                     <option key={b.brandId} value={String(b.brandId)}>
                       {b.brandName}
@@ -514,6 +621,50 @@ export const CreateProductPage: React.FC = () => {
                   <FiTrash2 />
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Product Tags */}
+          <div style={{ marginTop: '20px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+              <FiTag color="#2563eb" size={14} /> Product Tags (Optional)
+            </label>
+            <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#64748b' }}>
+              Assign tags to this product for customer search, promo badges, and filtering.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+              {allTags.map((t) => {
+                const isSelected = selectedTagIds.includes(t.tagId);
+                return (
+                  <button
+                    key={t.tagId}
+                    type="button"
+                    onClick={() => toggleTag(t.tagId)}
+                    style={{
+                      background: isSelected ? '#eff6ff' : '#f8fafc',
+                      color: isSelected ? '#2563eb' : '#475569',
+                      border: isSelected ? '1.5px solid #3b82f6' : '1px solid #cbd5e1',
+                      borderRadius: '20px',
+                      padding: '5px 14px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>#{t.tagName}</span>
+                    {isSelected ? <FiCheck size={12} /> : null}
+                  </button>
+                );
+              })}
+              {allTags.length === 0 && (
+                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                  No tags found. Go to Catalog &gt; Tags to create tags.
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -656,28 +807,57 @@ export const CreateProductPage: React.FC = () => {
                     </div>
 
                     {/* Swatches / Pills Box */}
-                    <div className={styles.swatchesBox}>
-                      {isColor
-                        ? attr.values.map((val) => (
-                            <span
-                              key={val}
-                              className={styles.colorCircle}
-                              style={{ backgroundColor: getColorHex(val) }}
-                              title={`${val} (click to remove)`}
-                              onClick={() => handleRemoveValue(attr.id, val)}
-                            />
-                          ))
-                        : attr.values.map((val) => (
-                            <span
-                              key={val}
-                              className={styles.sizePill}
-                              style={{ cursor: 'pointer' }}
-                              title="Click to remove"
-                              onClick={() => handleRemoveValue(attr.id, val)}
-                            >
-                              {val} <FiX size={10} style={{ marginLeft: '4px' }} />
-                            </span>
-                          ))}
+                    <div style={{ marginBottom: '8px' }}>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#64748b' }}>
+                        💡 Click any item below to remove it. Type in the field below and press Add (+) to add new values.
+                      </p>
+                      <div className={styles.swatchesBox}>
+                        {isColor
+                          ? attr.values.map((val) => (
+                              <span
+                                key={val}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '4px 10px',
+                                  borderRadius: '16px',
+                                  border: '1px solid #e2e8f0',
+                                  background: '#f8fafc',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  color: '#334155',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                title={`${val} (Click to remove)`}
+                                onClick={() => handleRemoveValue(attr.id, val)}
+                              >
+                                <span
+                                  style={{
+                                    width: '12px',
+                                    height: '12px',
+                                    borderRadius: '50%',
+                                    backgroundColor: getColorHex(val),
+                                    border: '1px solid rgba(0,0,0,0.15)',
+                                    display: 'inline-block',
+                                  }}
+                                />
+                                <span>{val}</span>
+                                <FiX size={10} color="#94a3b8" />
+                              </span>
+                            ))
+                          : attr.values.map((val) => (
+                              <span
+                                key={val}
+                                className={styles.sizePill}
+                                style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                title="Click to remove"
+                                onClick={() => handleRemoveValue(attr.id, val)}
+                              >
+                                {val} <FiX size={10} color="#94a3b8" />
+                              </span>
+                            ))}
+                      </div>
                     </div>
 
                     {/* Inline Add Value Input */}

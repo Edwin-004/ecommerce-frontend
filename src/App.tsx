@@ -1,5 +1,4 @@
 // src/App.tsx
-// src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './features/auth/Login';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -11,9 +10,17 @@ import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
-import { StaffList } from "./features/staff/StaffList";
+
+// --- Conflict ရှင်းလင်းပြီးသား Imports များ ---
+import { BrandsPage } from './features/brand/BrandsPage';
+import TagManagement from './features/tags/TagManagement';
+import { StaffList } from "./features/staff/StaffList"; 
+// ---------------------------------------------
+
 import { Profile } from './components/Profile';
+import { ReportsPage } from './features/reports/ReportsPage';
 import './App.css';
+import { ShippingRates } from './features/shipping/ShippingRates';
 
 function App() {
   return (
@@ -34,7 +41,7 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/profile" element={<Profile />} />
 
-            {/* Product Catalog & Stock (Member 3) */}
+            {/* Product Catalog & Stock */}
             <Route path="/admin/products" element={<ProductManagementPage />} />
             <Route path="/admin/products/new" element={<CreateProductPage />} />
             <Route path="/admin/variants" element={<VariantsPage />} />
@@ -44,11 +51,21 @@ function App() {
             {/* Categories */}
             <Route path="/admin/categories" element={<CategoryManagement />} />
 
+            {/* Brands & Tags */}
+            <Route path="/admin/brands" element={<BrandsPage />} />
+            <Route path="/admin/tags" element={<TagManagement />} />
+
             {/* Staff Management */}
             <Route path="/admin/staff" element={<StaffList />} />
 
+            {/* Reports */}
+            <Route path="/admin/reports" element={<ReportsPage />} />
+
             {/* Orders Management */}
             <Route path="/admin/orders" element={<AllOrders />} />
+
+            {/* Shipping Rates Management */}
+            <Route path="/admin/shipping-rates" element={<ShippingRates />} />
 
             {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
             <Route

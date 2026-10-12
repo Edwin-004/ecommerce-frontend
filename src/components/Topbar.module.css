@@ -1,70 +1,320 @@
-.topbar{
-  height:70px;
-  background:white;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:0 24px;
-  border-bottom:1px solid #e5e7eb;
+.topbar {
+  height: 72px;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32px;
+  border-bottom: 1px solid #f1f3f7;
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 
-.search{
-  width:360px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  background:#f3f4f6;
-  padding:10px 14px;
-  border-radius:10px;
+/* Shodai-inspired Search Bar */
+.search {
+  width: 380px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #edf0f5;
+  padding: 9px 16px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
-.search input{
-  border:none;
-  background:transparent;
-  width:100%;
-  outline:none;
+.search:focus-within {
+  border-color: #6366f1;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
 }
 
-.right{
-  display:flex;
-  align-items:center;
-  gap:20px;
+.searchIcon {
+  color: #94a3b8;
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
-.iconBtn{
-  border:none;
-  background:#f3f4f6;
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  cursor:pointer;
+.search input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  font-size: 13.5px;
+  color: #1e293b;
 }
 
-.profile{
-  display:flex;
-  align-items:center;
-  gap:10px;
+.search input::placeholder {
+  color: #94a3b8;
 }
 
-.avatar{
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  background:#2563eb;
-  color:white;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-weight:bold;
+.searchShortcut {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.profile h4{
-  margin:0;
-  font-size:14px;
+/* Right Section */
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-.profile p{
-  margin:0;
-  color:#64748b;
-  font-size:12px;
+/* Bell Button */
+.iconBtn {
+  position: relative;
+  border: 1px solid #f1f5f9;
+  background: #f8fafc;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  transition: all 0.2s ease;
+}
+
+.iconBtn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.notificationDot {
+  position: absolute;
+  top: 10px;
+  right: 11px;
+  width: 7px;
+  height: 7px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+}
+
+/* Profile Trigger */
+.profileContainer {
+  position: relative;
+}
+
+.profileTrigger {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 4px 10px 4px 6px;
+  border-radius: 28px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.profileTrigger:hover {
+  background: #f8fafc;
+  border-color: #f1f5f9;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
+  flex-shrink: 0;
+}
+
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.profileName {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.profileRole {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.chevron {
+  color: #94a3b8;
+  font-size: 14px;
+  transition: transform 0.2s ease;
+  margin-left: 2px;
+}
+
+.chevronRotated {
+  transform: rotate(180deg);
+}
+
+/* Floating Dropdown Menu */
+.dropdownMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 260px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 14px 35px -4px rgba(0, 0, 0, 0.1),
+    0 4px 12px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #edf0f5;
+  padding: 10px;
+  z-index: 100;
+  animation: dropIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdownHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+}
+
+.dropdownAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.dropdownUserMeta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dropdownUserName {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdownUserEmail {
+  margin: 2px 0 6px 0;
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: #eef2ff;
+  color: #4f46e5;
+  padding: 2px 8px;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 6px 4px;
+}
+
+.dropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.dropdownItem:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.itemIconWrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.dropdownItem:hover .itemIconWrapper {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+
+.logoutItem {
+  color: #ef4444;
+}
+
+.logoutItem:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.logoutIcon {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.logoutItem:hover .logoutIcon {
+  background: #fecaca;
+  color: #dc2626;
 }

@@ -147,4 +147,38 @@ export const productManagementApi = {
       method: 'POST',
       body: JSON.stringify({ variant: { variantId }, option: { optionId } }),
     }),
+
+  // Product Tags Mapping
+  getProductTags: (productId: number) =>
+    apiFetch<any[]>(`/api/backoffice/product-tags/product/${productId}`),
+
+  assignProductTags: (productId: number, tagIds: number[]) =>
+    apiFetch<any[]>(`/api/backoffice/product-tags/product/${productId}`, {
+      method: 'POST',
+      body: JSON.stringify(tagIds),
+    }),
+
+  // Product Variant Images
+  uploadProductVariantImage: async (variantId: number, file: File, isPrimary = false) => {
+    const formData = new FormData();
+    formData.append('variantId', String(variantId));
+    formData.append('file', file);
+    formData.append('isPrimary', String(isPrimary));
+    formData.append('userId', '1');
+
+    const token = localStorage.getItem('token');
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch('http://localhost:8080/api/backoffice/product-variant-images/upload', {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Variant image upload failed');
+    return res.json();
+  },
+
+  getVariantImages: (variantId: number) =>
+    apiFetch<any[]>(`/api/backoffice/product-variant-images/variant/${variantId}`),
 };

@@ -29,6 +29,12 @@ export interface OrderAddressDto {
   township: string;
 }
 
+export interface ShipmentDto {
+  courierName: string;  
+  trackingNumber: string;
+  shippedAt: string;
+}
+
 export interface OrderResponseDto {
   orderId: number;
   orderNo: string;
@@ -40,4 +46,5 @@ export interface OrderResponseDto {
   items?: OrderItemDto[];
   statusHistories?: OrderStatusHistoryDto[];
   shippingAddress?: OrderAddressDto;
+  shipment?: ShipmentDto;
 }

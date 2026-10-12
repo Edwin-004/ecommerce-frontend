@@ -2,40 +2,101 @@ import {
   useGetOrdersQuery,
   useGetOrderByOrderNoQuery,
   useGetPaymentByOrderNoQuery,
+  useGetCouriersQuery,
+  useCreateShipmentMutation,
+  useUpdateOrderStatusMutation,
 } from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
 import styles from './AllOrders.module.css';
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 
 export const AllOrders = () => {
-  // RTK Query မှ Data၊ Loading နှင့် Error အခြေအနေများကို တိုက်ရိုက်ဆွဲထုတ်ခြင်း
-  // data: orders = [] ဆိုသည်မှာ data မရလာသေးခင် အလွတ် [] ဖြင့်ထားရှိရန်ဖြစ်သည်
-  const {
-    data: orders = [],
-    isLoading,
-    isError,
-    refetch: refetchList,
-  } = useGetOrdersQuery();
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 10;
+  const { data, isLoading, isError } = useGetOrdersQuery({
+    page: currentPage,
+    size: pageSize,
+  });
+  // data ထဲတွင် ယခုအခါ data.content အဖြစ် ပြောင်းသွားပါမည်
+  const orders = data?.content || [];
+  const totalPages = data?.totalPages || 0;
+
   const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null);
-  const {
-    data: paymentInfo,
-    isLoading: LoadingPaymentInfo,
-    refetch: refetchPaymentInfo,
-  } = useGetPaymentByOrderNoQuery(selectedOrderNo || '', {
-    skip: !selectedOrderNo,
-  });
-  const token =
-    useSelector((state: any) => state.auth.token) ||
-    localStorage.getItem('token');
-  const {
-    data: orderDetails,
-    isLoading: loadingDetails,
-    refetch: refetchDetails,
-  } = useGetOrderByOrderNoQuery(selectedOrderNo || '', {
-    skip: !selectedOrderNo,
-  });
+  const { data: paymentInfo, isLoading: LoadingPaymentInfo } =
+    useGetPaymentByOrderNoQuery(selectedOrderNo || '', {
+      skip: !selectedOrderNo,
+    });
+  const { data: orderDetails, isLoading: loadingDetails } =
+    useGetOrderByOrderNoQuery(selectedOrderNo || '', {
+      skip: !selectedOrderNo,
+    });
+
+  const getCourierPrefix = (name: string) => {
+    switch (name) {
+      case 'J_AND_T':
+        return 'JNT';
+      case 'NINJAVAN':
+        return 'NJA';
+      case 'ROYAL_EXPRESS':
+        return 'RYL';
+      case 'FLASH_EXPRESS':
+        return 'FLS';
+      case 'KMD':
+        return 'KMD';
+      default:
+        return 'TRK';
+    }
+  };
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [showShipmentModal, setShowShipmentModal] = useState<boolean>(false);
+  const [courierName, setCourierName] = useState<string>(''); // Default Enum
+  const [trackingNumber, setTrackingNumber] = useState<string>('');
+  // const [courierList, setCourierList] = useState<string[]>([]);
+  const { data: courierList = [] } = useGetCouriersQuery();
+  const [createShipment, { isLoading: isCreatingShipment }] =
+    useCreateShipmentMutation();
+  const [updateOrderStatusApi, { isLoading: isUpdatingStatus }] =
+    useUpdateOrderStatusMutation();
+  const isUpdating = isCreatingShipment || isUpdatingStatus;
+
+  const handleUpdateClick = () => {
+    if (selectedStatus === 'SHIPPED') {
+      setShowShipmentModal(true); // Modal ကို ဖွင့်ပါ
+    } else {
+      handleStatusUpdate(); // မူလအတိုင်း တန်းပြီး Status ပြောင်းပါ
+    }
+  };
+
+  useEffect(() => {
+    // Modal ပွင့်နေပြီး Courier လည်း ရွေးထားမယ်၊ Order No လည်း ရှိနေမယ်ဆိုရင်
+    if (showShipmentModal && courierName && selectedOrderNo) {
+      const prefix = getCourierPrefix(courierName);
+      const randomDigits = Math.floor(1000 + Math.random() * 9000);
+      const formattedOrderNo = selectedOrderNo.replace(/_/g, '-');
+
+      setTrackingNumber(`${prefix}-${formattedOrderNo}-${randomDigits}`);
+    } else {
+      setTrackingNumber('');
+    }
+  }, [courierName, selectedOrderNo, showShipmentModal]);
+
+  useEffect(() => {
+    if (courierList.length > 0 && !courierName) {
+      setCourierName(courierList[0]);
+    }
+  }, [courierList, courierName]);
+
+  // J_AND_T ကဲ့သို့သော Enum String များကို J&T Express ဟု ဖတ်လွယ်အောင် ပြောင်းပေးမည့် Helper
+  const formatCourierName = (name: string) => {
+    if (name === 'J_AND_T') return 'J&T Express';
+    if (name === 'NINJAVAN') return 'Ninjavan';
+    if (name === 'ROYAL_EXPRESS') return 'Royal Express';
+    if (name === 'FLASH_EXPRESS') return 'Flash Express';
+    if (name === 'KMD') return 'KMD Express';
+    return name
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
 
   useEffect(() => {
     if (orderDetails) {
@@ -46,35 +107,31 @@ export const AllOrders = () => {
   const handleStatusUpdate = async () => {
     if (!selectedOrderNo) return;
 
-    setIsUpdating(true);
     try {
-      // Backend သို့ PATCH Request ပို့ခြင်း
-      const response = await fetch(
-        `http://localhost:8080/api/backoffice/orders/${selectedOrderNo}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ newStatus: selectedStatus }),
-        }
-      );
-
-      if (!response.ok) throw new Error('Status Update Failed!');
+      if (selectedStatus === 'SHIPPED') {
+        // Shipment API ခေါ်ခြင်း (POST)
+        await createShipment({
+          orderNo: selectedOrderNo,
+          courierName,
+          trackingNumber,
+        }).unwrap();
+      } else {
+        // ရိုးရိုး Status ပြောင်းသည့် API ခေါ်ခြင်း (PATCH)
+        await updateOrderStatusApi({
+          orderNo: selectedOrderNo,
+          newStatus: selectedStatus,
+        }).unwrap();
+      }
 
       alert('Status Updated Successfully!');
-
-      // Update အောင်မြင်သွားပါက ညာဘက်ခြမ်း Detail Data ကို အသစ်ပြန်ခေါ် (Refresh) လုပ်ရန်
-      refetchDetails();
-      refetchList();
-      refetchPaymentInfo();
+      setShowShipmentModal(false);
+      setTrackingNumber('');
     } catch (error) {
+      console.log('Error updating status:', error);
       alert('Status Update unsuccessful! Please try again.');
-    } finally {
-      setIsUpdating(false);
     }
   };
+
   // Status ပေါ်မူတည်၍ အရောင်ရွေးပေးမည့် Helper Method
   const getStatusBadgeClass = (status: string) => {
     switch (status.toUpperCase()) {
@@ -124,7 +181,7 @@ export const AllOrders = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center' }}>
+                  <td colSpan={6} className={styles.tableCellCenter}>
                     Loading orders...
                   </td>
                 </tr>
@@ -136,7 +193,7 @@ export const AllOrders = () => {
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center' }}>
+                  <td colSpan={6} className={styles.tableCellCenter}>
                     No orders found.
                   </td>
                 </tr>
@@ -145,7 +202,7 @@ export const AllOrders = () => {
                   <tr
                     key={order.orderId}
                     onClick={() => setSelectedOrderNo(order.orderNo)}
-                    style={{ cursor: 'pointer' }}
+                    className={styles.tableRow}
                   >
                     <td style={{ fontWeight: 'bold' }}>{order.orderNo}</td>
                     <td>{order.createdAt?.split(' ')[0]}</td>
@@ -159,15 +216,7 @@ export const AllOrders = () => {
                       </span>
                     </td>
                     <td>
-                      <span
-                        style={{
-                          color:
-                            order.paymentStatus === 'SUCCESS'
-                              ? 'green'
-                              : 'orange',
-                          fontWeight: 'bold',
-                        }}
-                      >
+                      <span className={styles.paymentSuccess}>
                         {order.paymentStatus}
                       </span>
                     </td>
@@ -176,6 +225,34 @@ export const AllOrders = () => {
               )}
             </tbody>
           </table>
+          {/* ================= Pagination Controls (အသစ်ထပ်တိုးရန်) ================= */}
+          {totalPages > 1 && (
+            <div className={styles.paginationContainer}>
+              <span className={styles.pageInfoText}>
+                Page {currentPage + 1} of {totalPages}
+              </span>
+              <div className={styles.paginationControls}>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 0))
+                  }
+                  disabled={currentPage === 0}
+                  className={styles.paginationBtn}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+                  }
+                  disabled={data?.last || currentPage === totalPages - 1}
+                  className={styles.paginationBtn}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* ==================== View ၂။ Split View (ရွေးချယ်ထားချိန်) ==================== */
@@ -188,30 +265,19 @@ export const AllOrders = () => {
                 className={`${styles.listItem} ${selectedOrderNo === order.orderNo ? styles.activeOrder : ''}`}
                 onClick={() => setSelectedOrderNo(order.orderNo)}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginBottom: '5px',
-                  }}
-                >
-                  <strong style={{ fontSize: '15px' }}>
+                <div className={styles.listHeader}>
+                  <strong className={styles.customerName}>
                     {order.customerName}
                   </strong>
-                  <span style={{ fontWeight: 'bold' }}>
+                  <span className={styles.amountText}>
                     {order.totalAmount?.toLocaleString()} Ks
                   </span>
                 </div>
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#666',
-                    marginBottom: '8px',
-                  }}
-                >
+                <div className={styles.listSubtext}>
                   {order.orderNo} • {order.createdAt?.split(' ')[0]}
                 </div>
                 <div>
+                  Order Status :
                   <span
                     className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}
                   >
@@ -245,14 +311,14 @@ export const AllOrders = () => {
                   <div>
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Customer Information</h3>
-                      <p style={{ margin: '8px 0' }}>
+                      <p className={styles.infoText}>
                         <strong>Name:</strong> {orderDetails.customerName}
                       </p>
-                      <p style={{ margin: '8px 0' }}>
+                      <p className={styles.infoText}>
                         <strong>Phone:</strong>{' '}
                         {orderDetails.shippingAddress?.phoneNumber || 'N/A'}
                       </p>
-                      <p style={{ margin: '8px 0' }}>
+                      <p className={styles.infoText}>
                         <strong>Address:</strong>{' '}
                         {[
                           orderDetails.shippingAddress?.addressLine1,
@@ -263,7 +329,7 @@ export const AllOrders = () => {
                           .filter(Boolean)
                           .join(', ') || 'N/A'}
                       </p>
-                      <p style={{ margin: '8px 0' }}>
+                      <p className={styles.infoText}>
                         <strong>Date: </strong>
                         {orderDetails.createdAt}
                       </p>
@@ -285,13 +351,7 @@ export const AllOrders = () => {
                               <td>
                                 {item.productName}
                                 {item.variantAttributes && (
-                                  <span
-                                    style={{
-                                      color: 'gray',
-                                      display: 'block',
-                                      fontSize: '13px',
-                                    }}
-                                  >
+                                  <span className={styles.variantText}>
                                     ({formatAttributes(item.variantAttributes)})
                                   </span>
                                 )}
@@ -305,7 +365,7 @@ export const AllOrders = () => {
                       <div className={styles.totalSection}>
                         <h4 style={{ margin: 0 }}>
                           Total:{' '}
-                          <span style={{ color: 'green', fontSize: '1.2rem' }}>
+                          <span className={styles.totalText}>
                             {orderDetails.totalAmount?.toLocaleString()} MMK
                           </span>
                         </h4>
@@ -314,17 +374,11 @@ export const AllOrders = () => {
                   </div>
 
                   {/* Action View (Update Status) */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '24px',
-                    }}
-                  >
+                  <div className={styles.actionColumn}>
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Order Action</h3>
                       <p style={{ marginBottom: '16px' }}>
-                        Current Status:{' '}
+                        Status:{' '}
                         <span
                           className={`${styles.badge} ${getStatusBadgeClass(orderDetails.orderStatus)}`}
                         >
@@ -333,9 +387,6 @@ export const AllOrders = () => {
                       </p>
 
                       <div className={styles.statusUpdateBox}>
-                        <label style={{ fontSize: '14px', fontWeight: '500' }}>
-                          Update Status to:
-                        </label>
                         <select
                           value={selectedStatus}
                           onChange={(e) => setSelectedStatus(e.target.value)}
@@ -350,7 +401,7 @@ export const AllOrders = () => {
                         </select>
 
                         <button
-                          onClick={handleStatusUpdate}
+                          onClick={handleUpdateClick}
                           className={styles.updateBtn}
                           disabled={
                             isUpdating ||
@@ -361,103 +412,51 @@ export const AllOrders = () => {
                         </button>
                       </div>
                     </div>
-                    {/* ၂။ Payment Information Card (အသစ်ထပ်တိုးရန်) */}
+                    {/* ၂။ Payment Information Card*/}
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Payment Information</h3>
                       {LoadingPaymentInfo ? (
-                        <p style={{ fontSize: '14px', color: '#666' }}>
+                        <p className={styles.loadingText}>
                           Loading payment info...
                         </p>
                       ) : paymentInfo ? (
                         <div>
-                          <div
-                            style={{
-                              display: 'flex',
-                              marginBottom: '12px',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: '#666',
-                                width: '80px',
-                                flexShrink: 0,
-                              }}
-                            >
-                              Status:
-                            </span>
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>Status:</span>
                             <strong
-                              style={{
-                                color:
-                                  paymentInfo.paymentStatus === 'SUCCESS'
-                                    ? '#34df5c'
-                                    : paymentInfo.paymentStatus === 'FAILED'
-                                      ? '#ec3241'
-                                      : '#f4c52b',
-                              }}
+                              className={
+                                paymentInfo.paymentStatus === 'SUCCESS'
+                                  ? styles.paymentStatusSuccess
+                                  : paymentInfo.paymentStatus === 'FAILED'
+                                    ? styles.paymentStatusFailed
+                                    : styles.paymentStatusPending
+                              }
                             >
                               {paymentInfo.paymentStatus || 'N/A'}
                             </strong>
                           </div>
 
-                          <div
-                            style={{
-                              display: 'flex',
-                              marginBottom: '12px',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: '#666',
-                                width: '80px',
-                                flexShrink: 0,
-                              }}
-                            >
-                              Method:
-                            </span>
-                            <strong style={{ wordBreak: 'break-word' }}>
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>Method:</span>
+                            <strong className={styles.paymentValue}>
                               {paymentInfo.paymentMethod || 'N/A'}
                             </strong>
                           </div>
 
-                          <div
-                            style={{
-                              display: 'flex',
-                              marginBottom: '12px',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: '#666',
-                                width: '80px',
-                                flexShrink: 0,
-                              }}
-                            >
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
                               Txn Ref:
                             </span>
-                            <strong style={{ wordBreak: 'break-all' }}>
+                            <strong className={styles.txnRefValue}>
                               {paymentInfo.transactionRef || 'N/A'}
                             </strong>
                           </div>
 
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: '#666',
-                                width: '80px',
-                                flexShrink: 0,
-                              }}
-                            >
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
                               Paid At:
                             </span>
-                            <strong style={{ wordBreak: 'break-word' }}>
+                            <strong className={styles.paymentValue}>
                               {paymentInfo.paidAt
                                 ? paymentInfo.paidAt.split('T').join(' ')
                                 : '-'}
@@ -470,12 +469,118 @@ export const AllOrders = () => {
                         </p>
                       )}
                     </div>
+                    {/* ၃။ Shipment Information Card */}
+                    <div className={styles.card}>
+                      <h3 className={styles.cardTitle}>Shipment Information</h3>
+
+                      {orderDetails.shipment ? (
+                        <div>
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
+                              Courier:
+                            </span>
+                            <strong className={styles.paymentValue}>
+                              {formatCourierName(
+                                orderDetails.shipment.courierName
+                              )}
+                            </strong>
+                          </div>
+
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
+                              Tracking:
+                            </span>
+                            <strong
+                              className={styles.txnRefValue}
+                              style={{ color: '#556ee6' }}
+                            >
+                              {orderDetails.shipment.trackingNumber || 'N/A'}
+                            </strong>
+                          </div>
+
+                          <div className={styles.paymentRow}>
+                            <span className={styles.paymentLabel}>
+                              Shipped At:
+                            </span>
+                            <strong className={styles.paymentValue}>
+                              {orderDetails.shipment.shippedAt
+                                ? orderDetails.shipment.shippedAt
+                                    .split('T')
+                                    .join(' ')
+                                : '-'}
+                            </strong>
+                          </div>
+                        </div>
+                      ) : (
+                        <p
+                          style={{ fontSize: '14px', color: '#999', margin: 0 }}
+                        >
+                          Shipment not created yet.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
               <p>Order Data မရှိပါ။</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ==================== Shipment Modal ==================== */}
+      {showShipmentModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h3 className={styles.modalHeaderTitle}>Create Shipment</h3>
+
+            <div className={styles.formGroup}>
+              <label className={styles.inputLabel}>Courier Service:</label>
+              <select
+                value={courierName}
+                onChange={(e) => setCourierName(e.target.value)}
+                className={styles.formControl}
+              >
+                {/* Backend မှ ရလာသော Courier List ကို Dynamic Map ထုတ်ခြင်း */}
+                {courierList.length > 0 ? (
+                  courierList.map((courier) => (
+                    <option key={courier} value={courier}>
+                      {formatCourierName(courier)}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Loading...</option>
+                )}
+              </select>
+            </div>
+
+            <div className={styles.formGroupLast}>
+              <label className={styles.inputLabel}>Tracking Number:</label>
+              <input
+                type="text"
+                value={trackingNumber}
+                readOnly
+                placeholder="Enter waybill number"
+                className={styles.formControl}
+              />
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                onClick={() => setShowShipmentModal(false)}
+                className={styles.cancelBtn}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStatusUpdate}
+                disabled={!trackingNumber.trim() || isUpdating}
+                className={styles.confirmBtn}
+              >
+                {isUpdating ? 'Saving...' : 'Confirm & Ship'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -2,30 +2,72 @@
   padding: 0;
 }
 
-.header {
+.pageTopHeader {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.title {
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.iconBadge {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  font-size: 22px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+}
+
+.mainTitle {
   margin: 0;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: #0f172a;
+  letter-spacing: -0.3px;
 }
 
-.subtitle {
+.mainSubtitle {
   color: #64748b;
   margin: 4px 0 0 0;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .headerActions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
+}
+
+.btnExportCsv {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btnExportCsv:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
 /* Metric Cards */
@@ -189,6 +231,46 @@
 
 .table tr:hover td {
   background: #f8fafc;
+}
+
+.productCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.productThumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  font-size: 18px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.stockBarContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stockBarBg {
+  width: 64px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.stockBarFill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s;
 }
 
 .skuTag {
