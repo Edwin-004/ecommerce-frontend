@@ -33,6 +33,7 @@ export const CreateVariantModal: React.FC<CreateVariantModalProps> = ({
   const [sellingPrice, setSellingPrice] = useState<number | ''>('');
   const [costPrice, setCostPrice] = useState<number | ''>('');
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
+  const [initialStock, setInitialStock] = useState<number | ''>(25);
   const [generatingSku, setGeneratingSku] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,25 +79,16 @@ export const CreateVariantModal: React.FC<CreateVariantModalProps> = ({
       setLoading(true);
       setError(null);
 
-      // 1. Create Variant
-      const newVariant = await variantApi.createProductVariant({
-        product: { productId: Number(productId) },
+      // Create Variant with Options & Stock atomically
+      await variantApi.createProductVariantWithOptions({
+        productId: Number(productId),
         sku: sku.trim() || undefined,
         sellingPrice: Number(sellingPrice),
         costPrice: costPrice ? Number(costPrice) : undefined,
         status,
+        optionIds: selectedOptionIds,
+        initialStock: initialStock !== '' ? Number(initialStock) : 0,
       });
-
-      // 2. Map selected options to this variant
-      if (selectedOptionIds.length > 0 && newVariant.variantId) {
-        for (const optId of selectedOptionIds) {
-          try {
-            await variantApi.assignOptionToVariant(newVariant.variantId, optId);
-          } catch (mapErr) {
-            console.warn(`Failed to map option ${optId}`, mapErr);
-          }
-        }
-      }
 
       onSuccess();
     } catch (err: any) {
@@ -257,6 +249,21 @@ export const CreateVariantModal: React.FC<CreateVariantModalProps> = ({
                   onChange={(e) => setCostPrice(Number(e.target.value))}
                 />
               </div>
+            </div>
+
+            {/* Initial Stock */}
+            <div className={styles.formGroup}>
+              <label>Initial Stock Quantity</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="25"
+                value={initialStock}
+                onChange={(e) => setInitialStock(e.target.value === '' ? '' : Number(e.target.value))}
+              />
+              <small style={{ color: '#64748b', fontSize: '12px' }}>
+                Stock and inventory audit record will be automatically initialized.
+              </small>
             </div>
 
             {/* Status */}

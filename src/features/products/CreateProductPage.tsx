@@ -6,7 +6,6 @@ import {
   type CategoryItem,
   type BrandItem,
 } from './productManagementApi';
-import { inventoryApi } from '../inventory/inventoryApi';
 import { tagApi } from '../tags/tagApi';
 import { variantApi } from '../variants/variantApi';
 import {
@@ -92,28 +91,12 @@ export const CreateProductPage: React.FC = () => {
     {
       id: 1,
       name: 'Colour',
-      values: [
-        'black',
-        'gold',
-        'olive',
-        'navy',
-        'blue',
-        'purple',
-        'sky blue',
-        'pink',
-        'brown',
-        'green',
-      ],
+      values: ['black', 'white'],
     },
     {
       id: 2,
       name: 'Size',
-      values: ['S', 'M', 'L', 'XL', 'XXL'],
-    },
-    {
-      id: 3,
-      name: 'ml',
-      values: ['50ml', '100ml', '250ml'],
+      values: ['M', 'L'],
     },
   ]);
 
@@ -363,94 +346,140 @@ export const CreateProductPage: React.FC = () => {
       }
 
       // 3. Create Variants if enabled, or default variant for simple product
-      if (hasVariants && attributes.length > 0) {
+      const activeAttrs = hasVariants
+        ? attributes.filter((a) => a.values && a.values.length > 0)
+        : [];
+
+      if (hasVariants && activeAttrs.length > 0 && prodId) {
         try {
-          // Pre-fetch DB options for mapping
-          let dbOptions: any[] = [];
+          // Pre-fetch DB variations
+          let dbVariations: any[] = [];
           try {
-            dbOptions = await variantApi.getVariationOptions();
+            dbVariations = await variantApi.getVariations();
           } catch {
-            dbOptions = [];
+            dbVariations = [];
           }
 
-          // Generate combinations from attributes
-          const firstAttr = attributes[0];
-          const secondAttr = attributes[1];
+          // Ensure all active attributes and their values exist in DB
+          const optionMap = new Map<string, number>();
 
-          if (firstAttr && firstAttr.values.length > 0) {
-            for (const val1 of firstAttr.values.slice(0, 3)) {
-              const val2 = secondAttr && secondAttr.values.length > 0 ? secondAttr.values[0] : '';
-              const skuCode = `${productName.slice(0, 3).toUpperCase()}-${val1.slice(0, 3).toUpperCase()}${val2 ? '-' + val2.slice(0, 3).toUpperCase() : ''}-${Math.floor(100 + Math.random() * 900)}`;
+          for (const attr of activeAttrs) {
+            let dbVar = dbVariations.find(
+              (v) => v.name?.toLowerCase() === attr.name.toLowerCase()
+            );
+            if (!dbVar) {
+              try {
+                dbVar = await variantApi.createVariation(attr.name);
+                dbVariations.push(dbVar);
+              } catch (createVarErr) {
+                console.warn(`Failed to create variation ${attr.name}:`, createVarErr);
+              }
+            }
 
-              const createdVar = await productManagementApi.createProductVariant({
-                product: { productId: prodId },
-                sku: skuCode,
-                sellingPrice: Number(price),
-                status: 'ACTIVE',
-              });
+            if (dbVar?.variationId) {
+              let existingOpts: any[] = [];
+              try {
+                existingOpts = await variantApi.getOptionsByVariationId(dbVar.variationId);
+              } catch {
+                existingOpts = [];
+              }
 
-              if (createdVar?.variantId) {
-                // Map Variant Option Values
-                if (dbOptions.length > 0) {
+              for (const val of attr.values) {
+                let dbOpt = existingOpts.find(
+                  (o) => o.value?.toLowerCase() === val.toLowerCase()
+                );
+                if (!dbOpt) {
                   try {
-                    const opt1 = dbOptions.find((o) => o.value.toLowerCase() === val1.toLowerCase());
-                    if (opt1) {
-                      await productManagementApi.assignOptionToVariant(createdVar.variantId, opt1.optionId);
-                    }
-                    if (val2) {
-                      const opt2 = dbOptions.find((o) => o.value.toLowerCase() === val2.toLowerCase());
-                      if (opt2) {
-                        await productManagementApi.assignOptionToVariant(createdVar.variantId, opt2.optionId);
-                      }
-                    }
-                  } catch (optMapErr) {
-                    console.warn('Variant option mapping skipped:', optMapErr);
+                    dbOpt = await variantApi.createVariationOption(dbVar.variationId, val);
+                    existingOpts.push(dbOpt);
+                  } catch (createOptErr) {
+                    console.warn(`Failed to create option ${val}:`, createOptErr);
                   }
                 }
-
-                try {
-                  await inventoryApi.initializeInventory({
-                    variantId: createdVar.variantId,
-                    initialQuantity: Number(quantity) > 0 ? Number(quantity) : 25,
-                    reorderLevel: 10,
-                  });
-                } catch (invErr) {
-                  console.warn('Inventory init skipped:', invErr);
+                if (dbOpt?.optionId) {
+                  optionMap.set(
+                    `${attr.name.toLowerCase()}:::${val.toLowerCase()}`,
+                    dbOpt.optionId
+                  );
                 }
               }
             }
           }
-        } catch (varErr) {
-          console.warn('Variant auto-generation skipped:', varErr);
+
+          // Cartesian product combination generator for all active attributes
+          type OptionChoice = { attrName: string; value: string; optionId?: number };
+
+          const attrChoices: OptionChoice[][] = activeAttrs.map((attr) =>
+            attr.values.map((val) => ({
+              attrName: attr.name,
+              value: val,
+              optionId: optionMap.get(`${attr.name.toLowerCase()}:::${val.toLowerCase()}`),
+            }))
+          );
+
+          const cartesianCombos = (arrays: OptionChoice[][]): OptionChoice[][] => {
+            return arrays.reduce<OptionChoice[][]>(
+              (acc, curr) => acc.flatMap((c) => curr.map((n) => [...c, n])),
+              [[]]
+            );
+          };
+
+          const allCombinations = cartesianCombos(attrChoices);
+          // Limit to a reasonable number to prevent browser hang
+          const combosToCreate = allCombinations.slice(0, 50);
+
+          const cleanPrefix =
+            productName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PROD';
+          const initQty = Number(quantity) > 0 ? Number(quantity) : 25;
+
+          for (const combo of combosToCreate) {
+            const valCodes = combo
+              .map((c) => c.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase())
+              .filter(Boolean)
+              .join('-');
+            const randomCode = Math.floor(100 + Math.random() * 900);
+            const skuCode = `${cleanPrefix}-${valCodes}-${randomCode}`;
+
+            const validOptionIds = combo
+              .map((c) => c.optionId)
+              .filter((id): id is number => typeof id === 'number');
+
+            await productManagementApi.createProductVariantWithOptions({
+              productId: prodId,
+              sku: skuCode,
+              sellingPrice: Number(price),
+              status: 'ACTIVE',
+              optionIds: validOptionIds,
+              initialStock: initQty,
+            });
+          }
+        } catch (varErr: any) {
+          console.warn('Variant auto-generation error:', varErr);
+          throw new Error('Base product was created, but variant/inventory setup failed: ' + (varErr.message || ''));
         }
-      } else if (createdProduct?.productId) {
+      } else if (prodId) {
+        // Simple product: create single default variant with stock atomically
         try {
-          const cleanName = productName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PROD';
+          const cleanName =
+            productName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PROD';
           const skuCode = `${cleanName}-${Math.floor(1000 + Math.random() * 9000)}`;
-          const createdVar = await productManagementApi.createProductVariant({
-            product: { productId: createdProduct.productId },
+          const initQty = Number(quantity) > 0 ? Number(quantity) : 25;
+
+          await productManagementApi.createProductVariantWithOptions({
+            productId: prodId,
             sku: skuCode,
             sellingPrice: Number(price),
             status: 'ACTIVE',
+            optionIds: [],
+            initialStock: initQty,
           });
-
-          if (createdVar?.variantId) {
-            try {
-              await inventoryApi.initializeInventory({
-                variantId: createdVar.variantId,
-                initialQuantity: Number(quantity) > 0 ? Number(quantity) : 25,
-                reorderLevel: 10,
-              });
-            } catch (invErr) {
-              console.warn('Inventory init skipped:', invErr);
-            }
-          }
-        } catch (singleVarErr) {
+        } catch (singleVarErr: any) {
           console.warn('Default variant creation skipped:', singleVarErr);
+          throw new Error('Base product was created, but stock inventory setup failed: ' + (singleVarErr.message || ''));
         }
       }
 
-      alert('Product created successfully!');
+      alert('Product created successfully with SKU and inventory stock!');
       navigate('/admin/products');
     } catch (err: any) {
       console.error(err);

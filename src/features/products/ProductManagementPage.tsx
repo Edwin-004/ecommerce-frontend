@@ -102,7 +102,7 @@ export const ProductManagementPage: React.FC = () => {
       setActiveImageIdx(0);
       Promise.allSettled([
         productManagementApi.getProductImages(viewProduct.productId),
-        productManagementApi.getProductVariants(),
+        productManagementApi.getVariantsByProductId(viewProduct.productId),
       ]).then(([imgsRes, varsRes]) => {
         if (imgsRes.status === 'fulfilled' && Array.isArray(imgsRes.value)) {
           setViewProductImages(imgsRes.value);
@@ -111,10 +111,7 @@ export const ProductManagementPage: React.FC = () => {
         }
 
         if (varsRes.status === 'fulfilled' && Array.isArray(varsRes.value)) {
-          const matching = varsRes.value.filter(
-            (v: any) => v.product?.productId === viewProduct.productId
-          );
-          setViewVariants(matching);
+          setViewVariants(varsRes.value);
         } else {
           setViewVariants([]);
         }

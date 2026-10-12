@@ -6,6 +6,7 @@ import styles from "./AdminDashboard.module.css";
 import { FiShoppingCart, FiDollarSign, FiPackage, FiUsers } from "react-icons/fi";
 import { inventoryApi } from "../features/inventory/inventoryApi";
 import { useGetOrdersQuery } from "../features/orders/orderApi";
+import type { OrderResponseDto } from "../types/order";
 import api from "../utils/axiosConfig";
 
 export const AdminDashboard = () => {
@@ -16,10 +17,11 @@ export const AdminDashboard = () => {
   const { username, role } = useSelector((state: RootState) => state.auth);
 
   // Real-time Orders & Revenue from Backend
-  const { data: orders = [] } = useGetOrdersQuery();
+  const { data: orderData } = useGetOrdersQuery({ page: 0, size: 100 });
+  const orders = orderData?.content || [];
 
-  const totalOrders = orders.length;
-  const totalRevenue = orders.reduce((acc, order) => {
+  const totalOrders = orderData?.totalElements ?? orders.length;
+  const totalRevenue = orders.reduce((acc: number, order: OrderResponseDto) => {
     return acc + (Number(order.totalAmount) || 0);
   }, 0);
 

@@ -17,14 +17,19 @@ export const orderApi = createApi({
   tagTypes: ['Order'], // Cache မှတ်ထားရန်
   endpoints: (builder) => ({
     // အော်ဒါအားလုံး (သို့) Status အလိုက် ဆွဲထုတ်မည့် API
-    getOrders: builder.query<PaginatedResponse<OrderResponseDto>, { status?: string; page: number; size: number }>({
-      query: ({ status, page, size }) => {
-      let url = `/orders?page=${page}&size=${size}`;
-      if (status) {
-        url += `&status=${status}`;
-      }
-      return url;
-    },
+    getOrders: builder.query<
+      PaginatedResponse<OrderResponseDto>,
+      { status?: string; page?: number; size?: number } | void
+    >({
+      query: (args) => {
+        const page = args?.page ?? 0;
+        const size = args?.size ?? 10;
+        let url = `/orders?page=${page}&size=${size}`;
+        if (args?.status) {
+          url += `&status=${args.status}`;
+        }
+        return url;
+      },
       providesTags: ['Order'],
     }),
 

@@ -54,6 +54,9 @@ export const variantApi = {
   getProductVariantById: (id: number) =>
     apiFetch<ProductVariant>(`/api/backoffice/product-variants/${id}`),
 
+  getVariantsByProductId: (productId: number) =>
+    apiFetch<ProductVariant[]>(`/api/backoffice/product-variants/product/${productId}`),
+
   createProductVariant: (payload: {
     product: { productId: number };
     sku?: string;
@@ -62,6 +65,20 @@ export const variantApi = {
     status: string;
   }) =>
     apiFetch<ProductVariant>('/api/backoffice/product-variants', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  createProductVariantWithOptions: (payload: {
+    productId: number;
+    sku?: string;
+    sellingPrice: number;
+    costPrice?: number;
+    status: string;
+    optionIds: number[];
+    initialStock?: number;
+  }) =>
+    apiFetch<ProductVariant>('/api/backoffice/product-variants/create-with-options', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

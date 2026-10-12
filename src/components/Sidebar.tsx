@@ -3,8 +3,6 @@ import { NavLink, useLocation } from "react-router-dom";
 import styles from "./Sidebar.module.css";
 
 import {
-  FiMenu,
-  FiChevronLeft,
   FiChevronDown,
   FiHome,
   FiShoppingCart,
@@ -19,7 +17,6 @@ import {
 } from "react-icons/fi";
 
 export const Sidebar = () => {
-  const [open, setOpen] = useState(true);
   const location = useLocation();
 
   // Active check for Catalog items
@@ -44,43 +41,31 @@ export const Sidebar = () => {
     isActive ? `${styles.subLink} ${styles.subActive}` : styles.subLink;
 
   return (
-    <aside className={`${styles.sidebar} ${!open ? styles.close : ""}`}>
+    <aside className={styles.sidebar}>
       {/* Brand Header */}
       <div className={styles.header}>
         <div className={styles.brandContainer}>
           <div className={styles.logoBadge}>
             <FiShoppingBag size={20} />
           </div>
-          {open && (
-            <div className={styles.brandText}>
-              <h2>Ecommerce</h2>
-              <span>Admin Portal</span>
-            </div>
-          )}
+          <div className={styles.brandText}>
+            <h2>Ecommerce</h2>
+            <span>Admin Portal</span>
+          </div>
         </div>
-
-        <button
-          type="button"
-          className={styles.toggleBtn}
-          onClick={() => setOpen(!open)}
-          title={open ? "Collapse sidebar" : "Expand sidebar"}
-          aria-label="Toggle Sidebar"
-        >
-          {open ? <FiChevronLeft size={16} /> : <FiMenu size={16} />}
-        </button>
       </div>
 
       {/* Navigation Sections */}
       <nav className={styles.navContainer}>
         {/* ================= 1. OVERVIEW ================= */}
-        {open && <div className={styles.navSectionTitle}>OVERVIEW</div>}
+        <div className={styles.navSectionTitle}>OVERVIEW</div>
         <NavLink to="/admin/dashboard" className={navClass}>
           <FiHome className={styles.linkIcon} />
-          {open && <span>Dashboard</span>}
+          <span>Dashboard</span>
         </NavLink>
 
         {/* ================= 2. CATALOG & STOCK ================= */}
-        {open && <div className={styles.navSectionTitle}>CATALOG & STOCK</div>}
+        <div className={styles.navSectionTitle}>CATALOG & STOCK</div>
 
         {/* Product Catalog Dropdown */}
         <div className={styles.dropdownGroup}>
@@ -89,25 +74,20 @@ export const Sidebar = () => {
             className={`${styles.dropdownToggle} ${
               isCatalogActive ? styles.parentActive : ""
             }`}
-            onClick={() => {
-              if (!open) setOpen(true);
-              setCatalogOpen(!catalogOpen);
-            }}
+            onClick={() => setCatalogOpen(!catalogOpen)}
           >
             <div className={styles.dropdownLeft}>
               <FiPackage className={styles.linkIcon} />
-              {open && <span>Product Catalog</span>}
+              <span>Product Catalog</span>
             </div>
-            {open && (
-              <FiChevronDown
-                className={`${styles.chevron} ${
-                  catalogOpen ? styles.chevronRotated : ""
-                }`}
-              />
-            )}
+            <FiChevronDown
+              className={`${styles.chevron} ${
+                catalogOpen ? styles.chevronRotated : ""
+              }`}
+            />
           </button>
 
-          {open && catalogOpen && (
+          {catalogOpen && (
             <div className={styles.submenu}>
               <NavLink to="/admin/products" end className={subNavClass}>
                 <FiPackage size={14} className={styles.subIcon} />
@@ -144,25 +124,20 @@ export const Sidebar = () => {
             className={`${styles.dropdownToggle} ${
               isInventoryActive ? styles.parentActive : ""
             }`}
-            onClick={() => {
-              if (!open) setOpen(true);
-              setInventoryOpen(!inventoryOpen);
-            }}
+            onClick={() => setInventoryOpen(!inventoryOpen)}
           >
             <div className={styles.dropdownLeft}>
               <FiBox className={styles.linkIcon} />
-              {open && <span>Inventory</span>}
+              <span>Inventory</span>
             </div>
-            {open && (
-              <FiChevronDown
-                className={`${styles.chevron} ${
-                  inventoryOpen ? styles.chevronRotated : ""
-                }`}
-              />
-            )}
+            <FiChevronDown
+              className={`${styles.chevron} ${
+                inventoryOpen ? styles.chevronRotated : ""
+              }`}
+            />
           </button>
 
-          {open && inventoryOpen && (
+          {inventoryOpen && (
             <div className={styles.submenu}>
               <NavLink to="/admin/inventory" end className={subNavClass}>
                 <FiBox size={14} className={styles.subIcon} />
@@ -180,18 +155,18 @@ export const Sidebar = () => {
         </div>
 
         {/* ================= 3. OPERATIONS ================= */}
-        {open && <div className={styles.navSectionTitle}>OPERATIONS</div>}
+        <div className={styles.navSectionTitle}>OPERATIONS</div>
 
         {/* Orders */}
         <NavLink to="/admin/orders" className={navClass}>
           <FiShoppingCart className={styles.linkIcon} />
-          {open && <span>Orders</span>}
+          <span>Orders</span>
         </NavLink>
 
         {/* Staff Management */}
         <NavLink to="/admin/staff" className={navClass}>
           <FiUsers className={styles.linkIcon} />
-          {open && <span>Staff Management</span>}
+          <span>Staff Management</span>
         </NavLink>
       </nav>
     </aside>
