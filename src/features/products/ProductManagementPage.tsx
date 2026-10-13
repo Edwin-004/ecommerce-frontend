@@ -10,10 +10,8 @@ import {
 } from './productManagementApi';
 import {
   FiPackage,
-  FiSearch,
   FiEdit2,
   FiTrash2,
-  FiDownload,
   FiPlus,
   FiEye,
   FiX,
@@ -139,71 +137,21 @@ export const ProductManagementPage: React.FC = () => {
       const catList: CategoryItem[] =
         catsData.status === 'fulfilled' && catsData.value.length > 0
           ? catsData.value
-          : [
-              { categoryId: 1, categoryName: 'Clothing' },
-              { categoryId: 2, categoryName: 'Footwear' },
-              { categoryId: 3, categoryName: 'Cosmetics' },
-              { categoryId: 4, categoryName: 'Accessories' },
-            ];
+          : [];
       setCategories(catList);
 
       // Brands
       const brandList: BrandItem[] =
         brandsData.status === 'fulfilled' && brandsData.value.length > 0
           ? brandsData.value
-          : [
-              { brandId: 1, brandName: 'Summer Breeze' },
-              { brandId: 2, brandName: 'Urban Fit' },
-              { brandId: 3, brandName: 'Nike' },
-              { brandId: 4, brandName: 'Zara' },
-            ];
+          : [];
       setBrands(brandList);
 
-      // Products (with realistic mock fallback if database is empty)
-      const fetchedProds =
-        prodsData.status === 'fulfilled' && prodsData.value.length > 0
+      // Real Products from Database
+      const fetchedProds: ProductItem[] =
+        prodsData.status === 'fulfilled' && Array.isArray(prodsData.value)
           ? prodsData.value
-          : [
-              {
-                productId: 1,
-                productName: 'Summer Floral Maxi Dress',
-                description: 'Elegant floral print maxi dress for casual summer wear',
-                sku: 'CLO-SUM-BLA-001',
-                sellingPrice: 1804000,
-                stock: 45,
-                status: 'ACTIVE',
-                categoryId: 1,
-                categoryName: 'Clothing',
-                brandId: 1,
-                brandName: 'Summer Breeze',
-              },
-              {
-                productId: 2,
-                productName: 'Classic Leather Sneakers',
-                description: 'Premium white leather sneakers with cushioned insole',
-                sku: 'FOO-SNK-WHT-002',
-                sellingPrice: 850000,
-                stock: 28,
-                status: 'ACTIVE',
-                categoryId: 2,
-                categoryName: 'Footwear',
-                brandId: 3,
-                brandName: 'Nike',
-              },
-              {
-                productId: 3,
-                productName: 'Hydrating Rose Serum 50ml',
-                description: 'Deep moisture facial serum enriched with organic rosewater',
-                sku: 'COS-SER-50M-003',
-                sellingPrice: 320000,
-                stock: 60,
-                status: 'ACTIVE',
-                categoryId: 3,
-                categoryName: 'Cosmetics',
-                brandId: 4,
-                brandName: 'Zara',
-              },
-            ];
+          : [];
       setProducts(fetchedProds);
 
       // Variations & Options
@@ -475,25 +423,47 @@ export const ProductManagementPage: React.FC = () => {
 
   return (
     <div className={styles.dashboardContainer}>
-      {/* 1. Header (3D Cube Icon + Title + Subtitle) */}
-      <div className={styles.pageTopHeader}>
-        <div className={styles.iconBadge}>
-          <FiPackage />
+      {/* 1. Header (Catalogue Tag + Title + Subtitle + Add Product Button) */}
+      <div className={styles.managementHeaderRow}>
+        <div className={styles.managementHeaderLeft}>
+          <div className={styles.catalogueSmallLabel}>CATALOGUE</div>
+          <h1>Product Management</h1>
+          <p>Manage inventory, pricing, and product attributes.</p>
         </div>
-        <h1 className={styles.mainTitle}>Product Management</h1>
-        <p className={styles.mainSubtitle}>
-          Manage your product catalog, stock, and pricing
-        </p>
+        <button
+          className={styles.btnAddProductPurple}
+          onClick={() => navigate('/admin/products/new')}
+        >
+          <FiPlus size={16} />
+          Add Product
+        </button>
       </div>
 
-      {/* 2. Search & Filters Bar */}
-      <div className={styles.filterCard}>
-        <div className={styles.searchGroup}>
-          <div className={styles.searchInputWrapper}>
-            <FiSearch color="#94a3b8" />
+      {/* 2. 3 Metric Summary Cards */}
+      <div className={styles.metricsGrid}>
+        <div className={styles.metricSummaryCard}>
+          <div className={styles.metricSummaryCardLabel}>In catalogue</div>
+          <div className={styles.metricSummaryCardValue}>{products.length}</div>
+        </div>
+        <div className={styles.metricSummaryCard}>
+          <div className={styles.metricSummaryCardLabel}>Matching filters</div>
+          <div className={styles.metricSummaryCardValue}>{filteredProducts.length}</div>
+        </div>
+        <div className={styles.metricSummaryCard}>
+          <div className={styles.metricSummaryCardLabel}>Selected</div>
+          <div className={styles.metricSummaryCardValue}>{selectedIds.length}</div>
+        </div>
+      </div>
+
+      {/* 3. Search & Filters Bar with Actions */}
+      <div className={styles.filterCardModern}>
+        <div className={styles.filterInputsGroup}>
+          <div className={styles.fieldWithLabel}>
+            <label>SEARCH</label>
             <input
               type="text"
-              placeholder="Search brands or categories..."
+              placeholder="Search name, brand"
+              className={styles.fieldInputSearch}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -501,106 +471,95 @@ export const ProductManagementPage: React.FC = () => {
               }}
             />
           </div>
-          <span className={styles.productsFoundText}>
-            {filteredProducts.length} Products found
-          </span>
+
+          <div className={styles.fieldWithLabel}>
+            <label>CATEGORY</label>
+            <select
+              className={styles.fieldSelectControl}
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.categoryId} value={c.categoryName}>
+                  {c.categoryName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.fieldWithLabel}>
+            <label>BRAND</label>
+            <select
+              className={styles.fieldSelectControl}
+              value={selectedBrand}
+              onChange={(e) => {
+                setSelectedBrand(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="">All Brands</option>
+              {brands.map((b) => (
+                <option key={b.brandId} value={b.brandName}>
+                  {b.brandName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.fieldWithLabel}>
+            <label>STATUS</label>
+            <select
+              className={styles.fieldSelectControl}
+              value={selectedStatus}
+              onChange={(e) => {
+                setSelectedStatus(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="">All Status</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
         </div>
 
-        <div className={styles.dropdownFiltersGroup}>
-          {/* Category Dropdown */}
-          <select
-            className={styles.filterSelect}
-            value={selectedCategory}
-            onChange={(e) => {
-              setSelectedCategory(e.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">Select Category</option>
-            {categories.map((c) => (
-              <option key={c.categoryId} value={c.categoryName}>
-                {c.categoryName}
-              </option>
-            ))}
-          </select>
-
-          {/* Brand Dropdown */}
-          <select
-            className={styles.filterSelect}
-            value={selectedBrand}
-            onChange={(e) => {
-              setSelectedBrand(e.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">Select Brand</option>
-            {brands.map((b) => (
-              <option key={b.brandId} value={b.brandName}>
-                {b.brandName}
-              </option>
-            ))}
-          </select>
-
-          {/* Status Dropdown */}
-          <select
-            className={styles.filterSelect}
-            value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value);
-              setCurrentPage(1);
-            }}
-          >
-            <option value="">Select Status</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </select>
-        </div>
-      </div>
-
-      {/* 3. Action Toolbar */}
-      <div className={styles.toolbarCard}>
-        <div className={styles.toolbarLeft}>
+        <div className={styles.filterActionsBar}>
           <button
-            className={styles.btnActionOutline}
+            className={styles.btnActionItem}
+            disabled={selectedIds.length !== 1}
             onClick={() => {
               if (selectedIds.length === 1) {
                 const prod = products.find((p) => p.productId === selectedIds[0]);
                 if (prod) setViewProduct(prod);
-              } else {
-                alert('Please select exactly one product to edit.');
               }
             }}
           >
-            <FiEdit2 size={13} />
+            <FiEdit2 size={12} />
             Edit
           </button>
 
           <button
-            className={`${styles.btnActionOutline} ${styles.btnActionDelete}`}
+            className={styles.btnActionItem}
+            disabled={selectedIds.length === 0}
             onClick={handleDeleteSelected}
+            style={{ color: selectedIds.length > 0 ? '#ef4444' : undefined }}
           >
-            <FiTrash2 size={13} />
+            <FiTrash2 size={12} />
             Delete
           </button>
 
-          <button className={styles.btnExportCsv} onClick={handleExportCsv}>
-            <FiDownload size={13} />
+          <button className={styles.btnActionItem} onClick={handleExportCsv}>
             Export CSV
           </button>
 
-          <button className={styles.btnExportPdf} onClick={handleExportPdf}>
-            <FiDownload size={13} />
+          <button className={styles.btnActionItem} onClick={handleExportPdf}>
             Export PDF
           </button>
         </div>
-
-        <button
-          className={styles.btnCreateProduct}
-          onClick={() => navigate('/admin/products/new')}
-        >
-          <FiPlus size={15} />
-          Create Product
-        </button>
       </div>
 
       {/* 4. Products Table */}
@@ -635,8 +594,12 @@ export const ProductManagementPage: React.FC = () => {
               </tr>
             ) : paginatedProducts.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: '#94a3b8' }}>
-                  No products found matching your search and filter criteria.
+                <td colSpan={7} style={{ padding: '0', border: 'none' }}>
+                  <div className={styles.emptyStateBox}>
+                    <div className={styles.emptyStateSmallTag}>NOTHING HERE YET</div>
+                    <h3 className={styles.emptyStateBigTitle}>No products found</h3>
+                    <p className={styles.emptyStateSubtext}>Add a product to start the catalogue.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
