@@ -15,6 +15,7 @@ import {
   FiGrid,
   FiShoppingBag,
   FiTruck,
+  FiBarChart2,
 } from 'react-icons/fi';
 
 export const Sidebar = () => {
@@ -167,13 +168,19 @@ export const Sidebar = () => {
         {/* Shipping rate */}
         <NavLink to="/admin/shipping-rates" className={navClass}>
           <FiTruck className={styles.linkIcon} />
-          {open && <span>Shipping Rates</span>}
+          <span>Shipping Rates</span>
         </NavLink>
 
         {/* Staff Management */}
         <NavLink to="/admin/staff" className={navClass}>
           <FiUsers className={styles.linkIcon} />
           <span>Staff Management</span>
+        </NavLink>
+
+        {/* Reports & Analytics */}
+        <NavLink to="/admin/reports" className={navClass}>
+          <FiBarChart2 className={styles.linkIcon} />
+          <span>Reports & Analytics</span>
         </NavLink>
       </nav>
     </aside>
