@@ -167,7 +167,7 @@ export const Sidebar = () => {
         {/* Shipping rate */}
         <NavLink to="/admin/shipping-rates" className={navClass}>
           <FiTruck className={styles.linkIcon} />
-          {open && <span>Shipping Rates</span>}
+          <span>Shipping Rates</span>
         </NavLink>
 
         {/* Staff Management */}

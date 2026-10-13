@@ -40,7 +40,9 @@ function App() {
 
             {/* Product Catalog & Stock (Member 3) */}
             <Route path="/admin/products" element={<ProductManagementPage />} />
+            <Route path="/productlist" element={<ProductManagementPage />} />
             <Route path="/admin/products/new" element={<CreateProductPage />} />
+            <Route path="/product" element={<CreateProductPage />} />
             <Route path="/admin/variants" element={<VariantsPage />} />
             <Route path="/admin/variations" element={<VariantsPage />} />
             <Route path="/admin/inventory" element={<InventoryPage />} />
