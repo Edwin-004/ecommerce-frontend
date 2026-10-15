@@ -18,6 +18,8 @@ import {
   FiCheck,
   FiSliders,
 } from 'react-icons/fi';
+import { Pagination } from '../../components/common/Pagination';
+
 
 // Color map for swatch rendering
 const COLOR_MAP: Record<string, string> = {
@@ -73,7 +75,8 @@ export const ProductManagementPage: React.FC = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 5;
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+
 
   // View Modal state
   const [viewProduct, setViewProduct] = useState<ProductItem | null>(null);
@@ -533,14 +536,14 @@ export const ProductManagementPage: React.FC = () => {
             disabled={selectedIds.length !== 1}
             onClick={() => {
               if (selectedIds.length === 1) {
-                const prod = products.find((p) => p.productId === selectedIds[0]);
-                if (prod) setViewProduct(prod);
+                navigate(`/admin/products/edit/${selectedIds[0]}`);
               }
             }}
           >
             <FiEdit2 size={12} />
             Edit
           </button>
+
 
           <button
             className={styles.btnActionItem}
@@ -657,14 +660,27 @@ export const ProductManagementPage: React.FC = () => {
                       </span>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      <button
-                        className={styles.btnViewAction}
-                        onClick={() => setViewProduct(p)}
-                      >
-                        <FiEye size={12} />
-                        View
-                      </button>
+                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                        <button
+                          className={styles.btnViewAction}
+                          onClick={() => setViewProduct(p)}
+                          title="View Details"
+                        >
+                          <FiEye size={12} />
+                          View
+                        </button>
+                        <button
+                          className={styles.btnViewAction}
+                          style={{ borderColor: '#93c5fd', color: '#1d4ed8', background: '#eff6ff' }}
+                          onClick={() => navigate(`/admin/products/edit/${p.productId}`)}
+                          title="Edit Product"
+                        >
+                          <FiEdit2 size={12} />
+                          Edit
+                        </button>
+                      </div>
                     </td>
+
                   </tr>
                 );
               })
@@ -673,40 +689,23 @@ export const ProductManagementPage: React.FC = () => {
         </table>
 
         {/* 5. Pagination Bar */}
-        <div className={styles.paginationBar}>
-          <div>
-            Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-            {Math.min(currentPage * itemsPerPage, filteredProducts.length)} of{' '}
-            {filteredProducts.length} results
+        {filteredProducts.length > 0 && (
+          <div style={{ padding: '0 16px 16px 16px' }}>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalResults={filteredProducts.length}
+              pageSize={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(size) => {
+                setItemsPerPage(size);
+                setCurrentPage(1);
+              }}
+            />
           </div>
-
-          <div className={styles.pageControls}>
-            <button
-              className={styles.btnPage}
-              disabled={currentPage <= 1}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            >
-              &lt; Previous
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                className={`${styles.btnPage} ${currentPage === page ? styles.btnPageActive : ''}`}
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              className={styles.btnPage}
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            >
-              Next &gt;
-            </button>
-          </div>
-        </div>
+        )}
       </div>
+
 
       {/* 6. Attributes & Values Bottom Card (Screenshot 4) */}
       <div className={styles.attributesSectionCard}>
@@ -1038,7 +1037,8 @@ export const ProductManagementPage: React.FC = () => {
                 padding: '14px 24px',
                 borderTop: '1px solid #f1f5f9',
                 display: 'flex',
-                justifyContent: 'flex-end',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 background: '#f8fafc',
               }}
             >
@@ -1048,7 +1048,20 @@ export const ProductManagementPage: React.FC = () => {
               >
                 Close
               </button>
+              <button
+                className={styles.btnPrimary}
+                style={{ padding: '7px 16px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => {
+                  const pId = viewProduct.productId;
+                  setViewProduct(null);
+                  navigate(`/admin/products/edit/${pId}`);
+                }}
+              >
+                <FiEdit2 size={13} />
+                Edit This Product
+              </button>
             </div>
+
           </div>
         </div>
       )}

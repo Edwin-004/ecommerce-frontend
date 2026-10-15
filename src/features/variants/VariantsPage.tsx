@@ -26,6 +26,7 @@ import {
   EditVariantModal,
   AddVariationModal,
 } from './VariantModals';
+import { Pagination } from '../../components/common/Pagination';
 
 export const VariantsPage: React.FC = () => {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
@@ -37,6 +38,11 @@ export const VariantsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
 
   // Modals state
   const [showCreateVariantModal, setShowCreateVariantModal] = useState(false);
@@ -138,8 +144,20 @@ export const VariantsPage: React.FC = () => {
       });
   }, [variants, searchQuery]);
 
+  // Reset page when search or tab changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, activeTab]);
+
+  // Paginated variants slice
+  const paginatedVariants = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredVariants.slice(start, start + pageSize);
+  }, [filteredVariants, page, pageSize]);
+
   const activeCount = useMemo(() => variants.filter((v) => v.status === 'ACTIVE').length, [variants]);
   const inactiveCount = useMemo(() => variants.filter((v) => v.status === 'INACTIVE').length, [variants]);
+
 
   return (
     <div className={styles.container}>
@@ -260,7 +278,7 @@ export const VariantsPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredVariants.map((v) => (
+                paginatedVariants.map((v) => (
                   <tr key={v.variantId}>
                     <td style={{ color: '#64748b' }}>#{v.variantId}</td>
                     <td><span className={styles.skuTag}>{v.sku}</span></td>
@@ -302,7 +320,23 @@ export const VariantsPage: React.FC = () => {
               )}
             </tbody>
           </table>
+          {filteredVariants.length > 0 && (
+            <div style={{ padding: '0 16px 16px 16px' }}>
+              <Pagination
+                currentPage={page}
+                totalPages={Math.ceil(filteredVariants.length / pageSize)}
+                totalResults={filteredVariants.length}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setPage(1);
+                }}
+              />
+            </div>
+          )}
         </div>
+
       ) : (
         /* Variations & Options Tab */
         <div className={styles.variationsGrid}>

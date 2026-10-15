@@ -1,0 +1,153 @@
+.paginationWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.infoText {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.highlight {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.controlsGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pageSizeSelector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.sizeSelect {
+  padding: 5px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.sizeSelect:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.btnPagesGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.navBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: #f1f5f9;
+}
+
+.pageNumberBtn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pageNumberBtn:hover:not(.activePage) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.activePage {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.ellipsis {
+  padding: 0 4px;
+  color: #94a3b8;
+  font-weight: 600;
+  user-select: none;
+}
+
+@media (max-width: 640px) {
+  .paginationWrapper {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .infoText {
+    text-align: center;
+  }
+
+  .controlsGroup {
+    justify-content: space-between;
+  }
+
+  .btnLabel {
+    display: none;
+  }
+
+  .pageNumberBtn {
+    min-width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+}

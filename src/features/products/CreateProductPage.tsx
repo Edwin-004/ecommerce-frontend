@@ -8,6 +8,8 @@ import {
 } from './productManagementApi';
 import { tagApi } from '../tags/tagApi';
 import { variantApi } from '../variants/variantApi';
+import { categoryApi } from '../categories/categoryApi';
+import { createBrand } from '../brand/brandApi';
 import {
   FiPackage,
   FiInfo,
@@ -22,7 +24,9 @@ import {
   FiTag,
   FiRefreshCw,
   FiAlertCircle,
+  FiClock,
 } from 'react-icons/fi';
+import { inventoryApi } from '../inventory/inventoryApi';
 
 const ATTRIBUTE_PRESETS: Record<string, string[]> = {
   color: ['White', 'Black', 'Yellow', 'Red', 'Blue', 'Green', 'Grey', 'Navy'],
@@ -113,6 +117,30 @@ export const CreateProductPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedBrand, setSelectedBrand] = useState<string>('');
 
+  // Expiration & Perishable tracking
+  const [isPerishable, setIsPerishable] = useState<boolean>(false);
+  const [expiryDate, setExpiryDate] = useState<string>('');
+  const [manufactureDate, setManufactureDate] = useState<string>('');
+  const [batchNumber, setBatchNumber] = useState<string>('');
+  const [expiryTouched, setExpiryTouched] = useState<boolean>(false);
+
+  // Auto-detect perishable products based on Category name
+  const handleCategorySelect = (catId: string) => {
+    setSelectedCategory(catId);
+    const cat = categories.find((c) => String(c.categoryId) === catId);
+    if (cat) {
+      const name = cat.categoryName.toLowerCase();
+      const perishableKeywords = [
+        'food', 'drink', 'beverage', 'grocer', 'snack', 'bakery', 'fruit', 'dairy',
+        'medicine', 'pharma', 'drug', 'health', 'medical', 'pill', 'tablet',
+        'cosmetic', 'skincare', 'beauty', 'makeup', 'lotion', 'cream', 'serum',
+        'supplement', 'vitamin', 'organic', 'perishable'
+      ];
+      const isPerish = perishableKeywords.some((kw) => name.includes(kw));
+      setIsPerishable(isPerish);
+    }
+  };
+
   // Tags
   const [allTags, setAllTags] = useState<Array<{ tagId: number; tagName: string }>>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
@@ -171,6 +199,91 @@ export const CreateProductPage: React.FC = () => {
   // Submission state
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Validation touched states
+  const [nameTouched, setNameTouched] = useState<boolean>(false);
+  const [qtyTouched, setQtyTouched] = useState<boolean>(false);
+
+  // Quick Create Modals
+  const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
+  const [newCatName, setNewCatName] = useState<string>('');
+  const [newCatDesc, setNewCatDesc] = useState<string>('');
+  const [catLoading, setCatLoading] = useState<boolean>(false);
+
+  const [showBrandModal, setShowBrandModal] = useState<boolean>(false);
+  const [newBrandName, setNewBrandName] = useState<string>('');
+  const [newBrandDesc, setNewBrandDesc] = useState<string>('');
+  const [brandLoading, setBrandLoading] = useState<boolean>(false);
+
+  const [showTagModal, setShowTagModal] = useState<boolean>(false);
+  const [newTagName, setNewTagName] = useState<string>('');
+  const [tagLoading, setTagLoading] = useState<boolean>(false);
+
+  const handleQuickCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    try {
+      setCatLoading(true);
+      const res = await categoryApi.createCategory({
+        categoryName: newCatName.trim(),
+        description: newCatDesc.trim() || undefined,
+      });
+      setCategories((prev) => [...prev, { categoryId: res.categoryId, categoryName: res.categoryName }]);
+      setSelectedCategory(String(res.categoryId));
+      setShowCategoryModal(false);
+      setNewCatName('');
+      setNewCatDesc('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to create category');
+    } finally {
+      setCatLoading(false);
+    }
+  };
+
+  const handleQuickCreateBrand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBrandName.trim()) return;
+    try {
+      setBrandLoading(true);
+      const res = await createBrand(
+        {
+          brandName: newBrandName.trim(),
+          brandLogoUrl: '',
+          description: newBrandDesc.trim() || '',
+          status: 'ACTIVE',
+          categoryIds: selectedCategory ? [Number(selectedCategory)] : [],
+        },
+        null
+      );
+      setBrands((prev) => [...prev, { brandId: res.brandId, brandName: res.brandName }]);
+      setSelectedBrand(String(res.brandId));
+      setShowBrandModal(false);
+      setNewBrandName('');
+      setNewBrandDesc('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to create brand');
+    } finally {
+      setBrandLoading(false);
+    }
+  };
+
+  const handleQuickCreateTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = newTagName.replace(/^#/, '').trim();
+    if (!clean) return;
+    try {
+      setTagLoading(true);
+      const res = await tagApi.createTag({ tagName: clean });
+      setAllTags((prev) => [...prev, { tagId: res.tagId, tagName: res.tagName }]);
+      setSelectedTagIds((prev) => [...prev, res.tagId]);
+      setShowTagModal(false);
+      setNewTagName('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to create tag');
+    } finally {
+      setTagLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadCategoriesAndBrands();
@@ -324,8 +437,26 @@ export const CreateProductPage: React.FC = () => {
     if (!checked) {
       setAttributes([]);
       setGeneratedVariants([]);
+    } else if (attributes.length === 0) {
+      // Auto-populate 'Color' attribute so user can immediately click color presets
+      setAttributes([
+        {
+          id: Date.now(),
+          name: 'Color',
+          values: [],
+        },
+      ]);
     }
   };
+
+  // Real-time reactive auto-generation of variant cards whenever attributes change
+  useEffect(() => {
+    if (hasVariants) {
+      generateCombosFromAttrs(attributes);
+    } else {
+      setGeneratedVariants([]);
+    }
+  }, [attributes, hasVariants]);
 
   // Manual trigger button to generate / re-generate variant cards
   const handleGenerateVariants = () => {
@@ -453,23 +584,36 @@ export const CreateProductPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setNameTouched(true);
+    setQtyTouched(true);
 
-    if (!productName.trim()) {
-      setErrorMessage('Please enter a product name.');
+    if (!productName.trim() || productName.trim().length < 3) {
+      setErrorMessage('Please enter a valid product name (at least 3 characters).');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (!price || Number(price) <= 0) {
       setErrorMessage('Please enter a valid price.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (!selectedCategory) {
       setErrorMessage('Please select a category.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     const prodQuantity = Number(quantity);
-    if (quantity === '' || isNaN(prodQuantity) || prodQuantity < 0) {
-      setErrorMessage('Please enter a valid product quantity.');
+    if (quantity === '' || isNaN(prodQuantity) || prodQuantity < 10) {
+      setErrorMessage('Product quantity must be at least 10 units.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Expiry validation for perishable products
+    setExpiryTouched(true);
+    if (isPerishable && !expiryDate) {
+      setErrorMessage('Please enter an expiration date for this perishable product.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -503,6 +647,7 @@ export const CreateProductPage: React.FC = () => {
         categoryId: Number(selectedCategory),
         brandId: selectedBrand ? Number(selectedBrand) : undefined,
         userId: 1,
+        isPerishable: isPerishable,
       };
 
       let createdProduct: any = null;
@@ -625,6 +770,21 @@ export const CreateProductPage: React.FC = () => {
                   optionIds: validOptionIds,
                   initialStock: varStock,
                 });
+
+              // Link expiry details to inventory if product is perishable
+              if (isPerishable && expiryDate && createdVariant?.variantId) {
+                try {
+                  await inventoryApi.restockVariant({
+                    variantId: createdVariant.variantId,
+                    quantity: 0,
+                    expiryDate: expiryDate,
+                    batchNumber: batchNumber.trim() || undefined,
+                    remark: 'Initial batch expiry setup',
+                  });
+                } catch (invErr) {
+                  console.warn('Initial expiry setup for variant skipped:', invErr);
+                }
+              }
             } catch (createVarErr) {
               console.warn(`Failed to create variant ${gv.sku}:`, createVarErr);
             }
@@ -661,9 +821,9 @@ export const CreateProductPage: React.FC = () => {
           const cleanName =
             productName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PROD';
           const skuCode = `${cleanName}-${Math.floor(1000 + Math.random() * 9000)}`;
-          const initQty = Number(quantity) > 0 ? Number(quantity) : 25;
+          const initQty = Number(quantity) >= 10 ? Number(quantity) : 10;
 
-          await productManagementApi.createProductVariantWithOptions({
+          const createdSimpleVar = await productManagementApi.createProductVariantWithOptions({
             productId: prodId,
             sku: skuCode,
             sellingPrice: Number(price),
@@ -671,6 +831,21 @@ export const CreateProductPage: React.FC = () => {
             optionIds: [],
             initialStock: initQty,
           });
+
+          // Link expiry details to inventory if product is perishable
+          if (isPerishable && expiryDate && createdSimpleVar?.variantId) {
+            try {
+              await inventoryApi.restockVariant({
+                variantId: createdSimpleVar.variantId,
+                quantity: 0,
+                expiryDate: expiryDate,
+                batchNumber: batchNumber.trim() || undefined,
+                remark: 'Initial batch expiry setup',
+              });
+            } catch (invErr) {
+              console.warn('Initial expiry setup for simple variant skipped:', invErr);
+            }
+          }
         } catch (singleVarErr: any) {
           console.warn('Default variant creation skipped:', singleVarErr);
           throw new Error('Base product was created, but stock inventory setup failed: ' + (singleVarErr.message || ''));
@@ -730,10 +905,35 @@ export const CreateProductPage: React.FC = () => {
                 type="text"
                 required
                 className={styles.inputField}
-                placeholder="Enter product name"
+                style={{
+                  borderColor:
+                    nameTouched && (!productName.trim() || productName.trim().length < 3)
+                      ? '#ef4444'
+                      : undefined,
+                }}
+                placeholder="Enter product name (min 3 chars)"
                 value={productName}
-                onChange={(e) => setProductName(e.target.value)}
+                onChange={(e) => {
+                  setProductName(e.target.value);
+                  if (!nameTouched) setNameTouched(true);
+                }}
+                onBlur={() => setNameTouched(true)}
               />
+              {nameTouched && (!productName.trim() || productName.trim().length < 3) && (
+                <span
+                  style={{
+                    color: '#ef4444',
+                    fontSize: '11px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <FiAlertCircle size={12} /> Product name is required and must be at least 3 characters.
+                </span>
+              )}
             </div>
 
             <div className={styles.inputGroup}>
@@ -753,16 +953,41 @@ export const CreateProductPage: React.FC = () => {
 
           <div className={styles.formGrid2}>
             <div className={styles.inputGroup}>
-              <label>Quantity *</label>
+              <label>Quantity * (Min. 10)</label>
               <input
                 type="number"
                 required
-                min="0"
+                min="10"
                 className={styles.inputField}
-                placeholder="Enter quantity"
+                style={{
+                  borderColor:
+                    qtyTouched && (quantity === '' || Number(quantity) < 10)
+                      ? '#ef4444'
+                      : undefined,
+                }}
+                placeholder="Enter quantity (min 10)"
                 value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
+                onChange={(e) => {
+                  setQuantity(e.target.value);
+                  if (!qtyTouched) setQtyTouched(true);
+                }}
+                onBlur={() => setQtyTouched(true)}
               />
+              {qtyTouched && (quantity === '' || Number(quantity) < 10) && (
+                <span
+                  style={{
+                    color: '#ef4444',
+                    fontSize: '11px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <FiAlertCircle size={12} /> Quantity must be at least 10 units.
+                </span>
+              )}
             </div>
 
             <div className={styles.inputGroup}>
@@ -798,15 +1023,46 @@ export const CreateProductPage: React.FC = () => {
 
           <div className={styles.formGrid2}>
             <div className={styles.inputGroup}>
-              <label>Select Category *</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ margin: 0 }}>Select Category *</label>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/categories?create=true')}
+                  style={{
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    color: '#2563eb',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                  title="Open Category Create Form Route"
+                >
+                  <FiPlus size={11} /> Add New Category
+                </button>
+              </div>
               <div className={styles.categoryBrandRow}>
                 <select
                   required
                   className={styles.inputField}
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value === '__NEW_CATEGORY__') {
+                      navigate('/admin/categories?create=true');
+                    } else {
+                      handleCategorySelect(e.target.value);
+                    }
+                  }}
                 >
                   <option value="">Select Category</option>
+                  <option value="__NEW_CATEGORY__" style={{ color: '#2563eb', fontWeight: 600 }}>
+                    + Add New Category (Go to Route)...
+                  </option>
                   {categories.map((c) => (
                     <option key={c.categoryId} value={String(c.categoryId)}>
                       {c.categoryName}
@@ -817,7 +1073,7 @@ export const CreateProductPage: React.FC = () => {
                   type="button"
                   className={styles.btnIconAction}
                   title="Clear Category"
-                  onClick={() => setSelectedCategory('')}
+                  onClick={() => handleCategorySelect('')}
                 >
                   <FiTrash2 />
                 </button>
@@ -825,14 +1081,45 @@ export const CreateProductPage: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Select Brand (Optional)</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ margin: 0 }}>Select Brand (Optional)</label>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/brands?create=true')}
+                  style={{
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    color: '#2563eb',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                  title="Open Brand Create Form Route"
+                >
+                  <FiPlus size={11} /> Add New Brand
+                </button>
+              </div>
               <div className={styles.categoryBrandRow}>
                 <select
                   className={styles.inputField}
                   value={selectedBrand}
-                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value === '__NEW_BRAND__') {
+                      navigate('/admin/brands?create=true');
+                    } else {
+                      setSelectedBrand(e.target.value);
+                    }
+                  }}
                 >
                   <option value="">Select Brand (Optional)</option>
+                  <option value="__NEW_BRAND__" style={{ color: '#2563eb', fontWeight: 600 }}>
+                    + Add New Brand (Go to Route)...
+                  </option>
                   {brands.map((b) => (
                     <option key={b.brandId} value={String(b.brandId)}>
                       {b.brandName}
@@ -853,9 +1140,31 @@ export const CreateProductPage: React.FC = () => {
 
           {/* Product Tags */}
           <div style={{ marginTop: '20px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-              <FiTag color="#2563eb" size={14} /> Product Tags (Optional)
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0, fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                <FiTag color="#2563eb" size={14} /> Product Tags (Optional)
+              </label>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/tags')}
+                style={{
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  color: '#2563eb',
+                  padding: '3px 10px',
+                  borderRadius: '16px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+                title="Open Tag Management Route"
+              >
+                <FiPlus size={11} /> Add New Tag
+              </button>
+            </div>
             <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#64748b' }}>
               Assign tags to this product for customer search, promo badges, and filtering.
             </p>
@@ -894,6 +1203,111 @@ export const CreateProductPage: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* CARD: Expiration & Batch Details (Dynamic Perishable Section) */}
+        <div
+          className={styles.sectionCard}
+          style={{
+            borderLeft: isPerishable ? '4px solid #10b981' : '1px solid #e2e8f0',
+            background: isPerishable ? '#fcfdfd' : '#ffffff',
+            transition: 'all 0.3s ease',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <h3 className={styles.sectionTitle} style={{ margin: 0 }}>
+              <FiClock color={isPerishable ? '#10b981' : '#64748b'} /> Expiration &amp; Batch Details
+              {isPerishable && (
+                <span
+                  style={{
+                    marginLeft: '10px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    padding: '3px 9px',
+                    borderRadius: '12px',
+                    background: '#ecfdf5',
+                    color: '#059669',
+                    border: '1px solid #a7f3d0',
+                  }}
+                >
+                  Perishable Goods Enabled
+                </span>
+              )}
+            </h3>
+
+            {/* Toggle switch */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+              <span>Has Expiration Date:</span>
+              <input
+                type="checkbox"
+                checked={isPerishable}
+                onChange={(e) => setIsPerishable(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#10b981' }}
+              />
+            </label>
+          </div>
+
+          <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748b' }}>
+            Enable this for products that can expire (such as medicine, cosmetics/skincare, and food/groceries) to track shelf life and trigger automatic alerts in inventory.
+          </p>
+
+          {isPerishable && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '16px',
+                padding: '16px',
+                background: '#f8fafc',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <div className={styles.inputGroup} style={{ margin: 0 }}>
+                <label>Expiration Date *</label>
+                <input
+                  type="date"
+                  required={isPerishable}
+                  className={styles.inputField}
+                  style={{
+                    borderColor: expiryTouched && !expiryDate ? '#ef4444' : undefined,
+                  }}
+                  value={expiryDate}
+                  onChange={(e) => {
+                    setExpiryDate(e.target.value);
+                    if (!expiryTouched) setExpiryTouched(true);
+                  }}
+                  onBlur={() => setExpiryTouched(true)}
+                />
+                {expiryTouched && !expiryDate && (
+                  <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <FiAlertCircle size={12} /> Expiration date is required for perishable products.
+                  </span>
+                )}
+              </div>
+
+              <div className={styles.inputGroup} style={{ margin: 0 }}>
+                <label>Manufacture Date (Optional)</label>
+                <input
+                  type="date"
+                  className={styles.inputField}
+                  value={manufactureDate}
+                  onChange={(e) => setManufactureDate(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.inputGroup} style={{ margin: 0 }}>
+                <label>Batch / Lot Number (Optional)</label>
+                <input
+                  type="text"
+                  className={styles.inputField}
+                  placeholder="e.g. LOT-2026-MED01"
+                  value={batchNumber}
+                  onChange={(e) => setBatchNumber(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* CARD 3: Product Images */}
@@ -1506,6 +1920,350 @@ export const CreateProductPage: React.FC = () => {
           )}
         </div>
       </form>
+
+      {/* ==================================================== */}
+      {/* QUICK CREATE MODALS (Category, Brand, Tag) */}
+      {/* ==================================================== */}
+
+      {/* 1. Category Modal */}
+      {showCategoryModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setShowCategoryModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              width: '90%',
+              maxWidth: '460px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                + Add New Category
+              </h3>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}
+                onClick={() => setShowCategoryModal(false)}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  className={styles.inputField}
+                  placeholder="e.g. Footwear, Electronics"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Description (Optional)
+                </label>
+                <textarea
+                  className={styles.textareaField}
+                  placeholder="Brief category description..."
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  rows={3}
+                  value={newCatDesc}
+                  onChange={(e) => setNewCatDesc(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setShowCategoryModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={catLoading || !newCatName.trim()}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: catLoading || !newCatName.trim() ? 'not-allowed' : 'pointer',
+                    opacity: catLoading || !newCatName.trim() ? 0.6 : 1,
+                  }}
+                  onClick={handleQuickCreateCategory}
+                >
+                  {catLoading ? 'Creating...' : 'Create Category'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Brand Modal */}
+      {showBrandModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setShowBrandModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              width: '90%',
+              maxWidth: '460px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                + Add New Brand
+              </h3>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}
+                onClick={() => setShowBrandModal(false)}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Brand Name *
+                </label>
+                <input
+                  type="text"
+                  className={styles.inputField}
+                  placeholder="e.g. Nike, Apple, Zara"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Description (Optional)
+                </label>
+                <textarea
+                  className={styles.textareaField}
+                  placeholder="Brief brand description..."
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  rows={3}
+                  value={newBrandDesc}
+                  onChange={(e) => setNewBrandDesc(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setShowBrandModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={brandLoading || !newBrandName.trim()}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: brandLoading || !newBrandName.trim() ? 'not-allowed' : 'pointer',
+                    opacity: brandLoading || !newBrandName.trim() ? 0.6 : 1,
+                  }}
+                  onClick={handleQuickCreateBrand}
+                >
+                  {brandLoading ? 'Creating...' : 'Create Brand'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Tag Modal */}
+      {showTagModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setShowTagModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              width: '90%',
+              maxWidth: '420px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                + Add New Tag
+              </h3>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}
+                onClick={() => setShowTagModal(false)}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Tag Name *
+                </label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', fontWeight: 700 }}>#</span>
+                  <input
+                    type="text"
+                    className={styles.inputField}
+                    placeholder="e.g. summer, hot-deal, unisex"
+                    style={{ width: '100%', paddingLeft: '28px', boxSizing: 'border-box' }}
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setShowTagModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={tagLoading || !newTagName.trim()}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: tagLoading || !newTagName.trim() ? 'not-allowed' : 'pointer',
+                    opacity: tagLoading || !newTagName.trim() ? 0.6 : 1,
+                  }}
+                  onClick={handleQuickCreateTag}
+                >
+                  {tagLoading ? 'Creating...' : 'Create Tag'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

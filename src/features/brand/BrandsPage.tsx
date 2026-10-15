@@ -241,6 +241,13 @@ export function BrandsPage() {
     setShowModal(true);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('create') === 'true') {
+      openCreate();
+    }
+  }, []);
+
   const openEdit = (brand: Brand) => {
     setEditingBrand(brand);
     setShowModal(true);
