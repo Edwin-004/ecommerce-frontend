@@ -15,6 +15,7 @@ import {
   FiGrid,
   FiShoppingBag,
   FiTruck,
+  FiUserPlus,
   FiBarChart2,
   FiX,
 } from 'react-icons/fi';
@@ -40,10 +41,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     location.pathname.startsWith('/admin/variations');
 
   const isInventoryActive = location.pathname.startsWith('/admin/inventory');
+  
+  // Staff အတွက် Active ဖြစ်/မဖြစ် စစ်ဆေးခြင်း
+  const isStaffActive = location.pathname.startsWith('/admin/staff');
 
-  // Keep Catalog expanded by default or when an active child is selected
   const [catalogOpen, setCatalogOpen] = useState<boolean>(true);
   const [inventoryOpen, setInventoryOpen] = useState<boolean>(true);
+  // Staff Dropdown အဖွင့်/အပိတ် အတွက် State
+  const [staffOpen, setStaffOpen] = useState<boolean>(true);
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.link} ${styles.active}` : styles.link;
@@ -86,7 +91,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         }}
       >
         {/* ================= 1. OVERVIEW ================= */}
-
         <div className={styles.navSectionTitle}>OVERVIEW</div>
         <NavLink to="/admin/dashboard" className={navClass}>
           <FiHome className={styles.linkIcon} />
@@ -198,13 +202,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           <span>Shipping Rates</span>
         </NavLink>
 
-        {/* Staff Management */}
-        <NavLink to="/admin/staff" className={navClass}>
-          <FiUsers className={styles.linkIcon} />
-          <span>Staff Management</span>
-        </NavLink>
+        {/* Staff Management Dropdown */}
+        <div className={styles.dropdownGroup}>
+          <button
+            type="button"
+            className={`${styles.dropdownToggle} ${
+              isStaffActive ? styles.parentActive : ''
+            }`}
+            onClick={() => setStaffOpen(!staffOpen)}
+          >
+            <div className={styles.dropdownLeft}>
+              <FiUsers className={styles.linkIcon} />
+              <span>Staff Management</span>
+            </div>
+            <FiChevronDown
+              className={`${styles.chevron} ${
+                staffOpen ? styles.chevronRotated : ''
+              }`}
+            />
+          </button>
 
-        {/* Reports & Analytics */}
+          {staffOpen && (
+            <div className={styles.submenu}>
+              <NavLink to="/admin/staff" end className={subNavClass}>
+                <FiUsers size={14} className={styles.subIcon} />
+                <span>All Staff</span>
+              </NavLink>
+              <NavLink to="/admin/staff/new" className={subNavClass}>
+                <FiUserPlus size={14} className={styles.subIcon} />
+                <span>Add New Staff</span>
+              </NavLink>
+            </div>
+          )}
+        </div>
+
+        {/* Reports & Analytics (Main Branch မှ အသစ်ပါလာသော အပိုင်း) */}
         <NavLink to="/admin/reports" className={navClass}>
           <FiBarChart2 className={styles.linkIcon} />
           <span>Reports & Analytics</span>
