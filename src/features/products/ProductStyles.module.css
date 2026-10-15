@@ -230,10 +230,11 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 0 0 14px 14px;
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
   margin-bottom: 28px;
 }
+
 
 .productTable {
   width: 100%;
@@ -859,3 +860,498 @@
   background: #1e293b;
   transform: translateY(-1px);
 }
+
+/* =======================================================
+   5. CATALOGUE & PRODUCT MANAGEMENT (Screenshots 5)
+   ======================================================= */
+.catalogueSmallLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.managementHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.managementHeaderLeft h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.managementHeaderLeft p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.btnAddProductPurple {
+  background: #5b5dfa;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(91, 93, 250, 0.25);
+  transition: all 0.15s ease;
+}
+
+.btnAddProductPurple:hover {
+  background: #494bee;
+  transform: translateY(-1px);
+}
+
+/* 3 Metric Summary Cards */
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.metricSummaryCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.metricSummaryCardLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.metricSummaryCardValue {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Modern Filter & Action Card */
+.filterCardModern {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filterInputsGroup {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.fieldWithLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldWithLabel label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.fieldInputSearch {
+  width: 220px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1e293b;
+  outline: none;
+  background: white;
+  transition: all 0.15s;
+}
+
+.fieldInputSearch:focus {
+  border-color: #5b5dfa;
+  box-shadow: 0 0 0 3px rgba(91, 93, 250, 0.12);
+}
+
+.fieldSelectControl {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #334155;
+  outline: none;
+  background: white;
+  min-width: 130px;
+  transition: all 0.15s;
+}
+
+.fieldSelectControl:focus {
+  border-color: #5b5dfa;
+  box-shadow: 0 0 0 3px rgba(91, 93, 250, 0.12);
+}
+
+.filterActionsBar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btnActionItem {
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btnActionItem:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.btnActionItem:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+}
+
+/* Empty State Card (Screenshot 5) */
+.emptyStateBox {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 60px 24px;
+  text-align: center;
+}
+
+.emptyStateSmallTag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.emptyStateBigTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.emptyStateSubtext {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* =======================================================
+   6. GENERATED VARIANTS CARDS (Screenshots 1, 2, 3, 4)
+   ======================================================= */
+.addExistingAttributeBox {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.addExistingAttrLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.addExistingAttrControls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.addExistingAttrSelect {
+  flex: 1;
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1e293b;
+  background: white;
+  outline: none;
+}
+
+.addExistingAttrSelect:focus {
+  border-color: #5b5dfa;
+  box-shadow: 0 0 0 3px rgba(91, 93, 250, 0.12);
+}
+
+.btnAddAttrBtn {
+  background: white;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btnAddAttrBtn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.generatedVariantsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.generatedVariantsTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.variantsCountBadge {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Grid of generated variants cards */
+.variantsCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.singleVariantCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.singleVariantCard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.variantCardTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.variantCardTitleCol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.variantCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.variantCardSku {
+  font-size: 11px;
+  font-family: monospace;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.btnDeleteVariantCard {
+  background: white;
+  border: 1px solid #fecaca;
+  color: #ef4444;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btnDeleteVariantCard:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+.variantAttrsPillsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.variantAttrPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #334155;
+  font-weight: 500;
+}
+
+.variantColorDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  display: inline-block;
+}
+
+.variantCardInputsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.variantCardInputCol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.variantCardInputCol label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.variantCardInputCol input {
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1e293b;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.variantCardInputCol input:focus {
+  border-color: #5b5dfa;
+  box-shadow: 0 0 0 2px rgba(91, 93, 250, 0.15);
+}
+
+.btnAddVariantImagesBtn {
+  background: white;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+  width: fit-content;
+}
+
+.btnAddVariantImagesBtn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.variantImgThumbSmall {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+}
+
+.createProductBottomBar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.btnCreateProductPurpleAction {
+  background: #5b5dfa;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btnCreateProductPurpleAction:hover:not(:disabled) {
+  background: #494bee;
+}
+
+.btnCreateProductPurpleAction:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stockValidationWarning {
+  color: #ef4444;
+  font-size: 12px;
+  margin: 0;
+}
+

@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   FiDownload, 
   FiBarChart2, 
   FiPieChart, 
   FiTrendingUp, 
   FiRefreshCcw,
-  FiAlertTriangle 
+  FiAlertTriangle,
+  FiLoader,
+  FiCheckCircle
 } from 'react-icons/fi';
 import styles from './ReportsPage.module.css';
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8080/api/backoffice/reports';
+import api from '../../utils/axiosConfig';
 
 export const ReportsPage = () => {
   const [salesStartDate, setSalesStartDate] = useState('2026-10-01');
@@ -28,15 +28,18 @@ export const ReportsPage = () => {
   const [formatLowStock, setFormatLowStock] = useState('pdf');
   
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [downloadingFormat, setDownloadingFormat] = useState<string>('pdf');
+  const [downloadTitle, setDownloadTitle] = useState<string>('');
+  const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
-  const downloadReport = async (path: string, reportName: string, exportFormat: string) => {
+  const downloadReport = async (path: string, reportName: string, exportFormat: string, reportTitle: string) => {
     try {
       setIsDownloading(reportName);
-      const token = localStorage.getItem('token');
+      setDownloadingFormat(exportFormat);
+      setDownloadTitle(reportTitle);
       
-      const response = await axios.get(`${API_BASE_URL}${path}`, { 
-        responseType: 'blob',
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await api.get(`/reports${path}`, { 
+        responseType: 'blob'
       });
       
       const blob = new Blob([response.data], { 
@@ -53,9 +56,20 @@ export const ReportsPage = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
+
+      // Trigger success feedback
+      setDownloadSuccess(`${reportTitle} (${exportFormat.toUpperCase()})`);
+      setTimeout(() => setDownloadSuccess(null), 3500);
+    } catch (error: any) {
       console.error('Failed to download report', error);
-      alert('We encountered an error while fetching your report. Please check your network connection or permissions and try again.');
+      const status = error.response?.status;
+      if (status === 401 || status === 403) {
+        alert('Permission / Session error (403/401). Please re-login to your admin account or ensure Spring Boot is restarted.');
+      } else if (status === 404) {
+        alert('Report endpoint or template not found (404).');
+      } else {
+        alert(`Failed to download report (${status ? 'Error ' + status : 'Network Error'}). Please check the backend console.`);
+      }
     } finally {
       setIsDownloading(null);
     }
@@ -111,11 +125,21 @@ export const ReportsPage = () => {
               <option value="excel">Excel</option>
             </select>
             <button 
-              className={styles.downloadBtn}
+              className={`${styles.downloadBtn} ${isDownloading === 'daily-sales' ? styles.downloadBtnLoading : ''}`}
               disabled={isDownloading === 'daily-sales'}
-              onClick={() => downloadReport(`/daily-product-sales?startDate=${salesStartDate}&endDate=${salesEndDate}&format=${formatDaily}`, 'daily-sales', formatDaily)}
+              onClick={() => downloadReport(`/daily-product-sales?startDate=${salesStartDate}&endDate=${salesEndDate}&format=${formatDaily}`, 'daily-sales', formatDaily, 'Daily Product Sales')}
             >
-              <FiDownload /> {isDownloading === 'daily-sales' ? 'Processing...' : 'Export'}
+              {isDownloading === 'daily-sales' ? (
+                <>
+                  <FiLoader className={styles.spinnerIcon} />
+                  <span>Generating {formatDaily.toUpperCase()}...</span>
+                </>
+              ) : (
+                <>
+                  <FiDownload />
+                  <span>Export</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -142,11 +166,21 @@ export const ReportsPage = () => {
               <option value="excel">Excel</option>
             </select>
             <button 
-              className={styles.downloadBtn}
+              className={`${styles.downloadBtn} ${isDownloading === 'category-summary' ? styles.downloadBtnLoading : ''}`}
               disabled={isDownloading === 'category-summary'}
-              onClick={() => downloadReport(`/categories?format=${formatCategory}`, 'category-summary', formatCategory)}
+              onClick={() => downloadReport(`/categories?format=${formatCategory}`, 'category-summary', formatCategory, 'Category Summary')}
             >
-              <FiDownload /> {isDownloading === 'category-summary' ? 'Processing...' : 'Export'}
+              {isDownloading === 'category-summary' ? (
+                <>
+                  <FiLoader className={styles.spinnerIcon} />
+                  <span>Generating {formatCategory.toUpperCase()}...</span>
+                </>
+              ) : (
+                <>
+                  <FiDownload />
+                  <span>Export</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -183,11 +217,21 @@ export const ReportsPage = () => {
               <option value="excel">Excel</option>
             </select>
             <button 
-              className={styles.downloadBtn}
+              className={`${styles.downloadBtn} ${isDownloading === 'top-selling' ? styles.downloadBtnLoading : ''}`}
               disabled={isDownloading === 'top-selling'}
-              onClick={() => downloadReport(`/top-selling?limitCount=${topSellingLimit}&format=${formatTopSelling}`, 'top-selling', formatTopSelling)}
+              onClick={() => downloadReport(`/top-selling?limitCount=${topSellingLimit}&format=${formatTopSelling}`, 'top-selling', formatTopSelling, 'Top Selling Products')}
             >
-              <FiDownload /> {isDownloading === 'top-selling' ? 'Processing...' : 'Export'}
+              {isDownloading === 'top-selling' ? (
+                <>
+                  <FiLoader className={styles.spinnerIcon} />
+                  <span>Generating {formatTopSelling.toUpperCase()}...</span>
+                </>
+              ) : (
+                <>
+                  <FiDownload />
+                  <span>Export</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -231,11 +275,21 @@ export const ReportsPage = () => {
               <option value="excel">Excel</option>
             </select>
             <button 
-              className={styles.downloadBtn}
+              className={`${styles.downloadBtn} ${isDownloading === 'refund-summary' ? styles.downloadBtnLoading : ''}`}
               disabled={isDownloading === 'refund-summary'}
-              onClick={() => downloadReport(`/refund-summary?startDate=${refundStartDate}&endDate=${refundEndDate}&format=${formatRefund}`, 'refund-summary', formatRefund)}
+              onClick={() => downloadReport(`/refund-summary?startDate=${refundStartDate}&endDate=${refundEndDate}&format=${formatRefund}`, 'refund-summary', formatRefund, 'Refund Summary')}
             >
-              <FiDownload /> {isDownloading === 'refund-summary' ? 'Processing...' : 'Export'}
+              {isDownloading === 'refund-summary' ? (
+                <>
+                  <FiLoader className={styles.spinnerIcon} />
+                  <span>Generating {formatRefund.toUpperCase()}...</span>
+                </>
+              ) : (
+                <>
+                  <FiDownload />
+                  <span>Export</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -262,16 +316,55 @@ export const ReportsPage = () => {
               <option value="excel">Excel</option>
             </select>
             <button 
-              className={styles.downloadBtn}
+              className={`${styles.downloadBtn} ${isDownloading === 'low-stock' ? styles.downloadBtnLoading : ''}`}
               disabled={isDownloading === 'low-stock'}
-              onClick={() => downloadReport(`/low-stock?format=${formatLowStock}`, 'low-stock', formatLowStock)}
+              onClick={() => downloadReport(`/low-stock?format=${formatLowStock}`, 'low-stock', formatLowStock, 'Critical Inventory Alerts')}
             >
-              <FiDownload /> {isDownloading === 'low-stock' ? 'Processing...' : 'Export'}
+              {isDownloading === 'low-stock' ? (
+                <>
+                  <FiLoader className={styles.spinnerIcon} />
+                  <span>Generating {formatLowStock.toUpperCase()}...</span>
+                </>
+              ) : (
+                <>
+                  <FiDownload />
+                  <span>Export</span>
+                </>
+              )}
             </button>
           </div>
         </div>
         
       </div>
+
+      {/* Floating Export Progress Animation HUD */}
+      {isDownloading && (
+        <div className={styles.exportProgressOverlay}>
+          <div className={styles.exportProgressCard}>
+            <div className={styles.spinnerWrapper}>
+              <div className={styles.circularSpinner} />
+              <span className={styles.formatBadge}>
+                {downloadingFormat === 'pdf' ? 'PDF' : 'XLS'}
+              </span>
+            </div>
+            <div className={styles.exportProgressText}>
+              <h4>Generating {downloadTitle}</h4>
+              <p>Compiling analytics data & formatting {downloadingFormat.toUpperCase()} document...</p>
+              <div className={styles.progressBarTrack}>
+                <div className={styles.progressBarFill} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Download Toast */}
+      {downloadSuccess && (
+        <div className={styles.successToast}>
+          <FiCheckCircle className={styles.successIcon} />
+          <span>{downloadSuccess} ready & downloaded!</span>
+        </div>
+      )}
     </div>
   );
 };

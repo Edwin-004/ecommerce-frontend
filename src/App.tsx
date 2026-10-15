@@ -5,7 +5,9 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLayout } from './components/AdminLayout';
 import { ProductManagementPage } from './features/products/ProductManagementPage';
 import { CreateProductPage } from './features/products/CreateProductPage';
+import { EditProductPage } from './features/products/EditProductPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
+
 import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
@@ -44,7 +46,11 @@ function App() {
 
             {/* Product Catalog & Stock */}
             <Route path="/admin/products" element={<ProductManagementPage />} />
+            <Route path="/productlist" element={<ProductManagementPage />} />
             <Route path="/admin/products/new" element={<CreateProductPage />} />
+            <Route path="/admin/products/edit/:id" element={<EditProductPage />} />
+            <Route path="/product" element={<CreateProductPage />} />
+
             <Route path="/admin/variants" element={<VariantsPage />} />
             <Route path="/admin/variations" element={<VariantsPage />} />
             <Route path="/admin/inventory" element={<InventoryPage />} />

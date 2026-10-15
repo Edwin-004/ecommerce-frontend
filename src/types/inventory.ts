@@ -9,6 +9,11 @@ export interface InventoryItem {
   availableQuantity: number;
   reorderLevel: number;
   status: 'NORMAL' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+  isPerishable?: boolean;
+  expiryDate?: string | null;
+  batchNumber?: string | null;
+  daysUntilExpiry?: number | null;
+  expiryStatus?: 'GOOD' | 'EXPIRING_SOON' | 'EXPIRED' | 'NON_PERISHABLE';
   createdAt: string;
   modifiedAt: string;
 }
@@ -35,6 +40,8 @@ export interface RestockPayload {
   referenceType?: string;
   referenceId?: number;
   remark?: string;
+  expiryDate?: string;
+  batchNumber?: string;
 }
 
 export interface WriteOffPayload {
@@ -53,4 +60,7 @@ export interface InventoryCreatePayload {
   variantId: number;
   initialQuantity?: number;
   reorderLevel?: number;
+  isPerishable?: boolean;
+  expiryDate?: string;
+  batchNumber?: string;
 }

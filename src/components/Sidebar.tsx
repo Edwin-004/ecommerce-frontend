@@ -3,8 +3,6 @@ import { NavLink, useLocation } from 'react-router-dom';
 import styles from './Sidebar.module.css';
 
 import {
-  FiMenu,
-  FiChevronLeft,
   FiChevronDown,
   FiHome,
   FiShoppingCart,
@@ -17,14 +15,23 @@ import {
   FiGrid,
   FiShoppingBag,
   FiTruck,
-  FiUserPlus // <--- Add Staff အတွက် Icon အသစ် ထည့်ထားပါသည်
+  FiUserPlus,
+  FiBarChart2,
+  FiX,
 } from 'react-icons/fi';
 
-export const Sidebar = () => {
-  const [open, setOpen] = useState(true);
+interface SidebarProps {
+  onCloseMobile?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const location = useLocation();
 
-  // Active checks
+  const handleLinkClick = () => {
+    if (onCloseMobile) onCloseMobile();
+  };
+
+  // Active check for Catalog items
   const isCatalogActive =
     location.pathname.startsWith('/admin/products') ||
     location.pathname.startsWith('/admin/categories') ||
@@ -50,43 +57,48 @@ export const Sidebar = () => {
     isActive ? `${styles.subLink} ${styles.subActive}` : styles.subLink;
 
   return (
-    <aside className={`${styles.sidebar} ${!open ? styles.close : ''}`}>
+    <aside className={styles.sidebar}>
       {/* Brand Header */}
       <div className={styles.header}>
         <div className={styles.brandContainer}>
           <div className={styles.logoBadge}>
             <FiShoppingBag size={20} />
           </div>
-          {open && (
-            <div className={styles.brandText}>
-              <h2>Ecommerce</h2>
-              <span>Admin Portal</span>
-            </div>
-          )}
+          <div className={styles.brandText}>
+            <h2>Ecommerce</h2>
+            <span>Admin Portal</span>
+          </div>
         </div>
-
-        <button
-          type="button"
-          className={styles.toggleBtn}
-          onClick={() => setOpen(!open)}
-          title={open ? 'Collapse sidebar' : 'Expand sidebar'}
-          aria-label="Toggle Sidebar"
-        >
-          {open ? <FiChevronLeft size={16} /> : <FiMenu size={16} />}
-        </button>
+        {onCloseMobile && (
+          <button
+            type="button"
+            className={styles.mobileCloseBtn}
+            onClick={onCloseMobile}
+            aria-label="Close Sidebar"
+          >
+            <FiX size={20} />
+          </button>
+        )}
       </div>
 
       {/* Navigation Sections */}
-      <nav className={styles.navContainer}>
+      <nav
+        className={styles.navContainer}
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest('a')) {
+            handleLinkClick();
+          }
+        }}
+      >
         {/* ================= 1. OVERVIEW ================= */}
-        {open && <div className={styles.navSectionTitle}>OVERVIEW</div>}
+        <div className={styles.navSectionTitle}>OVERVIEW</div>
         <NavLink to="/admin/dashboard" className={navClass}>
           <FiHome className={styles.linkIcon} />
-          {open && <span>Dashboard</span>}
+          <span>Dashboard</span>
         </NavLink>
 
         {/* ================= 2. CATALOG & STOCK ================= */}
-        {open && <div className={styles.navSectionTitle}>CATALOG & STOCK</div>}
+        <div className={styles.navSectionTitle}>CATALOG & STOCK</div>
 
         {/* Product Catalog Dropdown */}
         <div className={styles.dropdownGroup}>
@@ -95,25 +107,20 @@ export const Sidebar = () => {
             className={`${styles.dropdownToggle} ${
               isCatalogActive ? styles.parentActive : ''
             }`}
-            onClick={() => {
-              if (!open) setOpen(true);
-              setCatalogOpen(!catalogOpen);
-            }}
+            onClick={() => setCatalogOpen(!catalogOpen)}
           >
             <div className={styles.dropdownLeft}>
               <FiPackage className={styles.linkIcon} />
-              {open && <span>Product Catalog</span>}
+              <span>Product Catalog</span>
             </div>
-            {open && (
-              <FiChevronDown
-                className={`${styles.chevron} ${
-                  catalogOpen ? styles.chevronRotated : ''
-                }`}
-              />
-            )}
+            <FiChevronDown
+              className={`${styles.chevron} ${
+                catalogOpen ? styles.chevronRotated : ""
+              }`}
+            />
           </button>
 
-          {open && catalogOpen && (
+          {catalogOpen && (
             <div className={styles.submenu}>
               <NavLink to="/admin/products" end className={subNavClass}>
                 <FiPackage size={14} className={styles.subIcon} />
@@ -150,25 +157,20 @@ export const Sidebar = () => {
             className={`${styles.dropdownToggle} ${
               isInventoryActive ? styles.parentActive : ''
             }`}
-            onClick={() => {
-              if (!open) setOpen(true);
-              setInventoryOpen(!inventoryOpen);
-            }}
+            onClick={() => setInventoryOpen(!inventoryOpen)}
           >
             <div className={styles.dropdownLeft}>
               <FiBox className={styles.linkIcon} />
-              {open && <span>Inventory</span>}
+              <span>Inventory</span>
             </div>
-            {open && (
-              <FiChevronDown
-                className={`${styles.chevron} ${
-                  inventoryOpen ? styles.chevronRotated : ''
-                }`}
-              />
-            )}
+            <FiChevronDown
+              className={`${styles.chevron} ${
+                inventoryOpen ? styles.chevronRotated : ""
+              }`}
+            />
           </button>
 
-          {open && inventoryOpen && (
+          {inventoryOpen && (
             <div className={styles.submenu}>
               <NavLink to="/admin/inventory" end className={subNavClass}>
                 <FiBox size={14} className={styles.subIcon} />
@@ -186,46 +188,41 @@ export const Sidebar = () => {
         </div>
 
         {/* ================= 3. OPERATIONS ================= */}
-        {open && <div className={styles.navSectionTitle}>OPERATIONS</div>}
+        <div className={styles.navSectionTitle}>OPERATIONS</div>
 
         {/* Orders */}
         <NavLink to="/admin/orders" className={navClass}>
           <FiShoppingCart className={styles.linkIcon} />
-          {open && <span>Orders</span>}
+          <span>Orders</span>
         </NavLink>
 
         {/* Shipping rate */}
         <NavLink to="/admin/shipping-rates" className={navClass}>
           <FiTruck className={styles.linkIcon} />
-          {open && <span>Shipping Rates</span>}
+          <span>Shipping Rates</span>
         </NavLink>
 
-        {/* Staff Management Dropdown အသစ် */}
+        {/* Staff Management Dropdown */}
         <div className={styles.dropdownGroup}>
           <button
             type="button"
             className={`${styles.dropdownToggle} ${
               isStaffActive ? styles.parentActive : ''
             }`}
-            onClick={() => {
-              if (!open) setOpen(true);
-              setStaffOpen(!staffOpen);
-            }}
+            onClick={() => setStaffOpen(!staffOpen)}
           >
             <div className={styles.dropdownLeft}>
               <FiUsers className={styles.linkIcon} />
-              {open && <span>Staff Management</span>}
+              <span>Staff Management</span>
             </div>
-            {open && (
-              <FiChevronDown
-                className={`${styles.chevron} ${
-                  staffOpen ? styles.chevronRotated : ''
-                }`}
-              />
-            )}
+            <FiChevronDown
+              className={`${styles.chevron} ${
+                staffOpen ? styles.chevronRotated : ''
+              }`}
+            />
           </button>
 
-          {open && staffOpen && (
+          {staffOpen && (
             <div className={styles.submenu}>
               <NavLink to="/admin/staff" end className={subNavClass}>
                 <FiUsers size={14} className={styles.subIcon} />
@@ -238,6 +235,12 @@ export const Sidebar = () => {
             </div>
           )}
         </div>
+
+        {/* Reports & Analytics (Main Branch မှ အသစ်ပါလာသော အပိုင်း) */}
+        <NavLink to="/admin/reports" className={navClass}>
+          <FiBarChart2 className={styles.linkIcon} />
+          <span>Reports & Analytics</span>
+        </NavLink>
       </nav>
     </aside>
   );

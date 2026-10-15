@@ -23,23 +23,33 @@ import {
   AdjustModal,
   VariantHistoryModal,
 } from './InventoryModals';
+import { Pagination } from '../../components/common/Pagination';
 
 export const InventoryPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
-  const [activeTab, setActiveTab] = useState<'ALL' | 'LOW_STOCK' | 'TRANSACTIONS'>('ALL');
+  const [activeTab, setActiveTab] = useState<'ALL' | 'LOW_STOCK' | 'EXPIRING_SOON' | 'TRANSACTIONS'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [txnTypeFilter, setTxnTypeFilter] = useState('ALL');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync tab with URL query parameter (?tab=low-stock)
+  // Pagination states
+  const [itemsPage, setItemsPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [txnsPage, setTxnsPage] = useState(1);
+  const [txnsPerPage, setTxnsPerPage] = useState(10);
+
+
+  // Sync tab with URL query parameter (?tab=low-stock | ?tab=expiring-soon)
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam === 'low-stock') {
       setActiveTab('LOW_STOCK');
+    } else if (tabParam === 'expiring-soon') {
+      setActiveTab('EXPIRING_SOON');
     } else if (tabParam === 'transactions') {
       setActiveTab('TRANSACTIONS');
     }
@@ -100,6 +110,14 @@ export const InventoryPage: React.FC = () => {
   const totalStock = useMemo(() => items.reduce((sum, item) => sum + (item.quantity || 0), 0), [items]);
   const lowStockCount = useMemo(() => items.filter((item) => item.status === 'LOW_STOCK').length, [items]);
   const outOfStockCount = useMemo(() => items.filter((item) => item.status === 'OUT_OF_STOCK').length, [items]);
+  const expiringSoonCount = useMemo(
+    () => items.filter((item) => item.isPerishable && (item.expiryStatus === 'EXPIRING_SOON' || item.expiryStatus === 'EXPIRED')).length,
+    [items]
+  );
+  const expiredCount = useMemo(
+    () => items.filter((item) => item.isPerishable && item.expiryStatus === 'EXPIRED').length,
+    [items]
+  );
 
   // CSV Export
   const handleExportCsv = () => {
@@ -107,7 +125,7 @@ export const InventoryPage: React.FC = () => {
       alert('No inventory data to export');
       return;
     }
-    const headers = ['Variant ID', 'SKU', 'Product Name', 'Price (MMK)', 'Physical Qty', 'Reserved', 'Available', 'Reorder Level', 'Status'];
+    const headers = ['Variant ID', 'SKU', 'Product Name', 'Price (MMK)', 'Physical Qty', 'Reserved', 'Available', 'Reorder Level', 'Expiry Status', 'Expiry Date', 'Batch', 'Status'];
     const rows = filteredItems.map((item) => [
       item.variantId,
       `"${item.sku || ''}"`,
@@ -117,6 +135,9 @@ export const InventoryPage: React.FC = () => {
       item.reservedQuantity || 0,
       item.availableQuantity || 0,
       item.reorderLevel || 10,
+      item.expiryStatus || 'NON_PERISHABLE',
+      `"${item.expiryDate || ''}"`,
+      `"${item.batchNumber || ''}"`,
       item.status || 'NORMAL',
     ]);
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
@@ -144,9 +165,33 @@ export const InventoryPage: React.FC = () => {
         if (activeTab === 'LOW_STOCK') {
           return matchesSearch && matchesStatus && (item.status === 'LOW_STOCK' || item.status === 'OUT_OF_STOCK');
         }
+        if (activeTab === 'EXPIRING_SOON') {
+          return matchesSearch && matchesStatus && item.isPerishable && (item.expiryStatus === 'EXPIRING_SOON' || item.expiryStatus === 'EXPIRED');
+        }
         return matchesSearch && matchesStatus;
       });
   }, [items, activeTab, searchQuery, statusFilter]);
+
+  // Reset page on filter or tab change
+  useEffect(() => {
+    setItemsPage(1);
+  }, [activeTab, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    setTxnsPage(1);
+  }, [txnTypeFilter]);
+
+  // Paginated slices
+  const paginatedItems = useMemo(() => {
+    const start = (itemsPage - 1) * itemsPerPage;
+    return filteredItems.slice(start, start + itemsPerPage);
+  }, [filteredItems, itemsPage, itemsPerPage]);
+
+  const paginatedTxns = useMemo(() => {
+    const start = (txnsPage - 1) * txnsPerPage;
+    return transactions.slice(start, start + txnsPerPage);
+  }, [transactions, txnsPage, txnsPerPage]);
+
 
   return (
     <div className={styles.container}>
@@ -209,6 +254,29 @@ export const InventoryPage: React.FC = () => {
             <p>Out of Stock Items</p>
           </div>
         </div>
+
+        <div
+          className={styles.statCard}
+          style={{
+            cursor: 'pointer',
+            borderLeft: expiringSoonCount > 0 ? (expiredCount > 0 ? '3px solid #ef4444' : '3px solid #f59e0b') : undefined,
+          }}
+          onClick={() => setActiveTab('EXPIRING_SOON')}
+        >
+          <div
+            className={styles.statIcon}
+            style={{
+              background: expiredCount > 0 ? '#fef2f2' : '#fef3c7',
+              color: expiredCount > 0 ? '#ef4444' : '#d97706',
+            }}
+          >
+            <FiClock />
+          </div>
+          <div className={styles.statContent}>
+            <h3 style={{ color: expiredCount > 0 ? '#ef4444' : undefined }}>{expiringSoonCount}</h3>
+            <p>{expiredCount > 0 ? `${expiredCount} Expired!` : 'Expiring Soon'}</p>
+          </div>
+        </div>
       </div>
 
       {/* Controls Bar */}
@@ -228,6 +296,24 @@ export const InventoryPage: React.FC = () => {
             Low Stock Alerts
             {(lowStockCount + outOfStockCount > 0) && (
               <span className={styles.tabBadge}>{lowStockCount + outOfStockCount}</span>
+            )}
+          </button>
+
+          <button
+            className={`${styles.tabBtn} ${activeTab === 'EXPIRING_SOON' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('EXPIRING_SOON')}
+          >
+            <FiClock /> Expiring Soon
+            {expiringSoonCount > 0 && (
+              <span
+                className={styles.tabBadge}
+                style={{
+                  background: expiredCount > 0 ? '#ef4444' : '#f59e0b',
+                  color: '#ffffff',
+                }}
+              >
+                {expiringSoonCount}
+              </span>
             )}
           </button>
 
@@ -291,7 +377,9 @@ export const InventoryPage: React.FC = () => {
       {/* Data Views */}
       <div className={styles.tableContainer}>
         {activeTab !== 'TRANSACTIONS' ? (
-          <table className={styles.table}>
+          <>
+            <table className={styles.table}>
+
             <thead>
               <tr>
                 <th>VARIANT & SKU</th>
@@ -301,6 +389,7 @@ export const InventoryPage: React.FC = () => {
                 <th>RESERVED</th>
                 <th>AVAILABLE</th>
                 <th>REORDER LEVEL</th>
+                <th>EXPIRY &amp; BATCH</th>
                 <th>STATUS</th>
                 <th style={{ textAlign: 'center' }}>ACTIONS</th>
               </tr>
@@ -308,7 +397,7 @@ export const InventoryPage: React.FC = () => {
             <tbody>
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className={styles.emptyState}>
+                  <td colSpan={10} className={styles.emptyState}>
                     <FiBox />
                     <p style={{ margin: '8px 0 16px 0', fontWeight: 500 }}>No inventory records found matching your filters.</p>
                     <button className={styles.btnPrimary} onClick={loadData}>
@@ -317,8 +406,9 @@ export const InventoryPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((item) => (
+                paginatedItems.map((item) => (
                   <tr key={item.inventoryId || item.variantId}>
+
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                         <span className={styles.skuTag}>{item.sku}</span>
@@ -368,6 +458,76 @@ export const InventoryPage: React.FC = () => {
                       </span>
                     </td>
                     <td style={{ color: '#64748b' }}>{item.reorderLevel ?? 10} units</td>
+                    <td>
+                      {!item.isPerishable ? (
+                        <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          {item.expiryStatus === 'EXPIRED' && (
+                            <span
+                              style={{
+                                background: '#fef2f2',
+                                color: '#dc2626',
+                                border: '1px solid #fecaca',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                width: 'fit-content',
+                              }}
+                            >
+                              <FiAlertCircle size={11} /> Expired ({Math.abs(item.daysUntilExpiry || 0)}d ago)
+                            </span>
+                          )}
+                          {item.expiryStatus === 'EXPIRING_SOON' && (
+                            <span
+                              style={{
+                                background: '#fffbeb',
+                                color: '#d97706',
+                                border: '1px solid #fde68a',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                width: 'fit-content',
+                              }}
+                            >
+                              <FiClock size={11} /> Expires in {item.daysUntilExpiry}d
+                            </span>
+                          )}
+                          {item.expiryStatus === 'GOOD' && (
+                            <span
+                              style={{
+                                background: '#ecfdf5',
+                                color: '#059669',
+                                border: '1px solid #a7f3d0',
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                width: 'fit-content',
+                              }}
+                            >
+                              <FiCheckCircle size={11} /> Safe ({item.expiryDate})
+                            </span>
+                          )}
+                          {item.batchNumber && (
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>
+                              Batch: {item.batchNumber}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td>
                       <span className={`${styles.badge} ${
                         item.status === 'NORMAL' ? styles.badgeNormal :
@@ -419,8 +579,25 @@ export const InventoryPage: React.FC = () => {
               )}
             </tbody>
           </table>
+          {filteredItems.length > 0 && (
+            <div style={{ padding: '0 16px 16px 16px' }}>
+              <Pagination
+                currentPage={itemsPage}
+                totalPages={Math.ceil(filteredItems.length / itemsPerPage)}
+                totalResults={filteredItems.length}
+                pageSize={itemsPerPage}
+                onPageChange={setItemsPage}
+                onPageSizeChange={(size) => {
+                  setItemsPerPage(size);
+                  setItemsPage(1);
+                }}
+              />
+            </div>
+          )}
+        </>
         ) : (
           /* Audit History Tab */
+          <>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -444,7 +621,7 @@ export const InventoryPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                transactions.map((t) => (
+                paginatedTxns.map((t) => (
                   <tr key={t.txnId}>
                     <td style={{ fontSize: '13px', color: '#64748b' }}>
                       {new Date(t.createdAt).toLocaleString()}
@@ -454,10 +631,11 @@ export const InventoryPage: React.FC = () => {
                     <td>
                       <span className={`${styles.badge} ${
                         t.txnType === 'RESTOCK' ? styles.badgeNormal :
-                        t.txnType === 'WRITE_OFF' ? styles.badgeOutOfStock : styles.badgeLowStock
+                        (t.txnType === 'WRITE_OFF' || t.txnType === 'SALE') ? styles.badgeOutOfStock : styles.badgeLowStock
                       }`}>
                         {t.txnType}
                       </span>
+
                     </td>
                     <td style={{ fontWeight: 700, color: t.qty > 0 ? '#16a34a' : '#dc2626' }}>
                       {t.qty > 0 ? `+${t.qty}` : t.qty}
@@ -473,8 +651,25 @@ export const InventoryPage: React.FC = () => {
               )}
             </tbody>
           </table>
+          {transactions.length > 0 && (
+            <div style={{ padding: '0 16px 16px 16px' }}>
+              <Pagination
+                currentPage={txnsPage}
+                totalPages={Math.ceil(transactions.length / txnsPerPage)}
+                totalResults={transactions.length}
+                pageSize={txnsPerPage}
+                onPageChange={setTxnsPage}
+                onPageSizeChange={(size) => {
+                  setTxnsPerPage(size);
+                  setTxnsPage(1);
+                }}
+              />
+            </div>
+          )}
+        </>
         )}
       </div>
+
 
       {/* Render Action Modals */}
       {activeModal === 'RESTOCK' && selectedItem && (

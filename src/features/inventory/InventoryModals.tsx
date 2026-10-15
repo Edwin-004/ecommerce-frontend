@@ -18,6 +18,8 @@ export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuc
   const [referenceType, setReferenceType] = useState<string>('MANUAL');
   const [referenceId, setReferenceId] = useState<string>('');
   const [remark, setRemark] = useState<string>('');
+  const [expiryDate, setExpiryDate] = useState<string>(item.expiryDate || '');
+  const [batchNumber, setBatchNumber] = useState<string>(item.batchNumber || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +39,8 @@ export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuc
         referenceType,
         referenceId: referenceId ? Number(referenceId) : undefined,
         remark: remark || 'Stock replenishment',
+        expiryDate: expiryDate || undefined,
+        batchNumber: batchNumber.trim() || undefined,
       });
       onSuccess();
     } catch (err: any) {
@@ -103,6 +107,33 @@ export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuc
                 onChange={(e) => setRemark(e.target.value)}
               />
             </div>
+
+            {item.isPerishable && (
+              <div style={{ padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '10px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#059669', marginBottom: '8px' }}>
+                  🌿 Perishable Batch Details
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div className={styles.formGroup} style={{ margin: 0 }}>
+                    <label style={{ fontSize: '11px' }}>New Expiry Date</label>
+                    <input
+                      type="date"
+                      value={expiryDate}
+                      onChange={(e) => setExpiryDate(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.formGroup} style={{ margin: 0 }}>
+                    <label style={{ fontSize: '11px' }}>Batch / Lot No.</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. LOT-2026-02"
+                      value={batchNumber}
+                      onChange={(e) => setBatchNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className={styles.modalFooter}>
@@ -142,6 +173,10 @@ export const WriteOffModal: React.FC<WriteOffModalProps> = ({ item, onClose, onS
     }
     if (quantity > item.quantity) {
       setError(`Cannot write off ${quantity} units. Current stock is only ${item.quantity}.`);
+      return;
+    }
+    if (item.availableQuantity !== undefined && quantity > item.availableQuantity) {
+      setError(`Cannot write off ${quantity} units. Available stock is only ${item.availableQuantity} (${item.reservedQuantity} reserved for customer orders).`);
       return;
     }
     if (!remark.trim()) {

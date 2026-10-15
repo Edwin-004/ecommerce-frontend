@@ -62,11 +62,37 @@ export const productManagementApi = {
     categoryId: number;
     brandId?: number;
     userId: number;
+    isPerishable?: boolean;
   }) =>
     apiFetch<ProductItem>('/api/backoffice/products', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+
+  // Update product
+  updateProduct: (
+    id: number,
+    payload: {
+      productName: string;
+      description?: string;
+      status: string;
+      categoryId: number;
+      brandId?: number;
+      userId: number;
+      isPerishable?: boolean;
+    }
+  ) =>
+    apiFetch<ProductItem>(`/api/backoffice/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+
+  // Delete product
+  deleteProduct: (id: number) =>
+    apiFetch<void>(`/api/backoffice/products/${id}`, {
+      method: 'DELETE',
+    }),
+
 
   // Categories
   getCategories: async (): Promise<CategoryItem[]> => {
@@ -137,8 +163,23 @@ export const productManagementApi = {
 
   // Variants & Inventory
   getProductVariants: () => apiFetch<any[]>('/api/backoffice/product-variants'),
+  getVariantsByProductId: (productId: number) =>
+    apiFetch<any[]>(`/api/backoffice/product-variants/product/${productId}`),
   createProductVariant: (payload: any) =>
     apiFetch<any>('/api/backoffice/product-variants', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  createProductVariantWithOptions: (payload: {
+    productId: number;
+    sku?: string;
+    sellingPrice: number;
+    costPrice?: number;
+    status: string;
+    optionIds: number[];
+    initialStock?: number;
+  }) =>
+    apiFetch<any>('/api/backoffice/product-variants/create-with-options', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
