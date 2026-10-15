@@ -15,6 +15,7 @@ import CategoryManagement from './features/categories/CategoryManagement';
 import { BrandsPage } from './features/brand/BrandsPage';
 import TagManagement from './features/tags/TagManagement';
 import { StaffList } from "./features/staff/StaffList"; 
+import { CreateStaff } from './features/staff/CreateStaff'; // <--- အသစ်ထည့်ထားသော Import
 // ---------------------------------------------
 
 import { Profile } from './components/Profile';
@@ -57,6 +58,7 @@ function App() {
 
             {/* Staff Management */}
             <Route path="/admin/staff" element={<StaffList />} />
+            <Route path="/admin/staff/new" element={<CreateStaff />} /> {/* <--- အသစ်ထည့်ထားသော Route */}
 
             {/* Reports */}
             <Route path="/admin/reports" element={<ReportsPage />} />

@@ -17,13 +17,14 @@ import {
   FiGrid,
   FiShoppingBag,
   FiTruck,
+  FiUserPlus // <--- Add Staff အတွက် Icon အသစ် ထည့်ထားပါသည်
 } from 'react-icons/fi';
 
 export const Sidebar = () => {
   const [open, setOpen] = useState(true);
   const location = useLocation();
 
-  // Active check for Catalog items
+  // Active checks
   const isCatalogActive =
     location.pathname.startsWith('/admin/products') ||
     location.pathname.startsWith('/admin/categories') ||
@@ -33,10 +34,14 @@ export const Sidebar = () => {
     location.pathname.startsWith('/admin/variations');
 
   const isInventoryActive = location.pathname.startsWith('/admin/inventory');
+  
+  // Staff အတွက် Active ဖြစ်/မဖြစ် စစ်ဆေးခြင်း
+  const isStaffActive = location.pathname.startsWith('/admin/staff');
 
-  // Keep Catalog expanded by default or when an active child is selected
   const [catalogOpen, setCatalogOpen] = useState<boolean>(true);
   const [inventoryOpen, setInventoryOpen] = useState<boolean>(true);
+  // Staff Dropdown အဖွင့်/အပိတ် အတွက် State
+  const [staffOpen, setStaffOpen] = useState<boolean>(true);
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.link} ${styles.active}` : styles.link;
@@ -195,11 +200,44 @@ export const Sidebar = () => {
           {open && <span>Shipping Rates</span>}
         </NavLink>
 
-        {/* Staff Management */}
-        <NavLink to="/admin/staff" className={navClass}>
-          <FiUsers className={styles.linkIcon} />
-          {open && <span>Staff Management</span>}
-        </NavLink>
+        {/* Staff Management Dropdown အသစ် */}
+        <div className={styles.dropdownGroup}>
+          <button
+            type="button"
+            className={`${styles.dropdownToggle} ${
+              isStaffActive ? styles.parentActive : ''
+            }`}
+            onClick={() => {
+              if (!open) setOpen(true);
+              setStaffOpen(!staffOpen);
+            }}
+          >
+            <div className={styles.dropdownLeft}>
+              <FiUsers className={styles.linkIcon} />
+              {open && <span>Staff Management</span>}
+            </div>
+            {open && (
+              <FiChevronDown
+                className={`${styles.chevron} ${
+                  staffOpen ? styles.chevronRotated : ''
+                }`}
+              />
+            )}
+          </button>
+
+          {open && staffOpen && (
+            <div className={styles.submenu}>
+              <NavLink to="/admin/staff" end className={subNavClass}>
+                <FiUsers size={14} className={styles.subIcon} />
+                <span>All Staff</span>
+              </NavLink>
+              <NavLink to="/admin/staff/new" className={subNavClass}>
+                <FiUserPlus size={14} className={styles.subIcon} />
+                <span>Add New Staff</span>
+              </NavLink>
+            </div>
+          )}
+        </div>
       </nav>
     </aside>
   );

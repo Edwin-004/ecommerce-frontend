@@ -150,19 +150,27 @@
 }
 .staff-table tr:hover { background-color: #f9fafb; }
 
-/* Badges & Buttons */
+/* --- Badges & Buttons --- */
 .badge {
-    padding: 4px 10px;
-    border-radius: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700; /* စာသားကို ပိုထူပေးထားပါသည် */
     display: inline-block;
+    text-align: center;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* နည်းနည်းကြွတက်လာစေရန် Shadow ထည့်ထားပါသည် */
 }
-.badge-admin { background-color: #faf5ff; color: #9333ea; }
-.badge-staff { background-color: #eff6ff; color: #2563eb; }
-.badge-active { background-color: #f0fdf4; color: #16a34a; border-radius: 12px; }
-.badge-inactive { background-color: #fef2f2; color: #dc2626; border-radius: 12px; }
 
+/* Role Badges (အရောင်ရင့်ရင့်များ) */
+.badge-admin { background-color: #7c3aed; color: #ffffff; } /* ခရမ်းရောင် ရင့်ရင့် */
+.badge-staff { background-color: #2563eb; color: #ffffff; } /* အပြာရောင် ရင့်ရင့် */
+
+/* Status Badges (အရောင်ရင့်ရင့်များ) */
+.badge-active { background-color: #16a34a; color: #ffffff; } /* အစိမ်းရောင် ရင့်ရင့် */
+.badge-inactive { background-color: #dc2626; color: #ffffff; } /* အနီရောင် ရင့်ရင့် */
+
+/* Actions */
 .action-btn {
     padding: 6px 12px;
     border-radius: 6px;
