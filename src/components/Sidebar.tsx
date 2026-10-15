@@ -16,10 +16,19 @@ import {
   FiShoppingBag,
   FiTruck,
   FiBarChart2,
+  FiX,
 } from 'react-icons/fi';
 
-export const Sidebar = () => {
+interface SidebarProps {
+  onCloseMobile?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const location = useLocation();
+
+  const handleLinkClick = () => {
+    if (onCloseMobile) onCloseMobile();
+  };
 
   // Active check for Catalog items
   const isCatalogActive =
@@ -55,11 +64,29 @@ export const Sidebar = () => {
             <span>Admin Portal</span>
           </div>
         </div>
+        {onCloseMobile && (
+          <button
+            type="button"
+            className={styles.mobileCloseBtn}
+            onClick={onCloseMobile}
+            aria-label="Close Sidebar"
+          >
+            <FiX size={20} />
+          </button>
+        )}
       </div>
 
       {/* Navigation Sections */}
-      <nav className={styles.navContainer}>
+      <nav
+        className={styles.navContainer}
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest('a')) {
+            handleLinkClick();
+          }
+        }}
+      >
         {/* ================= 1. OVERVIEW ================= */}
+
         <div className={styles.navSectionTitle}>OVERVIEW</div>
         <NavLink to="/admin/dashboard" className={navClass}>
           <FiHome className={styles.linkIcon} />
