@@ -63,6 +63,10 @@ export const CategoryManagement: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("create") === "true") {
+      openCreateModal();
+    }
   }, []);
 
   const handleInputChange = (

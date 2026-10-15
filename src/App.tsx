@@ -1,19 +1,25 @@
 // src/App.tsx
-// src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './features/auth/Login';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLayout } from './components/AdminLayout';
 import { ProductManagementPage } from './features/products/ProductManagementPage';
 import { CreateProductPage } from './features/products/CreateProductPage';
+import { EditProductPage } from './features/products/EditProductPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
+
 import { VariantsPage } from './features/variants/VariantsPage';
 import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
+
+// --- Conflict ရှင်းလင်းပြီးသား Imports များ ---
 import { BrandsPage } from './features/brand/BrandsPage';
 import TagManagement from './features/tags/TagManagement';
-import StaffList from './components/StaffList';
+import { StaffList } from "./features/staff/StaffList"; 
+import { CreateStaff } from './features/staff/CreateStaff'; // <--- အသစ်ထည့်ထားသော Import
+// ---------------------------------------------
+
 import { Profile } from './components/Profile';
 import { ReportsPage } from './features/reports/ReportsPage';
 import './App.css';
@@ -38,9 +44,13 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/profile" element={<Profile />} />
 
-            {/* Product Catalog & Stock (Member 3) */}
+            {/* Product Catalog & Stock */}
             <Route path="/admin/products" element={<ProductManagementPage />} />
+            <Route path="/productlist" element={<ProductManagementPage />} />
             <Route path="/admin/products/new" element={<CreateProductPage />} />
+            <Route path="/admin/products/edit/:id" element={<EditProductPage />} />
+            <Route path="/product" element={<CreateProductPage />} />
+
             <Route path="/admin/variants" element={<VariantsPage />} />
             <Route path="/admin/variations" element={<VariantsPage />} />
             <Route path="/admin/inventory" element={<InventoryPage />} />
@@ -48,12 +58,13 @@ function App() {
             {/* Categories */}
             <Route path="/admin/categories" element={<CategoryManagement />} />
 
+            {/* Brands & Tags */}
             <Route path="/admin/brands" element={<BrandsPage />} />
-            {/* Tags */}
             <Route path="/admin/tags" element={<TagManagement />} />
 
             {/* Staff Management */}
             <Route path="/admin/staff" element={<StaffList />} />
+            <Route path="/admin/staff/new" element={<CreateStaff />} /> {/* <--- အသစ်ထည့်ထားသော Route */}
 
             {/* Reports */}
             <Route path="/admin/reports" element={<ReportsPage />} />

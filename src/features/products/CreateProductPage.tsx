@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
 import {
@@ -8,6 +8,8 @@ import {
 } from './productManagementApi';
 import { tagApi } from '../tags/tagApi';
 import { variantApi } from '../variants/variantApi';
+import { categoryApi } from '../categories/categoryApi';
+import { createBrand } from '../brand/brandApi';
 import {
   FiPackage,
   FiInfo,
@@ -20,7 +22,18 @@ import {
   FiX,
   FiCheck,
   FiTag,
+  FiRefreshCw,
+  FiAlertCircle,
+  FiClock,
 } from 'react-icons/fi';
+import { inventoryApi } from '../inventory/inventoryApi';
+
+const ATTRIBUTE_PRESETS: Record<string, string[]> = {
+  color: ['White', 'Black', 'Yellow', 'Red', 'Blue', 'Green', 'Grey', 'Navy'],
+  size: ['S', 'M', 'L', 'XL', 'XXL'],
+  storage: ['64GB', '128GB', '256GB', '512GB', '1TB'],
+  material: ['Cotton', 'Leather', 'Polyester', 'Silk', 'Denim'],
+};
 
 const COLOR_MAP: Record<string, string> = {
   black: '#000000',
@@ -54,6 +67,39 @@ interface LocalAttribute {
   values: string[];
 }
 
+export interface GeneratedVariant {
+  id: string;
+  sku: string;
+  combination: Array<{ attrName: string; value: string }>;
+  price: string | number;
+  stock: string | number;
+  images: File[];
+  imagePreviews: string[];
+}
+
+const generateVariantSku = (
+  index: number,
+  combination: Array<{ attrName: string; value: string }>,
+  prodName: string
+) => {
+  const prefix = prodName
+    ? prodName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase() || 'LVLUNO'
+    : 'LVLUNO';
+
+  let comboCode = '';
+  combination.forEach((c) => {
+    const val = c.value.trim().toUpperCase();
+    if (val === 'WHITE') comboCode += 'I';
+    else if (val === 'BLACK') comboCode += 'S';
+    else if (val === 'YELLOW') comboCode += 'X';
+    else if (val.length <= 2) comboCode += val;
+    else comboCode += val.slice(0, 2);
+  });
+
+  const numPart = String(index + 1).padStart(3, '0');
+  return `${prefix}${comboCode || 'V'}${numPart}`;
+};
+
 export const CreateProductPage: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +117,30 @@ export const CreateProductPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedBrand, setSelectedBrand] = useState<string>('');
 
+  // Expiration & Perishable tracking
+  const [isPerishable, setIsPerishable] = useState<boolean>(false);
+  const [expiryDate, setExpiryDate] = useState<string>('');
+  const [manufactureDate, setManufactureDate] = useState<string>('');
+  const [batchNumber, setBatchNumber] = useState<string>('');
+  const [expiryTouched, setExpiryTouched] = useState<boolean>(false);
+
+  // Auto-detect perishable products based on Category name
+  const handleCategorySelect = (catId: string) => {
+    setSelectedCategory(catId);
+    const cat = categories.find((c) => String(c.categoryId) === catId);
+    if (cat) {
+      const name = cat.categoryName.toLowerCase();
+      const perishableKeywords = [
+        'food', 'drink', 'beverage', 'grocer', 'snack', 'bakery', 'fruit', 'dairy',
+        'medicine', 'pharma', 'drug', 'health', 'medical', 'pill', 'tablet',
+        'cosmetic', 'skincare', 'beauty', 'makeup', 'lotion', 'cream', 'serum',
+        'supplement', 'vitamin', 'organic', 'perishable'
+      ];
+      const isPerish = perishableKeywords.some((kw) => name.includes(kw));
+      setIsPerishable(isPerish);
+    }
+  };
+
   // Tags
   const [allTags, setAllTags] = useState<Array<{ tagId: number; tagName: string }>>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
@@ -85,23 +155,33 @@ export const CreateProductPage: React.FC = () => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
-  // Variations toggle & list
-  const [hasVariants, setHasVariants] = useState<boolean>(true);
-  const [attributes, setAttributes] = useState<LocalAttribute[]>([
-    {
-      id: 1,
-      name: 'Colour',
-      values: ['black', 'white'],
-    },
-    {
-      id: 2,
-      name: 'Size',
-      values: ['M', 'L'],
-    },
-  ]);
+  // Variations toggle & list (Defaults to FALSE, only expands when user clicks/enables)
+  const [hasVariants, setHasVariants] = useState<boolean>(false);
+  // Attributes start empty so user must explicitly choose from ADD EXISTING ATTRIBUTE
+  const [attributes, setAttributes] = useState<LocalAttribute[]>([]);
+
+  // Generated Variants State (Empty initially - cards only drop down when user clicks Generate Variants)
+  const [generatedVariants, setGeneratedVariants] = useState<GeneratedVariant[]>([]);
+
+  // Computed combinations count based on active attributes
+  const computedCombosCount = useMemo(() => {
+    const activeAttrs = attributes.filter((a) => a.values && a.values.length > 0);
+    if (activeAttrs.length === 0) return 0;
+    return activeAttrs.reduce((total, attr) => total * attr.values.length, 1);
+  }, [attributes]);
+
+  // Total variant stock sum across all generated cards
+  const totalVariantStock = useMemo(() => {
+    return generatedVariants.reduce(
+      (acc, v) => acc + (Number(v.stock) || 0),
+      0
+    );
+  }, [generatedVariants]);
 
   // Existing attributes available in database to add
   const [availableAttributes, setAvailableAttributes] = useState<string[]>([
+    'Color',
+    'Size',
     'Material',
     'Pattern',
     'Storage',
@@ -119,6 +199,91 @@ export const CreateProductPage: React.FC = () => {
   // Submission state
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Validation touched states
+  const [nameTouched, setNameTouched] = useState<boolean>(false);
+  const [qtyTouched, setQtyTouched] = useState<boolean>(false);
+
+  // Quick Create Modals
+  const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
+  const [newCatName, setNewCatName] = useState<string>('');
+  const [newCatDesc, setNewCatDesc] = useState<string>('');
+  const [catLoading, setCatLoading] = useState<boolean>(false);
+
+  const [showBrandModal, setShowBrandModal] = useState<boolean>(false);
+  const [newBrandName, setNewBrandName] = useState<string>('');
+  const [newBrandDesc, setNewBrandDesc] = useState<string>('');
+  const [brandLoading, setBrandLoading] = useState<boolean>(false);
+
+  const [showTagModal, setShowTagModal] = useState<boolean>(false);
+  const [newTagName, setNewTagName] = useState<string>('');
+  const [tagLoading, setTagLoading] = useState<boolean>(false);
+
+  const handleQuickCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    try {
+      setCatLoading(true);
+      const res = await categoryApi.createCategory({
+        categoryName: newCatName.trim(),
+        description: newCatDesc.trim() || undefined,
+      });
+      setCategories((prev) => [...prev, { categoryId: res.categoryId, categoryName: res.categoryName }]);
+      setSelectedCategory(String(res.categoryId));
+      setShowCategoryModal(false);
+      setNewCatName('');
+      setNewCatDesc('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to create category');
+    } finally {
+      setCatLoading(false);
+    }
+  };
+
+  const handleQuickCreateBrand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBrandName.trim()) return;
+    try {
+      setBrandLoading(true);
+      const res = await createBrand(
+        {
+          brandName: newBrandName.trim(),
+          brandLogoUrl: '',
+          description: newBrandDesc.trim() || '',
+          status: 'ACTIVE',
+          categoryIds: selectedCategory ? [Number(selectedCategory)] : [],
+        },
+        null
+      );
+      setBrands((prev) => [...prev, { brandId: res.brandId, brandName: res.brandName }]);
+      setSelectedBrand(String(res.brandId));
+      setShowBrandModal(false);
+      setNewBrandName('');
+      setNewBrandDesc('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to create brand');
+    } finally {
+      setBrandLoading(false);
+    }
+  };
+
+  const handleQuickCreateTag = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = newTagName.replace(/^#/, '').trim();
+    if (!clean) return;
+    try {
+      setTagLoading(true);
+      const res = await tagApi.createTag({ tagName: clean });
+      setAllTags((prev) => [...prev, { tagId: res.tagId, tagName: res.tagName }]);
+      setSelectedTagIds((prev) => [...prev, res.tagId]);
+      setShowTagModal(false);
+      setNewTagName('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to create tag');
+    } finally {
+      setTagLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadCategoriesAndBrands();
@@ -213,19 +378,122 @@ export const CreateProductPage: React.FC = () => {
     });
   };
 
+  // Generate Cartesian variant combinations
+  const generateCombosFromAttrs = (
+    currentAttrs: LocalAttribute[],
+    customPrice?: string | number,
+    customProdName?: string
+  ) => {
+    const activeAttrs = currentAttrs.filter((a) => a.values && a.values.length > 0);
+    if (activeAttrs.length === 0) {
+      setGeneratedVariants([]);
+      return;
+    }
+
+    type Item = { attrName: string; value: string };
+    const attrChoices: Item[][] = activeAttrs.map((attr) =>
+      attr.values.map((v) => ({ attrName: attr.name, value: v }))
+    );
+
+    const cartesianCombos = (arrays: Item[][]): Item[][] => {
+      return arrays.reduce<Item[][]>(
+        (acc, curr) => acc.flatMap((c) => curr.map((n) => [...c, n])),
+        [[]]
+      );
+    };
+
+    const combos = cartesianCombos(attrChoices);
+    const activePrice = customPrice !== undefined ? customPrice : price || 200000;
+    const activeName = customProdName !== undefined ? customProdName : productName;
+
+    setGeneratedVariants((prev) => {
+      return combos.map((combo, idx) => {
+        const comboKey = combo.map((c) => `${c.attrName}:${c.value}`).sort().join('|');
+        const existing = prev.find((v) => {
+          const key = v.combination.map((c) => `${c.attrName}:${c.value}`).sort().join('|');
+          return key === comboKey;
+        });
+
+        if (existing) {
+          return existing;
+        }
+
+        return {
+          id: `var-${idx + 1}-${comboKey}`,
+          sku: generateVariantSku(idx, combo, activeName),
+          combination: combo,
+          price: activePrice,
+          stock: '',
+          images: [],
+          imagePreviews: [],
+        };
+      });
+    });
+  };
+
+  // Toggle handler: Clicking variant checkbox at the top
+  const handleToggleHasVariants = (checked: boolean) => {
+    setHasVariants(checked);
+    if (!checked) {
+      setAttributes([]);
+      setGeneratedVariants([]);
+    } else if (attributes.length === 0) {
+      // Auto-populate 'Color' attribute so user can immediately click color presets
+      setAttributes([
+        {
+          id: Date.now(),
+          name: 'Color',
+          values: [],
+        },
+      ]);
+    }
+  };
+
+  // Real-time reactive auto-generation of variant cards whenever attributes change
+  useEffect(() => {
+    if (hasVariants) {
+      generateCombosFromAttrs(attributes);
+    } else {
+      setGeneratedVariants([]);
+    }
+  }, [attributes, hasVariants]);
+
+  // Manual trigger button to generate / re-generate variant cards
+  const handleGenerateVariants = () => {
+    generateCombosFromAttrs(attributes);
+  };
+
+  // Quick preset value add for attribute
+  const handleAddPresetValue = (attrId: string | number, value: string) => {
+    setAttributes((prev) =>
+      prev.map((attr) => {
+        if (attr.id === attrId) {
+          if (attr.values.some((v) => v.toLowerCase() === value.toLowerCase())) {
+            return attr;
+          }
+          return { ...attr, values: [...attr.values, value] };
+        }
+        return attr;
+      })
+    );
+  };
+
   // Inline value add for attribute
   const handleAddValueToAttr = (attrId: string | number) => {
     const val = inlineValues[attrId]?.trim();
     if (!val) return;
 
     setAttributes((prev) =>
-      prev.map((attr) =>
-        attr.id === attrId && !attr.values.includes(val)
-          ? { ...attr, values: [...attr.values, val] }
-          : attr
-      )
+      prev.map((attr) => {
+        if (attr.id === attrId) {
+          if (attr.values.some((v) => v.toLowerCase() === val.toLowerCase())) {
+            return attr;
+          }
+          return { ...attr, values: [...attr.values, val] };
+        }
+        return attr;
+      })
     );
-
     setInlineValues((prev) => ({ ...prev, [attrId]: '' }));
   };
 
@@ -251,14 +519,15 @@ export const CreateProductPage: React.FC = () => {
       return;
     }
 
-    setAttributes((prev) => [
-      ...prev,
+    const updated: LocalAttribute[] = [
+      ...attributes,
       {
         id: Date.now(),
         name: selectedExistingAttr,
         values: [],
       },
-    ]);
+    ];
+    setAttributes(updated);
     setSelectedExistingAttr('');
   };
 
@@ -270,34 +539,102 @@ export const CreateProductPage: React.FC = () => {
       return;
     }
 
-    setAttributes((prev) => [
-      ...prev,
+    const updated: LocalAttribute[] = [
+      ...attributes,
       {
         id: Date.now(),
         name: customAttrName.trim(),
         values: [],
       },
-    ]);
+    ];
+    setAttributes(updated);
     setCustomAttrName('');
     setShowAddAttrInput(false);
+  };
+
+  const handleDeleteGeneratedVariant = (id: string) => {
+    setGeneratedVariants((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  const handleVariantFieldChange = (id: string, field: 'price' | 'stock', value: string) => {
+    setGeneratedVariants((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
+    );
+  };
+
+  const handleVariantImagesUpload = (id: string, files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files);
+    const newUrls = newFiles.map((f) => URL.createObjectURL(f));
+
+    setGeneratedVariants((prev) =>
+      prev.map((v) =>
+        v.id === id
+          ? {
+              ...v,
+              images: [...v.images, ...newFiles],
+              imagePreviews: [...v.imagePreviews, ...newUrls],
+            }
+          : v
+      )
+    );
   };
 
   // Form Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setNameTouched(true);
+    setQtyTouched(true);
 
-    if (!productName.trim()) {
-      setErrorMessage('Please enter a product name.');
+    if (!productName.trim() || productName.trim().length < 3) {
+      setErrorMessage('Please enter a valid product name (at least 3 characters).');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (!price || Number(price) <= 0) {
       setErrorMessage('Please enter a valid price.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (!selectedCategory) {
       setErrorMessage('Please select a category.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
+    }
+
+    const prodQuantity = Number(quantity);
+    if (quantity === '' || isNaN(prodQuantity) || prodQuantity < 10) {
+      setErrorMessage('Product quantity must be at least 10 units.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Expiry validation for perishable products
+    setExpiryTouched(true);
+    if (isPerishable && !expiryDate) {
+      setErrorMessage('Please enter an expiration date for this perishable product.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Variant stock validation: Total variant stock must equal product quantity
+    if (hasVariants) {
+      if (generatedVariants.length === 0) {
+        setErrorMessage(
+          'Please generate variants before creating the product, or uncheck "This product has variants".'
+        );
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
+      if (totalVariantStock !== prodQuantity) {
+        setErrorMessage(
+          `Total variant stock (${totalVariantStock}) must equal product quantity (${prodQuantity}). Please adjust the variant stock quantities.`
+        );
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -310,6 +647,7 @@ export const CreateProductPage: React.FC = () => {
         categoryId: Number(selectedCategory),
         brandId: selectedBrand ? Number(selectedBrand) : undefined,
         userId: 1,
+        isPerishable: isPerishable,
       };
 
       let createdProduct: any = null;
@@ -350,7 +688,7 @@ export const CreateProductPage: React.FC = () => {
         ? attributes.filter((a) => a.values && a.values.length > 0)
         : [];
 
-      if (hasVariants && activeAttrs.length > 0 && prodId) {
+      if (hasVariants && generatedVariants.length > 0 && prodId) {
         try {
           // Pre-fetch DB variations
           let dbVariations: any[] = [];
@@ -406,52 +744,72 @@ export const CreateProductPage: React.FC = () => {
             }
           }
 
-          // Cartesian product combination generator for all active attributes
-          type OptionChoice = { attrName: string; value: string; optionId?: number };
-
-          const attrChoices: OptionChoice[][] = activeAttrs.map((attr) =>
-            attr.values.map((val) => ({
-              attrName: attr.name,
-              value: val,
-              optionId: optionMap.get(`${attr.name.toLowerCase()}:::${val.toLowerCase()}`),
-            }))
-          );
-
-          const cartesianCombos = (arrays: OptionChoice[][]): OptionChoice[][] => {
-            return arrays.reduce<OptionChoice[][]>(
-              (acc, curr) => acc.flatMap((c) => curr.map((n) => [...c, n])),
-              [[]]
-            );
-          };
-
-          const allCombinations = cartesianCombos(attrChoices);
-          // Limit to a reasonable number to prevent browser hang
-          const combosToCreate = allCombinations.slice(0, 50);
-
-          const cleanPrefix =
-            productName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PROD';
-          const initQty = Number(quantity) > 0 ? Number(quantity) : 25;
-
-          for (const combo of combosToCreate) {
-            const valCodes = combo
-              .map((c) => c.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase())
-              .filter(Boolean)
-              .join('-');
-            const randomCode = Math.floor(100 + Math.random() * 900);
-            const skuCode = `${cleanPrefix}-${valCodes}-${randomCode}`;
-
-            const validOptionIds = combo
-              .map((c) => c.optionId)
+          // Create each generated variant with customized price, stock, and SKU
+          for (const gv of generatedVariants) {
+            const validOptionIds = gv.combination
+              .map((c) =>
+                optionMap.get(
+                  `${c.attrName.toLowerCase()}:::${c.value.toLowerCase()}`
+                )
+              )
               .filter((id): id is number => typeof id === 'number');
 
-            await productManagementApi.createProductVariantWithOptions({
-              productId: prodId,
-              sku: skuCode,
-              sellingPrice: Number(price),
-              status: 'ACTIVE',
-              optionIds: validOptionIds,
-              initialStock: initQty,
-            });
+            const varPrice =
+              Number(gv.price) > 0 ? Number(gv.price) : Number(price);
+            const varStock =
+              Number(gv.stock) >= 0 ? Number(gv.stock) : (Number(quantity) || 0);
+
+            let createdVariant: any = null;
+            try {
+              createdVariant =
+                await productManagementApi.createProductVariantWithOptions({
+                  productId: prodId,
+                  sku: gv.sku,
+                  sellingPrice: varPrice,
+                  status: 'ACTIVE',
+                  optionIds: validOptionIds,
+                  initialStock: varStock,
+                });
+
+              // Link expiry details to inventory if product is perishable
+              if (isPerishable && expiryDate && createdVariant?.variantId) {
+                try {
+                  await inventoryApi.restockVariant({
+                    variantId: createdVariant.variantId,
+                    quantity: 0,
+                    expiryDate: expiryDate,
+                    batchNumber: batchNumber.trim() || undefined,
+                    remark: 'Initial batch expiry setup',
+                  });
+                } catch (invErr) {
+                  console.warn('Initial expiry setup for variant skipped:', invErr);
+                }
+              }
+            } catch (createVarErr) {
+              console.warn(`Failed to create variant ${gv.sku}:`, createVarErr);
+            }
+
+            // Upload variant-specific images if any
+            if (
+              gv.images &&
+              gv.images.length > 0 &&
+              createdVariant?.variantId
+            ) {
+              for (let i = 0; i < gv.images.length; i++) {
+                try {
+                  await productManagementApi.uploadProductVariantImage(
+                    createdVariant.variantId,
+                    gv.images[i],
+                    i === 0
+                  );
+                } catch (imgErr) {
+                  console.warn(
+                    `Variant image upload failed for ${gv.sku}:`,
+                    imgErr
+                  );
+                }
+              }
+            }
           }
         } catch (varErr: any) {
           console.warn('Variant auto-generation error:', varErr);
@@ -463,9 +821,9 @@ export const CreateProductPage: React.FC = () => {
           const cleanName =
             productName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PROD';
           const skuCode = `${cleanName}-${Math.floor(1000 + Math.random() * 9000)}`;
-          const initQty = Number(quantity) > 0 ? Number(quantity) : 25;
+          const initQty = Number(quantity) >= 10 ? Number(quantity) : 10;
 
-          await productManagementApi.createProductVariantWithOptions({
+          const createdSimpleVar = await productManagementApi.createProductVariantWithOptions({
             productId: prodId,
             sku: skuCode,
             sellingPrice: Number(price),
@@ -473,6 +831,21 @@ export const CreateProductPage: React.FC = () => {
             optionIds: [],
             initialStock: initQty,
           });
+
+          // Link expiry details to inventory if product is perishable
+          if (isPerishable && expiryDate && createdSimpleVar?.variantId) {
+            try {
+              await inventoryApi.restockVariant({
+                variantId: createdSimpleVar.variantId,
+                quantity: 0,
+                expiryDate: expiryDate,
+                batchNumber: batchNumber.trim() || undefined,
+                remark: 'Initial batch expiry setup',
+              });
+            } catch (invErr) {
+              console.warn('Initial expiry setup for simple variant skipped:', invErr);
+            }
+          }
         } catch (singleVarErr: any) {
           console.warn('Default variant creation skipped:', singleVarErr);
           throw new Error('Base product was created, but stock inventory setup failed: ' + (singleVarErr.message || ''));
@@ -532,10 +905,35 @@ export const CreateProductPage: React.FC = () => {
                 type="text"
                 required
                 className={styles.inputField}
-                placeholder="Enter product name"
+                style={{
+                  borderColor:
+                    nameTouched && (!productName.trim() || productName.trim().length < 3)
+                      ? '#ef4444'
+                      : undefined,
+                }}
+                placeholder="Enter product name (min 3 chars)"
                 value={productName}
-                onChange={(e) => setProductName(e.target.value)}
+                onChange={(e) => {
+                  setProductName(e.target.value);
+                  if (!nameTouched) setNameTouched(true);
+                }}
+                onBlur={() => setNameTouched(true)}
               />
+              {nameTouched && (!productName.trim() || productName.trim().length < 3) && (
+                <span
+                  style={{
+                    color: '#ef4444',
+                    fontSize: '11px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <FiAlertCircle size={12} /> Product name is required and must be at least 3 characters.
+                </span>
+              )}
             </div>
 
             <div className={styles.inputGroup}>
@@ -555,16 +953,41 @@ export const CreateProductPage: React.FC = () => {
 
           <div className={styles.formGrid2}>
             <div className={styles.inputGroup}>
-              <label>Quantity *</label>
+              <label>Quantity * (Min. 10)</label>
               <input
                 type="number"
                 required
-                min="0"
+                min="10"
                 className={styles.inputField}
-                placeholder="Enter quantity"
+                style={{
+                  borderColor:
+                    qtyTouched && (quantity === '' || Number(quantity) < 10)
+                      ? '#ef4444'
+                      : undefined,
+                }}
+                placeholder="Enter quantity (min 10)"
                 value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
+                onChange={(e) => {
+                  setQuantity(e.target.value);
+                  if (!qtyTouched) setQtyTouched(true);
+                }}
+                onBlur={() => setQtyTouched(true)}
               />
+              {qtyTouched && (quantity === '' || Number(quantity) < 10) && (
+                <span
+                  style={{
+                    color: '#ef4444',
+                    fontSize: '11px',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <FiAlertCircle size={12} /> Quantity must be at least 10 units.
+                </span>
+              )}
             </div>
 
             <div className={styles.inputGroup}>
@@ -600,15 +1023,46 @@ export const CreateProductPage: React.FC = () => {
 
           <div className={styles.formGrid2}>
             <div className={styles.inputGroup}>
-              <label>Select Category *</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ margin: 0 }}>Select Category *</label>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/categories?create=true')}
+                  style={{
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    color: '#2563eb',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                  title="Open Category Create Form Route"
+                >
+                  <FiPlus size={11} /> Add New Category
+                </button>
+              </div>
               <div className={styles.categoryBrandRow}>
                 <select
                   required
                   className={styles.inputField}
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value === '__NEW_CATEGORY__') {
+                      navigate('/admin/categories?create=true');
+                    } else {
+                      handleCategorySelect(e.target.value);
+                    }
+                  }}
                 >
                   <option value="">Select Category</option>
+                  <option value="__NEW_CATEGORY__" style={{ color: '#2563eb', fontWeight: 600 }}>
+                    + Add New Category (Go to Route)...
+                  </option>
                   {categories.map((c) => (
                     <option key={c.categoryId} value={String(c.categoryId)}>
                       {c.categoryName}
@@ -619,7 +1073,7 @@ export const CreateProductPage: React.FC = () => {
                   type="button"
                   className={styles.btnIconAction}
                   title="Clear Category"
-                  onClick={() => setSelectedCategory('')}
+                  onClick={() => handleCategorySelect('')}
                 >
                   <FiTrash2 />
                 </button>
@@ -627,14 +1081,45 @@ export const CreateProductPage: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Select Brand (Optional)</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ margin: 0 }}>Select Brand (Optional)</label>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/brands?create=true')}
+                  style={{
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    color: '#2563eb',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                  title="Open Brand Create Form Route"
+                >
+                  <FiPlus size={11} /> Add New Brand
+                </button>
+              </div>
               <div className={styles.categoryBrandRow}>
                 <select
                   className={styles.inputField}
                   value={selectedBrand}
-                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value === '__NEW_BRAND__') {
+                      navigate('/admin/brands?create=true');
+                    } else {
+                      setSelectedBrand(e.target.value);
+                    }
+                  }}
                 >
                   <option value="">Select Brand (Optional)</option>
+                  <option value="__NEW_BRAND__" style={{ color: '#2563eb', fontWeight: 600 }}>
+                    + Add New Brand (Go to Route)...
+                  </option>
                   {brands.map((b) => (
                     <option key={b.brandId} value={String(b.brandId)}>
                       {b.brandName}
@@ -655,9 +1140,31 @@ export const CreateProductPage: React.FC = () => {
 
           {/* Product Tags */}
           <div style={{ marginTop: '20px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-              <FiTag color="#2563eb" size={14} /> Product Tags (Optional)
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: 0, fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                <FiTag color="#2563eb" size={14} /> Product Tags (Optional)
+              </label>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/tags')}
+                style={{
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  color: '#2563eb',
+                  padding: '3px 10px',
+                  borderRadius: '16px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+                title="Open Tag Management Route"
+              >
+                <FiPlus size={11} /> Add New Tag
+              </button>
+            </div>
             <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#64748b' }}>
               Assign tags to this product for customer search, promo badges, and filtering.
             </p>
@@ -696,6 +1203,111 @@ export const CreateProductPage: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* CARD: Expiration & Batch Details (Dynamic Perishable Section) */}
+        <div
+          className={styles.sectionCard}
+          style={{
+            borderLeft: isPerishable ? '4px solid #10b981' : '1px solid #e2e8f0',
+            background: isPerishable ? '#fcfdfd' : '#ffffff',
+            transition: 'all 0.3s ease',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <h3 className={styles.sectionTitle} style={{ margin: 0 }}>
+              <FiClock color={isPerishable ? '#10b981' : '#64748b'} /> Expiration &amp; Batch Details
+              {isPerishable && (
+                <span
+                  style={{
+                    marginLeft: '10px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    padding: '3px 9px',
+                    borderRadius: '12px',
+                    background: '#ecfdf5',
+                    color: '#059669',
+                    border: '1px solid #a7f3d0',
+                  }}
+                >
+                  Perishable Goods Enabled
+                </span>
+              )}
+            </h3>
+
+            {/* Toggle switch */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+              <span>Has Expiration Date:</span>
+              <input
+                type="checkbox"
+                checked={isPerishable}
+                onChange={(e) => setIsPerishable(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#10b981' }}
+              />
+            </label>
+          </div>
+
+          <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748b' }}>
+            Enable this for products that can expire (such as medicine, cosmetics/skincare, and food/groceries) to track shelf life and trigger automatic alerts in inventory.
+          </p>
+
+          {isPerishable && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '16px',
+                padding: '16px',
+                background: '#f8fafc',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <div className={styles.inputGroup} style={{ margin: 0 }}>
+                <label>Expiration Date *</label>
+                <input
+                  type="date"
+                  required={isPerishable}
+                  className={styles.inputField}
+                  style={{
+                    borderColor: expiryTouched && !expiryDate ? '#ef4444' : undefined,
+                  }}
+                  value={expiryDate}
+                  onChange={(e) => {
+                    setExpiryDate(e.target.value);
+                    if (!expiryTouched) setExpiryTouched(true);
+                  }}
+                  onBlur={() => setExpiryTouched(true)}
+                />
+                {expiryTouched && !expiryDate && (
+                  <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <FiAlertCircle size={12} /> Expiration date is required for perishable products.
+                  </span>
+                )}
+              </div>
+
+              <div className={styles.inputGroup} style={{ margin: 0 }}>
+                <label>Manufacture Date (Optional)</label>
+                <input
+                  type="date"
+                  className={styles.inputField}
+                  value={manufactureDate}
+                  onChange={(e) => setManufactureDate(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.inputGroup} style={{ margin: 0 }}>
+                <label>Batch / Lot Number (Optional)</label>
+                <input
+                  type="text"
+                  className={styles.inputField}
+                  placeholder="e.g. LOT-2026-MED01"
+                  value={batchNumber}
+                  onChange={(e) => setBatchNumber(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* CARD 3: Product Images */}
@@ -746,31 +1358,68 @@ export const CreateProductPage: React.FC = () => {
             <FiSliders color="#2563eb" /> Product Variations
           </h3>
 
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={hasVariants}
-              onChange={(e) => setHasVariants(e.target.checked)}
-            />
-            <span>This product has variants (size, color, etc.)</span>
-          </label>
+          <div style={{ marginBottom: '14px' }}>
+            <label className={styles.checkboxLabel} style={{ margin: 0 }}>
+              <input
+                type="checkbox"
+                checked={hasVariants}
+                onChange={(e) => handleToggleHasVariants(e.target.checked)}
+              />
+              <span style={{ fontWeight: 600, color: hasVariants ? '#2563eb' : '#334155' }}>
+                This product has variants (size, color, etc.)
+              </span>
+            </label>
+          </div>
 
           {!hasVariants ? (
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '8px 0 0 0' }}>
-              Enable variants to add different options like sizes or colors for this product.
-            </p>
+            <div style={{ marginTop: '6px', padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                💡 Click &quot;This product has variants&quot; above to select attributes and generate variant cards.
+              </p>
+            </div>
           ) : (
             <div className={styles.variationsSubSection}>
-              <div className={styles.attrSectionHeader}>
-                <h4>Product Attributes</h4>
-                <button
-                  type="button"
-                  className={styles.btnNewAttrSmall}
-                  onClick={() => setShowAddAttrInput(true)}
-                >
-                  <FiPlus size={12} />
-                  Add New Attribute
-                </button>
+              {/* STEP 1: ADD EXISTING ATTRIBUTE */}
+              <div className={styles.addExistingAttributeBox}>
+                <label className={styles.addExistingAttrLabel}>
+                  ADD EXISTING ATTRIBUTE
+                </label>
+                <div className={styles.addExistingAttrControls}>
+                  <select
+                    className={styles.addExistingAttrSelect}
+                    value={selectedExistingAttr}
+                    onChange={(e) => setSelectedExistingAttr(e.target.value)}
+                  >
+                    <option value="">Select attribute</option>
+                    {availableAttributes
+                      .filter(
+                        (a) =>
+                          !attributes.some(
+                            (cur) => cur.name.toLowerCase() === a.toLowerCase()
+                          )
+                      )
+                      .map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={styles.btnAddAttrBtn}
+                    onClick={handleAddExistingAttribute}
+                  >
+                    Add
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.btnNewAttrSmall}
+                    style={{ padding: '8px 12px' }}
+                    onClick={() => setShowAddAttrInput(true)}
+                  >
+                    <FiPlus size={12} /> Custom
+                  </button>
+                </div>
               </div>
 
               {/* Inline input for custom new attribute */}
@@ -781,7 +1430,7 @@ export const CreateProductPage: React.FC = () => {
                     border: '1px solid #bfdbfe',
                     padding: '12px',
                     borderRadius: '10px',
-                    marginBottom: '14px',
+                    marginBottom: '16px',
                     display: 'flex',
                     gap: '8px',
                     alignItems: 'center',
@@ -815,158 +1464,806 @@ export const CreateProductPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Attributes List */}
-              {attributes.map((attr) => {
-                const isColor =
-                  attr.name.toLowerCase().includes('colour') ||
-                  attr.name.toLowerCase().includes('color');
-
-                return (
-                  <div key={attr.id} className={styles.attributeItemCard}>
-                    <div className={styles.attrItemTitleRow}>
-                      <span className={styles.attrNameTitle}>{attr.name}</span>
-                      <button
-                        type="button"
-                        className={styles.btnIconAction}
-                        onClick={() => handleRemoveAttribute(attr.id)}
-                        title={`Delete ${attr.name}`}
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </div>
-
-                    {/* Swatches / Pills Box */}
-                    <div style={{ marginBottom: '8px' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#64748b' }}>
-                        💡 Click any item below to remove it. Type in the field below and press Add (+) to add new values.
-                      </p>
-                      <div className={styles.swatchesBox}>
-                        {isColor
-                          ? attr.values.map((val) => (
-                              <span
-                                key={val}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  padding: '4px 10px',
-                                  borderRadius: '16px',
-                                  border: '1px solid #e2e8f0',
-                                  background: '#f8fafc',
-                                  cursor: 'pointer',
-                                  fontSize: '12px',
-                                  color: '#334155',
-                                  transition: 'all 0.15s ease',
-                                }}
-                                title={`${val} (Click to remove)`}
-                                onClick={() => handleRemoveValue(attr.id, val)}
-                              >
-                                <span
-                                  style={{
-                                    width: '12px',
-                                    height: '12px',
-                                    borderRadius: '50%',
-                                    backgroundColor: getColorHex(val),
-                                    border: '1px solid rgba(0,0,0,0.15)',
-                                    display: 'inline-block',
-                                  }}
-                                />
-                                <span>{val}</span>
-                                <FiX size={10} color="#94a3b8" />
-                              </span>
-                            ))
-                          : attr.values.map((val) => (
-                              <span
-                                key={val}
-                                className={styles.sizePill}
-                                style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                title="Click to remove"
-                                onClick={() => handleRemoveValue(attr.id, val)}
-                              >
-                                {val} <FiX size={10} color="#94a3b8" />
-                              </span>
-                            ))}
-                      </div>
-                    </div>
-
-                    {/* Inline Add Value Input */}
-                    <div className={styles.inlineAddValueRow}>
-                      <input
-                        type="text"
-                        placeholder="Add new value"
-                        value={inlineValues[attr.id] || ''}
-                        onChange={(e) =>
-                          setInlineValues((prev) => ({
-                            ...prev,
-                            [attr.id]: e.target.value,
-                          }))
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddValueToAttr(attr.id);
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className={styles.btnAddValuePlus}
-                        onClick={() => handleAddValueToAttr(attr.id)}
-                        title="Add value"
-                      >
-                        <FiPlus />
-                      </button>
-                    </div>
+              {/* STEP 2: ACTIVE ATTRIBUTES & VALUES (Shown only after an attribute is added) */}
+              {attributes.length > 0 && (
+                <div style={{ marginTop: '16px' }}>
+                  <div className={styles.attrSectionHeader}>
+                    <h4>Active Attributes &amp; Values</h4>
                   </div>
-                );
-              })}
 
-              {/* Add Existing Attribute Row */}
-              <div className={styles.addExistingRow}>
-                <label>Add existing attribute</label>
-                <div className={styles.addExistingControls}>
-                  <select
-                    value={selectedExistingAttr}
-                    onChange={(e) => setSelectedExistingAttr(e.target.value)}
+                  {attributes.map((attr) => {
+                    const isColor =
+                      attr.name.toLowerCase().includes('colour') ||
+                      attr.name.toLowerCase().includes('color');
+
+                    const attrLower = attr.name.toLowerCase();
+                    const presets =
+                      ATTRIBUTE_PRESETS[attrLower] ||
+                      (attrLower.includes('color') || attrLower.includes('colour')
+                        ? ATTRIBUTE_PRESETS.color
+                        : attrLower.includes('size')
+                        ? ATTRIBUTE_PRESETS.size
+                        : null);
+
+                    return (
+                      <div key={attr.id} className={styles.attributeItemCard}>
+                        <div className={styles.attrItemTitleRow}>
+                          <span className={styles.attrNameTitle}>{attr.name}</span>
+                          <button
+                            type="button"
+                            className={styles.btnIconAction}
+                            onClick={() => handleRemoveAttribute(attr.id)}
+                            title={`Delete ${attr.name}`}
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+
+                        {/* Quick Suggestions presets if available */}
+                        {presets && (
+                          <div style={{ marginBottom: '10px' }}>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                color: '#64748b',
+                                fontWeight: 600,
+                                display: 'block',
+                                marginBottom: '6px',
+                              }}
+                            >
+                              Quick Suggestions (click to add):
+                            </span>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {presets.map((presetVal) => {
+                                const isAdded = attr.values.some(
+                                  (v) => v.toLowerCase() === presetVal.toLowerCase()
+                                );
+                                if (isAdded) return null;
+                                return (
+                                  <button
+                                    key={presetVal}
+                                    type="button"
+                                    onClick={() => handleAddPresetValue(attr.id, presetVal)}
+                                    style={{
+                                      background: '#ffffff',
+                                      border: '1px solid #cbd5e1',
+                                      borderRadius: '16px',
+                                      padding: '3px 10px',
+                                      fontSize: '12px',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '5px',
+                                      color: '#334155',
+                                    }}
+                                  >
+                                    {isColor && (
+                                      <span
+                                        style={{
+                                          width: '10px',
+                                          height: '10px',
+                                          borderRadius: '50%',
+                                          backgroundColor: getColorHex(presetVal),
+                                          border: '1px solid rgba(0,0,0,0.15)',
+                                          display: 'inline-block',
+                                        }}
+                                      />
+                                    )}
+                                    <span>+ {presetVal}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Swatches / Selected Values Box */}
+                        <div style={{ marginBottom: '8px' }}>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#64748b' }}>
+                            💡 Click any pill below to remove it. Type in the input and click (+) to add new values.
+                          </p>
+                          <div className={styles.swatchesBox}>
+                            {isColor
+                              ? attr.values.map((val) => (
+                                  <span
+                                    key={val}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      padding: '4px 10px',
+                                      borderRadius: '16px',
+                                      border: '1px solid #e2e8f0',
+                                      background: '#f8fafc',
+                                      cursor: 'pointer',
+                                      fontSize: '12px',
+                                      color: '#334155',
+                                      transition: 'all 0.15s ease',
+                                    }}
+                                    title={`${val} (Click to remove)`}
+                                    onClick={() => handleRemoveValue(attr.id, val)}
+                                  >
+                                    <span
+                                      style={{
+                                        width: '12px',
+                                        height: '12px',
+                                        borderRadius: '50%',
+                                        backgroundColor: getColorHex(val),
+                                        border: '1px solid rgba(0,0,0,0.15)',
+                                        display: 'inline-block',
+                                      }}
+                                    />
+                                    <span>{val}</span>
+                                    <FiX size={10} color="#94a3b8" />
+                                  </span>
+                                ))
+                              : attr.values.map((val) => (
+                                  <span
+                                    key={val}
+                                    className={styles.sizePill}
+                                    style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                    title="Click to remove"
+                                    onClick={() => handleRemoveValue(attr.id, val)}
+                                  >
+                                    {val} <FiX size={10} color="#94a3b8" />
+                                  </span>
+                                ))}
+                            {attr.values.length === 0 && (
+                              <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                                No values added yet. Select a suggestion above or enter a value below.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Inline Add Value Input */}
+                        <div className={styles.inlineAddValueRow}>
+                          <input
+                            type="text"
+                            placeholder={`Add new ${attr.name.toLowerCase()} value`}
+                            value={inlineValues[attr.id] || ''}
+                            onChange={(e) =>
+                              setInlineValues((prev) => ({
+                                ...prev,
+                                [attr.id]: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddValueToAttr(attr.id);
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className={styles.btnAddValuePlus}
+                            onClick={() => handleAddValueToAttr(attr.id)}
+                            title="Add value"
+                          >
+                            <FiPlus />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Generate Variants Action Banner */}
+                  <div
+                    style={{
+                      marginTop: '16px',
+                      padding: '16px 20px',
+                      background: '#f8fafc',
+                      borderRadius: '12px',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                    }}
                   >
-                    <option value="">Select attribute</option>
-                    {availableAttributes
-                      .filter(
-                        (a) =>
-                          !attributes.some(
-                            (cur) => cur.name.toLowerCase() === a.toLowerCase()
-                          )
-                      )
-                      .map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                  </select>
-                  <button
-                    type="button"
-                    className={styles.btnAddValuePlus}
-                    onClick={handleAddExistingAttribute}
-                    title="Add attribute"
-                  >
-                    <FiPlus />
-                  </button>
+                    <div>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block' }}>
+                        Generate Variants
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {computedCombosCount === 0
+                          ? 'Add at least one value to your attributes above to generate variant cards.'
+                          : `Click to generate ${computedCombosCount} variant card${computedCombosCount > 1 ? 's' : ''}.`}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={computedCombosCount === 0}
+                      onClick={handleGenerateVariants}
+                      className={styles.btnAddProductPurple}
+                      style={{
+                        padding: '9px 20px',
+                        fontSize: '13px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        opacity: computedCombosCount === 0 ? 0.5 : 1,
+                        cursor: computedCombosCount === 0 ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      <FiRefreshCw size={13} />
+                      {generatedVariants.length > 0
+                        ? `Regenerate Variants (${computedCombosCount})`
+                        : `Generate Variants (${computedCombosCount})`}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* STEP 3: GENERATED VARIANTS CARDS (Shown only after clicking Generate Variants) */}
+              {generatedVariants.length > 0 && (
+                <div className={styles.generatedVariantsSection} style={{ marginTop: '24px' }}>
+                  <div className={styles.generatedVariantsHeader}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h4 className={styles.generatedVariantsTitle}>
+                        Generated Variants
+                      </h4>
+                      <span className={styles.variantsCountBadge}>
+                        {generatedVariants.length} variant(s)
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleGenerateVariants}
+                      className={styles.btnAddProductPurple}
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                      }}
+                    >
+                      <FiRefreshCw size={12} />
+                      Regenerate Variants ({computedCombosCount})
+                    </button>
+                  </div>
+
+                  {/* Stock validation status indicator */}
+                  <div
+                    style={{
+                      marginBottom: '16px',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: totalVariantStock === (Number(quantity) || 0) ? '#f0fdf4' : '#fef2f2',
+                      border: `1.5px solid ${totalVariantStock === (Number(quantity) || 0) ? '#86efac' : '#fca5a5'}`,
+                      color: totalVariantStock === (Number(quantity) || 0) ? '#15803d' : '#b91c1c',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {totalVariantStock === (Number(quantity) || 0) ? (
+                        <FiCheck size={16} />
+                      ) : (
+                        <FiAlertCircle size={16} />
+                      )}
+                      <span>
+                        Total Variant Stock: <strong>{totalVariantStock}</strong> / Product Quantity: <strong>{Number(quantity) || 0}</strong>
+                      </span>
+                    </div>
+                    <span>
+                      {totalVariantStock === (Number(quantity) || 0)
+                        ? '✓ Stock matches quantity'
+                        : (Number(quantity) || 0) - totalVariantStock > 0
+                        ? `Need ${(Number(quantity) || 0) - totalVariantStock} more stock`
+                        : `Over by ${totalVariantStock - (Number(quantity) || 0)} stock`}
+                    </span>
+                  </div>
+
+                  <div className={styles.variantsCardGrid}>
+                    {generatedVariants.map((gv, idx) => (
+                      <div key={gv.id} className={styles.singleVariantCard}>
+                        {/* Top row: Title + SKU + Trash Button */}
+                        <div className={styles.variantCardTopRow}>
+                          <div className={styles.variantCardTitleCol}>
+                            <span className={styles.variantCardTitle}>
+                              Variant {idx + 1}
+                            </span>
+                            <span className={styles.variantCardSku}>
+                              {gv.sku}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className={styles.btnDeleteVariantCard}
+                            onClick={() => handleDeleteGeneratedVariant(gv.id)}
+                            title="Delete this variant"
+                          >
+                            <FiTrash2 size={13} />
+                          </button>
+                        </div>
+
+                        {/* Attribute Badges */}
+                        <div className={styles.variantAttrsPillsRow}>
+                          {gv.combination.map((c, cIdx) => {
+                            const isColor =
+                              c.attrName.toLowerCase().includes('color') ||
+                              c.attrName.toLowerCase().includes('colour');
+                            return (
+                              <div key={cIdx} className={styles.variantAttrPill}>
+                                {isColor && (
+                                  <span
+                                    className={styles.variantColorDot}
+                                    style={{
+                                      backgroundColor: getColorHex(c.value),
+                                    }}
+                                  />
+                                )}
+                                <span>
+                                  {isColor ? 'Color' : `${c.attrName}: ${c.value}`}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Price & Stock Inputs */}
+                        <div className={styles.variantCardInputsRow}>
+                          <div className={styles.variantCardInputCol}>
+                            <label>PRICE</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={gv.price}
+                              onChange={(e) =>
+                                handleVariantFieldChange(gv.id, 'price', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div className={styles.variantCardInputCol}>
+                            <label>STOCK</label>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={gv.stock}
+                              onChange={(e) =>
+                                handleVariantFieldChange(gv.id, 'stock', e.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        {/* Add Images Button & Previews */}
+                        <div>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            id={`var-file-${gv.id}`}
+                            style={{ display: 'none' }}
+                            onChange={(e) =>
+                              handleVariantImagesUpload(gv.id, e.target.files)
+                            }
+                          />
+                          <button
+                            type="button"
+                            className={styles.btnAddVariantImagesBtn}
+                            onClick={() =>
+                              document.getElementById(`var-file-${gv.id}`)?.click()
+                            }
+                          >
+                            Add Images
+                          </button>
+
+                          {gv.imagePreviews && gv.imagePreviews.length > 0 && (
+                            <div
+                              style={{
+                                display: 'flex',
+                                gap: '6px',
+                                marginTop: '8px',
+                                flexWrap: 'wrap',
+                              }}
+                            >
+                              {gv.imagePreviews.map((url, imgIdx) => (
+                                <img
+                                  key={imgIdx}
+                                  src={url}
+                                  alt="variant preview"
+                                  className={styles.variantImgThumbSmall}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Centered Submit Button */}
-        <button
-          type="submit"
-          disabled={submitting}
-          className={styles.btnSubmitCreateProduct}
-        >
-          <FiPlus size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-          {submitting ? 'Creating Product...' : 'Create Product'}
-        </button>
+        {/* Bottom Actions Bar (Create Product button + stock validation notice) */}
+        <div className={styles.createProductBottomBar}>
+          <button
+            type="submit"
+            disabled={submitting}
+            className={styles.btnCreateProductPurpleAction}
+          >
+            {submitting ? 'Creating Product...' : 'Create Product'}
+          </button>
+
+          {hasVariants && generatedVariants.length > 0 && totalVariantStock !== (Number(quantity) || 0) && (
+            <p className={styles.stockValidationWarning} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <FiAlertCircle size={14} />
+              Total variant stock ({totalVariantStock}) must equal product quantity ({Number(quantity) || 0}).
+            </p>
+          )}
+
+          {hasVariants && generatedVariants.length > 0 && totalVariantStock === (Number(quantity) || 0) && (
+            <p style={{ color: '#16a34a', fontSize: '13px', margin: 0, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <FiCheck size={14} />
+              Total variant stock matches product quantity ({totalVariantStock}/{Number(quantity) || 0}).
+            </p>
+          )}
+
+          {errorMessage && (
+            <p style={{ color: '#ef4444', fontSize: '13px', margin: '6px 0 0 0', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <FiAlertCircle size={14} />
+              {errorMessage}
+            </p>
+          )}
+        </div>
       </form>
+
+      {/* ==================================================== */}
+      {/* QUICK CREATE MODALS (Category, Brand, Tag) */}
+      {/* ==================================================== */}
+
+      {/* 1. Category Modal */}
+      {showCategoryModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setShowCategoryModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              width: '90%',
+              maxWidth: '460px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                + Add New Category
+              </h3>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}
+                onClick={() => setShowCategoryModal(false)}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  className={styles.inputField}
+                  placeholder="e.g. Footwear, Electronics"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Description (Optional)
+                </label>
+                <textarea
+                  className={styles.textareaField}
+                  placeholder="Brief category description..."
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  rows={3}
+                  value={newCatDesc}
+                  onChange={(e) => setNewCatDesc(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setShowCategoryModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={catLoading || !newCatName.trim()}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: catLoading || !newCatName.trim() ? 'not-allowed' : 'pointer',
+                    opacity: catLoading || !newCatName.trim() ? 0.6 : 1,
+                  }}
+                  onClick={handleQuickCreateCategory}
+                >
+                  {catLoading ? 'Creating...' : 'Create Category'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Brand Modal */}
+      {showBrandModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setShowBrandModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              width: '90%',
+              maxWidth: '460px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                + Add New Brand
+              </h3>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}
+                onClick={() => setShowBrandModal(false)}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Brand Name *
+                </label>
+                <input
+                  type="text"
+                  className={styles.inputField}
+                  placeholder="e.g. Nike, Apple, Zara"
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Description (Optional)
+                </label>
+                <textarea
+                  className={styles.textareaField}
+                  placeholder="Brief brand description..."
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  rows={3}
+                  value={newBrandDesc}
+                  onChange={(e) => setNewBrandDesc(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setShowBrandModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={brandLoading || !newBrandName.trim()}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: brandLoading || !newBrandName.trim() ? 'not-allowed' : 'pointer',
+                    opacity: brandLoading || !newBrandName.trim() ? 0.6 : 1,
+                  }}
+                  onClick={handleQuickCreateBrand}
+                >
+                  {brandLoading ? 'Creating...' : 'Create Brand'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Tag Modal */}
+      {showTagModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={() => setShowTagModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              width: '90%',
+              maxWidth: '420px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                + Add New Tag
+              </h3>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}
+                onClick={() => setShowTagModal(false)}
+              >
+                <FiX />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '18px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                  Tag Name *
+                </label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', fontWeight: 700 }}>#</span>
+                  <input
+                    type="text"
+                    className={styles.inputField}
+                    placeholder="e.g. summer, hot-deal, unisex"
+                    style={{ width: '100%', paddingLeft: '28px', boxSizing: 'border-box' }}
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#475569',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setShowTagModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={tagLoading || !newTagName.trim()}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: tagLoading || !newTagName.trim() ? 'not-allowed' : 'pointer',
+                    opacity: tagLoading || !newTagName.trim() ? 0.6 : 1,
+                  }}
+                  onClick={handleQuickCreateTag}
+                >
+                  {tagLoading ? 'Creating...' : 'Create Tag'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

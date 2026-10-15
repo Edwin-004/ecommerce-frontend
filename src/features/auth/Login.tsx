@@ -1,18 +1,64 @@
-// src/features/auth/Login.tsx
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setCredentials } from './authSlice';
-import './Login.css'; // <--- ခုနက ရေးထားသော CSS ဖိုင်ကို ချိတ်ဆက်ခြင်း
+import './Login.css'; 
 
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  // States for Validation Errors
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [apiError, setApiError] = useState('');
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  // --- Frontend Validation ---
+  const validateForm = () => {
+    let isValid = true;
+    setEmailError('');
+    setPasswordError('');
+    setApiError('');
+
+    // Email Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError('Email is required.');
+      isValid = false;
+    } else if (!emailRegex.test(email)) {
+      setEmailError('Invalid email format.');
+      isValid = false;
+    }
+
+    // Password Validation
+    if (!password) {
+      setPasswordError('Password is required.');
+      isValid = false;
+    } else if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters long.');
+      isValid = false;
+    } else if (!/(?=.*[a-z])/.test(password)) {
+      setPasswordError('Password must contain at least one lowercase letter (a-z).');
+      isValid = false;
+    } else if (!/(?=.*[A-Z])/.test(password)) {
+      setPasswordError('Password must contain at least one uppercase letter (A-Z).');
+      isValid = false;
+    }
+
+    return isValid;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check Frontend Validation first. Do not call API if validation fails.
+    if (!validateForm()) {
+      return; 
+    }
+
     try {
       const response = await fetch('http://localhost:8080/api/backoffice/auth/login', {
         method: 'POST',
@@ -20,11 +66,13 @@ export const Login = () => {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) throw new Error('Login failed');
+      if (!response.ok) {
+          // If Backend returns 400 Bad Request due to @Valid
+          throw new Error('Login failed');
+      }
 
       const data = await response.json();
       
-      // Email ကိုပါ Redux ထဲ သိမ်းပေးမည် (ယခင်အဆင့်က ပြင်ထားသည့်အတိုင်း)
       dispatch(setCredentials({ 
           token: data.token, 
           username: data.username, 
@@ -32,33 +80,39 @@ export const Login = () => {
           role: data.role 
       }));
       
-      if (data.role === 'ADMIN' || data.role === 'INVENTORY_STAFF' || data.role === 'SALES_STAFF') {
+      if (['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF'].includes(data.role)) {
           navigate('/admin/dashboard');
       } else {
-          alert('ဝင်ခွင့်မရှိသော အကောင့်ဖြစ်ပါသည်။');
-          navigate('/login');
+          setApiError('Unauthorized account access.');
       }
     } catch (error) {
-      alert('Email သို့မဟုတ် Password မှားယွင်းနေပါသည်။');
+      setApiError('Invalid email or password.');
     }
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
-        {/* E-commerce နှင့် လိုက်ဖက်သော ခေါင်းစဉ် */}
         <div className="login-logo">E-Commerce <span>Portal</span></div>
         <p className="login-subtitle">Welcome back! Please login to your account.</p>
         
+        {apiError && (
+          <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px', textAlign: 'center' }}>
+            {apiError}
+          </div>
+        )}
+
         <form className="login-form" onSubmit={handleLogin}>
           <div className="input-group">
             <label>Email Address</label>
             <input 
-              type="email" 
+              type="text" 
               placeholder="admin@ecommerce.com" 
+              value={email}
               onChange={(e) => setEmail(e.target.value)} 
-              required 
+              style={{ borderColor: emailError ? '#dc2626' : '' }}
             />
+            {emailError && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>{emailError}</span>}
           </div>
           
           <div className="input-group">
@@ -66,9 +120,11 @@ export const Login = () => {
             <input 
               type="password" 
               placeholder="••••••••" 
+              value={password}
               onChange={(e) => setPassword(e.target.value)} 
-              required 
+              style={{ borderColor: passwordError ? '#dc2626' : '' }}
             />
+            {passwordError && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>{passwordError}</span>}
           </div>
           
           <button type="submit" className="login-btn">Sign In</button>
