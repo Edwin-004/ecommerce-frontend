@@ -28,7 +28,7 @@
 
 .tag-eyebrow {
   margin-bottom: 8px;
-  color: #6366f1;
+  color: #2563eb;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -176,8 +176,8 @@
   border-radius: 13px;
   background: linear-gradient(
     135deg,
-    #6366f1,
-    #8b5cf6
+    #2563eb,
+    #1d4ed8
   );
   color: white;
   font-size: 22px;
@@ -230,18 +230,18 @@
 }
 
 .tag-input-wrapper:focus-within {
-  border-color: #6366f1;
+  border-color: #2563eb;
   box-shadow:
     0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
 .tag-input-wrapper.is-editing {
-  border-color: #8b5cf6;
+  border-color: #1d4ed8;
 }
 
 .input-prefix {
   padding-left: 16px;
-  color: #6366f1;
+  color: #2563eb;
   font-size: 18px;
   font-weight: 800;
 }
@@ -303,8 +303,8 @@
   border: 0;
   background: linear-gradient(
     135deg,
-    #6366f1,
-    #7c3aed
+    #2563eb,
+    #1d4ed8
   );
   color: #ffffff;
   box-shadow:
@@ -444,7 +444,7 @@
 
 .refresh-button:hover:not(:disabled) {
   background: #f5f3ff;
-  color: #6366f1;
+  color: #2563eb;
   transform: rotate(20deg);
 }
 
@@ -535,7 +535,7 @@
   height: 36px;
   border-radius: 10px;
   background: #eef2ff;
-  color: #6366f1;
+  color: #2563eb;
   font-size: 15px;
   font-weight: 800;
 }
@@ -603,9 +603,9 @@
 }
 
 .edit-button {
-  border: 1px solid #e0e7ff;
-  background: #f5f7ff;
-  color: #4f46e5;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
 }
 
 .edit-button:hover:not(:disabled) {
@@ -613,9 +613,9 @@
 }
 
 .delete-button {
-  border: 1px solid #fee2e2;
-  background: #fff7f7;
-  color: #dc2626;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #ef4444;
 }
 
 .delete-button:hover:not(:disabled) {
@@ -676,7 +676,7 @@
   border: 0;
   border-radius: 8px;
   background: #eef2ff;
-  color: #4f46e5;
+  color: #2563eb;
   padding: 8px 13px;
   font-size: 12px;
   font-weight: 700;
@@ -705,7 +705,7 @@
   width: 22px;
   height: 22px;
   border-color: #e5e7eb;
-  border-top-color: #6366f1;
+  border-top-color: #2563eb;
 }
 
 /* =========================================================
@@ -756,7 +756,7 @@
 .pagination-controls button:hover:not(:disabled) {
   border-color: #c7d2fe;
   background: #eef2ff;
-  color: #4f46e5;
+  color: #2563eb;
 }
 
 .pagination-controls button:disabled {
@@ -889,5 +889,154 @@
   .primary-button,
   .secondary-button {
     width: 100%;
+  }
+}
+
+/* =========================================================
+   PRODUCT MANAGEMENT MATCHING STYLES (HEADER, METRICS, MODAL)
+   ========================================================= */
+
+.tag-header-left {
+  flex: 1;
+}
+
+.tag-btn-add-primary {
+  background: #5b5dfa;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(91, 93, 250, 0.25);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.tag-btn-add-primary:hover {
+  background: #494bee;
+  transform: translateY(-1px);
+}
+
+.tag-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.tag-metric-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tag-metric-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.tag-metric-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.tag-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 16px;
+  animation: tagFadeIn 0.15s ease-out;
+}
+
+.tag-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px 28px;
+  width: 480px;
+  max-width: 100%;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: tagSlideUp 0.2s ease-out;
+}
+
+.tag-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.tag-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-modal-header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.tag-modal-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.tag-modal-close:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.tag-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+@keyframes tagFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tagSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

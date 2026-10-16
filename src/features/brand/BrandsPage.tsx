@@ -14,6 +14,20 @@ import {
   BrandModal,
   type Category,
 } from './BrandModels';
+import {
+  FiPlus,
+  FiTag,
+  FiCheckCircle,
+  FiPauseCircle,
+  FiSearch,
+  FiX,
+  FiInbox,
+  FiEdit2,
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronDown,
+  FiChevronUp,
+} from 'react-icons/fi';
 
 import styles from './Brands.module.css';
 
@@ -356,14 +370,14 @@ export function BrandsPage() {
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) {
       return (
-        <i className="bi bi-arrow-down-up text-muted ms-1 small" />
+        <FiChevronDown size={14} className="text-muted ms-1" />
       );
     }
 
     return sortDir === 'asc' ? (
-      <i className="bi bi-sort-alpha-down ms-1 text-primary" />
+      <FiChevronDown size={14} className="ms-1 text-primary" />
     ) : (
-      <i className="bi bi-sort-alpha-up-alt ms-1 text-primary" />
+      <FiChevronUp size={14} className="ms-1 text-primary" />
     );
   };
 
@@ -393,7 +407,7 @@ export function BrandsPage() {
             onClick={openCreate}
             disabled={loading || categoryLoading || saving}
           >
-            <i className="bi bi-plus-lg me-2" />
+            <FiPlus size={16} className="me-2" />
             Add Brand
           </button>
         </div>
@@ -405,7 +419,7 @@ export function BrandsPage() {
             <div className={`${styles.statCard} card border-0 shadow-sm`}>
               <div className="card-body d-flex align-items-center">
                 <div className={`${styles.statIcon} ${styles.purple}`}>
-                  <i className="bi bi-tags" />
+                  <FiTag size={20} />
                 </div>
 
                 <div>
@@ -425,7 +439,7 @@ export function BrandsPage() {
             <div className={`${styles.statCard} card border-0 shadow-sm`}>
               <div className="card-body d-flex align-items-center">
                 <div className={`${styles.statIcon} ${styles.green}`}>
-                  <i className="bi bi-check-circle" />
+                  <FiCheckCircle size={20} />
                 </div>
 
                 <div>
@@ -445,7 +459,7 @@ export function BrandsPage() {
             <div className={`${styles.statCard} card border-0 shadow-sm`}>
               <div className="card-body d-flex align-items-center">
                 <div className={`${styles.statIcon} ${styles.orange}`}>
-                  <i className="bi bi-pause-circle" />
+                  <FiPauseCircle size={20} />
                 </div>
 
                 <div>
@@ -473,7 +487,7 @@ export function BrandsPage() {
               <div className="col-md">
                 <div className="input-group">
                   <span className="input-group-text bg-white">
-                    <i className="bi bi-search" />
+                    <FiSearch size={15} />
                   </span>
 
                   <input
@@ -493,7 +507,7 @@ export function BrandsPage() {
                       onClick={handleClearSearch}
                       aria-label="Clear search"
                     >
-                      <i className="bi bi-x-lg" />
+                      <FiX size={14} />
                     </button>
                   )}
                 </div>
@@ -565,7 +579,7 @@ export function BrandsPage() {
                 ) : brands.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-5">
-                      <i className="bi bi-inbox fs-1 text-secondary" />
+                      <FiInbox size={36} className="text-secondary" />
 
                       <h6 className="mt-3">
                         No brands found
@@ -657,12 +671,12 @@ export function BrandsPage() {
                         <td>
                           {brand.status === 'ACTIVE' ? (
                             <span className="badge rounded-pill text-bg-success">
-                              <i className="bi bi-check-circle me-1" />
+                              <FiCheckCircle size={12} className="me-1" />
                               Active
                             </span>
                           ) : (
                             <span className="badge rounded-pill text-bg-secondary">
-                              <i className="bi bi-pause-circle me-1" />
+                              <FiPauseCircle size={12} className="me-1" />
                               Inactive
                             </span>
                           )}
@@ -672,13 +686,14 @@ export function BrandsPage() {
 
                         <td className="text-end px-4">
                           <button
-                            className="btn btn-sm btn-light"
+                            type="button"
+                            className="table-btn-edit"
                             onClick={() => openEdit(brand)}
-                            title="Edit"
+                            title="Edit Brand"
                             aria-label={`Edit ${brand.brandName}`}
                             disabled={saving}
                           >
-                            <i className="bi bi-pencil" />
+                            <FiEdit2 size={12} /> Edit
                           </button>
                         </td>
                       </tr>
@@ -706,7 +721,7 @@ export function BrandsPage() {
                   }
                   aria-label="Previous page"
                 >
-                  <i className="bi bi-chevron-left" />
+                  <FiChevronLeft size={16} />
                 </button>
 
                 <button
@@ -717,7 +732,7 @@ export function BrandsPage() {
                   }
                   aria-label="Next page"
                 >
-                  <i className="bi bi-chevron-right" />
+                  <FiChevronRight size={16} />
                 </button>
               </div>
             </div>

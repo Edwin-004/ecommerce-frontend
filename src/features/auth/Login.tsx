@@ -3,16 +3,19 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setCredentials } from './authSlice';
-import './Login.css'; // <--- ခုနက ရေးထားသော CSS ဖိုင်ကို ချိတ်ဆက်ခြင်း
+import { FiShoppingBag, FiLogIn } from 'react-icons/fi';
+import './Login.css';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:8080/api/backoffice/auth/login', {
         method: 'POST',
@@ -40,15 +43,24 @@ export const Login = () => {
       }
     } catch (error) {
       alert('Email သို့မဟုတ် Password မှားယွင်းနေပါသည်။');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
+        {/* Brand Badge */}
+        <div className="login-badge-wrapper">
+          <div className="login-logo-badge">
+            <FiShoppingBag size={24} />
+          </div>
+        </div>
+
         {/* E-commerce နှင့် လိုက်ဖက်သော ခေါင်းစဉ် */}
-        <div className="login-logo">E-Commerce <span>Portal</span></div>
-        <p className="login-subtitle">Welcome back! Please login to your account.</p>
+        <div className="login-logo">Ecommerce <span>Admin Portal</span></div>
+        <p className="login-subtitle">Welcome back! Please sign in to your dashboard.</p>
         
         <form className="login-form" onSubmit={handleLogin}>
           <div className="input-group">
@@ -56,6 +68,7 @@ export const Login = () => {
             <input 
               type="email" 
               placeholder="admin@ecommerce.com" 
+              value={email}
               onChange={(e) => setEmail(e.target.value)} 
               required 
             />
@@ -66,12 +79,16 @@ export const Login = () => {
             <input 
               type="password" 
               placeholder="••••••••" 
+              value={password}
               onChange={(e) => setPassword(e.target.value)} 
               required 
             />
           </div>
           
-          <button type="submit" className="login-btn">Sign In</button>
+          <button type="submit" disabled={loading} className="login-btn">
+            <FiLogIn size={16} />
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
         </form>
       </div>
     </div>
