@@ -7,6 +7,20 @@ import type {
   TagRequestDto,
   TagResponseDto,
 } from "../../types/tag";
+import {
+  FiTag,
+  FiPlus,
+  FiCheck,
+  FiEdit2,
+  FiTrash2,
+  FiSearch,
+  FiRefreshCw,
+  FiX,
+  FiChevronLeft,
+  FiChevronRight,
+  FiAlertCircle,
+  FiCheckCircle,
+} from "react-icons/fi";
 
 import "./TagManagement.css";
 
@@ -46,6 +60,9 @@ export default function TagManagement() {
   const [tagName, setTagName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
 
+  // Modal Open/Close State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // Search input
   const [search, setSearch] = useState("");
 
@@ -65,12 +82,6 @@ export default function TagManagement() {
 
   /**
    * Debounce search input.
-   *
-   * User types:
-   * p -> ph -> pho -> phon -> phone
-   *
-   * API will only be called after user stops typing
-   * for 400ms.
    */
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -84,10 +95,6 @@ export default function TagManagement() {
 
   /**
    * Reset pagination when search keyword changes.
-   *
-   * Example:
-   * Page 5 + search "phone"
-   * -> go back to Page 1 for the search result.
    */
   useEffect(() => {
     setPage(0);
@@ -95,8 +102,6 @@ export default function TagManagement() {
 
   /**
    * Load tags from backend.
-   *
-   * Search is now handled by backend.
    */
   const loadTags = useCallback(async () => {
     setLoading(true);
@@ -132,16 +137,31 @@ export default function TagManagement() {
     setEditingId(null);
   };
 
+  const openCreateModal = () => {
+    resetForm();
+    setError("");
+    setIsModalOpen(true);
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("create") === "true") {
+      openCreateModal();
+    }
+  }, []);
+
   const handleEdit = (tag: TagResponseDto) => {
     setEditingId(tag.tagId);
     setTagName(tag.tagName);
     setError("");
-    setSuccess("");
+    setIsModalOpen(true);
+  };
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+  const closeModal = () => {
+    if (saving) return;
+    setIsModalOpen(false);
+    resetForm();
+    setError("");
   };
 
   const handleSubmit = async (
@@ -178,12 +198,7 @@ export default function TagManagement() {
         setSuccess("Tag created successfully.");
       }
 
-      resetForm();
-
-      /**
-       * After create/update:
-       * reload current search result.
-       */
+      closeModal();
       await loadTags();
     } catch (err) {
       setError(getErrorMessage(err));
@@ -208,11 +223,6 @@ export default function TagManagement() {
 
       setSuccess("Tag deleted successfully.");
 
-      /**
-       * If deleting the last item on the current page,
-       * and this isn't the first page,
-       * move back one page.
-       */
       if (tags.length === 1 && page > 0) {
         setPage((currentPage) => currentPage - 1);
       } else {
@@ -220,7 +230,7 @@ export default function TagManagement() {
       }
 
       if (editingId === tag.tagId) {
-        resetForm();
+        closeModal();
       }
     } catch (err) {
       setError(getErrorMessage(err));
@@ -231,30 +241,59 @@ export default function TagManagement() {
 
   return (
     <div className="tag-page">
-      {/* Header */}
+      {/* 1. Header (Catalogue Eyebrow + Title + Subtitle + Add Tag Button) */}
       <div className="tag-page-header">
-        <div>
+        <div className="tag-header-left">
           <div className="tag-eyebrow">
-            INVENTORY MANAGEMENT
+            CATALOGUE
           </div>
 
-          <h1>Tag Management</h1>
+          <h1>
+            <FiTag style={{ marginRight: 8, verticalAlign: 'middle' }} /> Tag Management
+          </h1>
 
           <p>
             Create and manage product tags across your inventory.
           </p>
         </div>
 
-        <div className="tag-total-card">
-          <span className="tag-total-label">Total Tags</span>
-          <strong>{totalElements}</strong>
+        <button
+          type="button"
+          className="tag-btn-add-primary"
+          onClick={openCreateModal}
+        >
+          <FiPlus size={16} /> Add Tag
+        </button>
+      </div>
+
+      {/* 2. 3 Metric Summary Cards (like Product Management) */}
+      <div className="tag-metrics-grid">
+        <div className="tag-metric-card">
+          <div className="tag-metric-label">Total in Catalogue</div>
+          <div className="tag-metric-value">{totalElements}</div>
+        </div>
+
+        <div className="tag-metric-card">
+          <div className="tag-metric-label">Matching Filters</div>
+          <div className="tag-metric-value">
+            {debouncedSearch ? tags.length : totalElements}
+          </div>
+        </div>
+
+        <div className="tag-metric-card">
+          <div className="tag-metric-label">Current Page</div>
+          <div className="tag-metric-value">
+            {totalPages === 0 ? "0 / 0" : `${page + 1} / ${totalPages}`}
+          </div>
         </div>
       </div>
 
-      {/* Notifications */}
-      {error && (
+      {/* 3. Global Notifications */}
+      {error && !isModalOpen && (
         <div className="alert alert-error">
-          <span className="alert-icon">!</span>
+          <span className="alert-icon">
+            <FiAlertCircle size={16} />
+          </span>
 
           <div>
             <strong>Something went wrong</strong>
@@ -264,15 +303,18 @@ export default function TagManagement() {
           <button
             type="button"
             onClick={() => setError("")}
+            aria-label="Close error"
           >
-            ×
+            <FiX size={15} />
           </button>
         </div>
       )}
 
       {success && (
         <div className="alert alert-success">
-          <span className="alert-icon">✓</span>
+          <span className="alert-icon">
+            <FiCheckCircle size={16} />
+          </span>
 
           <div>
             <strong>Success</strong>
@@ -282,110 +324,14 @@ export default function TagManagement() {
           <button
             type="button"
             onClick={() => setSuccess("")}
+            aria-label="Close success"
           >
-            ×
+            <FiX size={15} />
           </button>
         </div>
       )}
 
-      {/* Create / Edit */}
-      <section className="tag-form-card">
-        <div className="section-heading">
-          <div className="section-icon">
-            {editingId !== null ? "✎" : "+"}
-          </div>
-
-          <div>
-            <h2>
-              {editingId !== null
-                ? "Edit Tag"
-                : "Create New Tag"}
-            </h2>
-
-            <p>
-              {editingId !== null
-                ? "Update the selected product tag."
-                : "Add a new tag to organize your products."}
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label htmlFor="tagName">
-              Tag Name
-              <span>*</span>
-            </label>
-
-            <div
-              className={`tag-input-wrapper ${
-                editingId !== null ? "is-editing" : ""
-              }`}
-            >
-              <span className="input-prefix">#</span>
-
-              <input
-                id="tagName"
-                name="tagName"
-                type="text"
-                value={tagName}
-                onChange={(event) =>
-                  setTagName(event.target.value)
-                }
-                placeholder="e.g. New Arrival"
-                maxLength={100}
-                required
-              />
-
-              <span className="character-count">
-                {tagName.length}/100
-              </span>
-            </div>
-
-            <p className="field-help">
-              Use a short and descriptive name for your tag.
-            </p>
-          </div>
-
-          <div className="form-actions">
-            <button
-              type="submit"
-              disabled={saving}
-              className="primary-button"
-            >
-              {saving ? (
-                <>
-                  <span className="spinner" />
-                  Saving...
-                </>
-              ) : editingId !== null ? (
-                <>
-                  <span>✓</span>
-                  Update Tag
-                </>
-              ) : (
-                <>
-                  <span>+</span>
-                  Create Tag
-                </>
-              )}
-            </button>
-
-            {editingId !== null && (
-              <button
-                type="button"
-                onClick={resetForm}
-                disabled={saving}
-                className="secondary-button"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-      </section>
-
-      {/* Tag Table */}
+      {/* 4. Single Unified Tag Table Card */}
       <section className="tag-table-card">
         <div className="table-toolbar">
           <div>
@@ -393,14 +339,13 @@ export default function TagManagement() {
 
             <p>
               {totalElements}{" "}
-              {totalElements === 1 ? "tag" : "tags"} in your
-              inventory
+              {totalElements === 1 ? "tag" : "tags"} in your inventory
             </p>
           </div>
 
           <div className="table-toolbar-right">
             <div className="search-wrapper">
-              <span className="search-icon">⌕</span>
+              <FiSearch className="search-icon" size={15} />
 
               <input
                 type="search"
@@ -417,8 +362,9 @@ export default function TagManagement() {
                   type="button"
                   className="clear-search"
                   onClick={() => setSearch("")}
+                  aria-label="Clear search"
                 >
-                  ×
+                  <FiX size={14} />
                 </button>
               )}
             </div>
@@ -430,7 +376,7 @@ export default function TagManagement() {
               disabled={loading}
               title="Refresh"
             >
-              ↻
+              <FiRefreshCw size={14} className={loading ? "spin" : ""} />
             </button>
           </div>
         </div>
@@ -475,12 +421,21 @@ export default function TagManagement() {
                           : "Create your first tag to get started."}
                       </p>
 
-                      {debouncedSearch && (
+                      {debouncedSearch ? (
                         <button
                           type="button"
                           onClick={() => setSearch("")}
                         >
                           Clear Search
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="primary-button"
+                          style={{ marginTop: 12 }}
+                          onClick={openCreateModal}
+                        >
+                          <FiPlus size={14} /> Add First Tag
                         </button>
                       )}
                     </div>
@@ -538,19 +493,19 @@ export default function TagManagement() {
                     </td>
 
                     <td>
-                      <div className="row-actions">
+                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                         <button
                           type="button"
-                          className="icon-button edit-button"
+                          className="table-btn-edit"
                           onClick={() => handleEdit(tag)}
                           title="Edit tag"
                         >
-                          ✎
+                          <FiEdit2 size={12} /> Edit
                         </button>
 
                         <button
                           type="button"
-                          className="icon-button delete-button"
+                          className="table-btn-delete"
                           onClick={() =>
                             void handleDelete(tag)
                           }
@@ -559,9 +514,13 @@ export default function TagManagement() {
                           }
                           title="Delete tag"
                         >
-                          {deletingId === tag.tagId
-                            ? "..."
-                            : "⌫"}
+                          {deletingId === tag.tagId ? (
+                            <span className="spinner" style={{ width: 12, height: 12 }} />
+                          ) : (
+                            <>
+                              <FiTrash2 size={12} /> Delete
+                            </>
+                          )}
                         </button>
                       </div>
                     </td>
@@ -590,8 +549,9 @@ export default function TagManagement() {
                 setPage((current) => current - 1)
               }
               disabled={page === 0 || loading}
+              aria-label="Previous page"
             >
-              ←
+              <FiChevronLeft size={16} />
             </button>
 
             <div className="page-number">
@@ -610,12 +570,119 @@ export default function TagManagement() {
                 totalPages === 0 ||
                 page >= totalPages - 1
               }
+              aria-label="Next page"
             >
-              →
+              <FiChevronRight size={16} />
             </button>
           </div>
         </div>
       </section>
+
+      {/* 5. Create / Edit Tag Modal Dialog */}
+      {isModalOpen && (
+        <div
+          className="tag-modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
+        >
+          <div className="tag-modal-card">
+            <div className="tag-modal-header">
+              <div>
+                <h3>
+                  {editingId !== null ? <FiEdit2 size={16} /> : <FiPlus size={16} />}
+                  {editingId !== null ? "Edit Tag" : "Create New Tag"}
+                </h3>
+                <p>
+                  {editingId !== null
+                    ? "Update the selected product tag."
+                    : "Add a new tag to organize your products."}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="tag-modal-close"
+                onClick={closeModal}
+                disabled={saving}
+                aria-label="Close modal"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              {error && (
+                <div className="alert alert-error" style={{ marginBottom: 16 }}>
+                  <span className="alert-icon">
+                    <FiAlertCircle size={15} />
+                  </span>
+                  <p style={{ margin: 0, fontSize: 13 }}>{error}</p>
+                </div>
+              )}
+
+              <div className="form-field" style={{ marginBottom: 18 }}>
+                <label htmlFor="modalTagName">
+                  Tag Name <span>*</span>
+                </label>
+
+                <div className={`tag-input-wrapper ${editingId !== null ? "is-editing" : ""}`}>
+                  <span className="input-prefix">#</span>
+                  <input
+                    id="modalTagName"
+                    name="tagName"
+                    type="text"
+                    value={tagName}
+                    onChange={(e) => setTagName(e.target.value)}
+                    placeholder="e.g. New Arrival"
+                    maxLength={100}
+                    required
+                    autoFocus
+                  />
+                  <span className="character-count">
+                    {tagName.length}/100
+                  </span>
+                </div>
+
+                <p className="field-help">
+                  Use a short and descriptive name for your tag.
+                </p>
+              </div>
+
+              <div className="tag-modal-footer">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={closeModal}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="primary-button"
+                >
+                  {saving ? (
+                    <>
+                      <span className="spinner" /> Saving...
+                    </>
+                  ) : editingId !== null ? (
+                    <>
+                      <FiCheck size={15} /> Update Tag
+                    </>
+                  ) : (
+                    <>
+                      <FiPlus size={15} /> Create Tag
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

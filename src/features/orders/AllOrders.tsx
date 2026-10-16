@@ -8,6 +8,7 @@ import {
 } from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
 import styles from './AllOrders.module.css';
 import { useEffect, useState } from 'react';
+import { FiShoppingCart, FiChevronLeft, FiChevronRight, FiX, FiEye } from 'react-icons/fi';
 
 export const AllOrders = () => {
   const [currentPage, setCurrentPage] = useState(0);
@@ -162,7 +163,16 @@ export const AllOrders = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <h2 className={styles.pageTitle}>All Orders</h2>
+      <div className={styles.pageHeader}>
+        <div className={styles.titleArea}>
+          <h1>
+            <FiShoppingCart /> All Orders
+          </h1>
+          <p>
+            Track customer purchases, fulfillment stages, shipments, and payment statuses
+          </p>
+        </div>
+      </div>
 
       {!selectedOrderNo ? (
         /* ==================== View ၁။ Table View (ဘာမှမရွေးထားချိန်) ==================== */
@@ -176,24 +186,25 @@ export const AllOrders = () => {
                 <th>Total Amount</th>
                 <th>Order Status</th>
                 <th>Payment</th>
+                <th style={{ textAlign: "center" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className={styles.tableCellCenter}>
+                  <td colSpan={7} className={styles.tableCellCenter}>
                     Loading orders...
                   </td>
                 </tr>
               ) : isError ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: 'red' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'red' }}>
                     Error fetching orders!
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className={styles.tableCellCenter}>
+                  <td colSpan={7} className={styles.tableCellCenter}>
                     No orders found.
                   </td>
                 </tr>
@@ -220,6 +231,19 @@ export const AllOrders = () => {
                         {order.paymentStatus}
                       </span>
                     </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button
+                        type="button"
+                        className="table-btn-view"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedOrderNo(order.orderNo);
+                        }}
+                        title="View Order Details"
+                      >
+                        <FiEye size={12} /> View
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -239,7 +263,7 @@ export const AllOrders = () => {
                   disabled={currentPage === 0}
                   className={styles.paginationBtn}
                 >
-                  Previous
+                  <FiChevronLeft size={15} /> Previous
                 </button>
                 <button
                   onClick={() =>
@@ -248,7 +272,7 @@ export const AllOrders = () => {
                   disabled={data?.last || currentPage === totalPages - 1}
                   className={styles.paginationBtn}
                 >
-                  Next
+                  Next <FiChevronRight size={15} />
                 </button>
               </div>
             </div>
@@ -300,8 +324,9 @@ export const AllOrders = () => {
                   <button
                     className={styles.closeBtn}
                     onClick={() => setSelectedOrderNo(null)}
+                    aria-label="Close details"
                   >
-                    ✖
+                    <FiX size={18} />
                   </button>
                 </div>
 

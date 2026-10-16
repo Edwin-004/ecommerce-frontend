@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { useGetZoneGroupsQuery } from './shippingApi';
 import styles from './ShippingRates.module.css';
+import {
+  FiTruck,
+  FiPlus,
+  FiEdit2,
+  FiSliders,
+  FiCheckCircle,
+  FiXCircle,
+} from 'react-icons/fi';
 import { AddNewZoneModal } from './AddNewZoneModal';
 
 export const ShippingRates = () => {
@@ -16,9 +24,19 @@ export const ShippingRates = () => {
     <div className={styles.container}>
       {/* Header Section */}
       <div className={styles.header}>
-        <h2 className={styles.pageTitle}>Delivery Zones & Rates</h2>
-        <button onClick={() => setIsModalOpen(true)} className={styles.addBtn}>
-          Create New Zone
+        <div className={styles.titleArea}>
+          <h1>
+            <FiTruck /> Delivery Zones & Rates
+          </h1>
+          <p>Configure regional delivery zones, shipping fees, and estimated transit times</p>
+        </div>
+
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <FiPlus size={16} /> Add New Zone
         </button>
       </div>
 
@@ -59,7 +77,7 @@ export const ShippingRates = () => {
               <tr>
                 <td colSpan={7} className={styles.stateCell}>
                   No delivery zones found. Click{' '}
-                  <strong>"Create New Zone"</strong> to create one.
+                  <strong>"Add New Zone"</strong> to create one.
                 </td>
               </tr>
             ) : (
@@ -96,19 +114,36 @@ export const ShippingRates = () => {
                   </td>
                   <td>
                     <span
-                      className={`${styles.badge} ${
+                      className={`badge-status ${
                         zone.status === 'ACTIVE'
-                          ? styles.badgeActive
-                          : styles.badgeInactive
+                          ? 'badge-status-active'
+                          : 'badge-status-inactive'
                       }`}
                     >
+                      {zone.status === 'ACTIVE' ? (
+                        <FiCheckCircle size={12} />
+                      ) : (
+                        <FiXCircle size={12} />
+                      )}
                       {zone.status}
                     </span>
                   </td>
                   <td>
                     <div className={styles.actionGroup}>
-                      <button className={styles.editBtn}>Edit Zone</button>
-                      <button className={styles.manageBtn}>Manage Rates</button>
+                      <button
+                        type="button"
+                        className="table-btn-edit"
+                        title="Edit Zone"
+                      >
+                        <FiEdit2 size={13} /> Edit Zone
+                      </button>
+                      <button
+                        type="button"
+                        className="table-btn-view"
+                        title="Manage Rates"
+                      >
+                        <FiSliders size={13} /> Manage Rates
+                      </button>
                     </div>
                   </td>
                 </tr>

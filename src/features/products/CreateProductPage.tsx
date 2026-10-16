@@ -9,7 +9,10 @@ import {
 import { tagApi } from '../tags/tagApi';
 import { variantApi } from '../variants/variantApi';
 import { categoryApi } from '../categories/categoryApi';
-import { createBrand } from '../brand/brandApi';
+import { createBrand, type BrandRequest } from '../brand/brandApi';
+import { CategoryFormModal } from '../categories/CategoryFormModal';
+import { BrandModal } from '../brand/BrandModels';
+import type { CategoryRequestDto, CategoryResponseDto } from '../../types/category';
 import {
   FiPackage,
   FiInfo,
@@ -206,60 +209,77 @@ export const CreateProductPage: React.FC = () => {
 
   // Quick Create Modals
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
-  const [newCatName, setNewCatName] = useState<string>('');
-  const [newCatDesc, setNewCatDesc] = useState<string>('');
+  const [categoryFormData, setCategoryFormData] = useState<CategoryRequestDto>({
+    categoryName: '',
+    description: '',
+    parentId: null,
+  });
+  const [categoryModalError, setCategoryModalError] = useState<string | null>(null);
+  const [allCategoriesFull, setAllCategoriesFull] = useState<CategoryResponseDto[]>([]);
   const [catLoading, setCatLoading] = useState<boolean>(false);
 
   const [showBrandModal, setShowBrandModal] = useState<boolean>(false);
-  const [newBrandName, setNewBrandName] = useState<string>('');
-  const [newBrandDesc, setNewBrandDesc] = useState<string>('');
   const [brandLoading, setBrandLoading] = useState<boolean>(false);
 
   const [showTagModal, setShowTagModal] = useState<boolean>(false);
   const [newTagName, setNewTagName] = useState<string>('');
   const [tagLoading, setTagLoading] = useState<boolean>(false);
 
-  const handleQuickCreateCategory = async (e: React.FormEvent) => {
+  const handleCategoryInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setCategoryFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === 'parentId'
+          ? value
+            ? Number(value)
+            : null
+          : value,
+    }));
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCatName.trim()) return;
+    if (!categoryFormData.categoryName.trim()) {
+      setCategoryModalError('Category name is required.');
+      return;
+    }
     try {
       setCatLoading(true);
-      const res = await categoryApi.createCategory({
-        categoryName: newCatName.trim(),
-        description: newCatDesc.trim() || undefined,
-      });
+      setCategoryModalError(null);
+      const res = await categoryApi.createCategory(categoryFormData);
       setCategories((prev) => [...prev, { categoryId: res.categoryId, categoryName: res.categoryName }]);
-      setSelectedCategory(String(res.categoryId));
+      setAllCategoriesFull((prev) => [...prev, res]);
+      handleCategorySelect(String(res.categoryId));
       setShowCategoryModal(false);
-      setNewCatName('');
-      setNewCatDesc('');
+      setCategoryFormData({
+        categoryName: '',
+        description: '',
+        parentId: null,
+      });
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Failed to create category');
+      setCategoryModalError(
+        err.response?.data?.message || err.message || 'Failed to create category'
+      );
     } finally {
       setCatLoading(false);
     }
   };
 
-  const handleQuickCreateBrand = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBrandName.trim()) return;
+  const handleBrandModalSubmit = async (
+    data: BrandRequest,
+    file: File | null
+  ) => {
     try {
       setBrandLoading(true);
-      const res = await createBrand(
-        {
-          brandName: newBrandName.trim(),
-          brandLogoUrl: '',
-          description: newBrandDesc.trim() || '',
-          status: 'ACTIVE',
-          categoryIds: selectedCategory ? [Number(selectedCategory)] : [],
-        },
-        null
-      );
+      const res = await createBrand(data, file);
       setBrands((prev) => [...prev, { brandId: res.brandId, brandName: res.brandName }]);
       setSelectedBrand(String(res.brandId));
       setShowBrandModal(false);
-      setNewBrandName('');
-      setNewBrandDesc('');
     } catch (err: any) {
       alert(err.response?.data?.message || err.message || 'Failed to create brand');
     } finally {
@@ -291,11 +311,16 @@ export const CreateProductPage: React.FC = () => {
 
   const loadCategoriesAndBrands = async () => {
     try {
-      const [cats, brs, vars] = await Promise.allSettled([
+      const [cats, brs, vars, fullCats] = await Promise.allSettled([
         productManagementApi.getCategories(),
         productManagementApi.getBrands(),
         productManagementApi.getVariations(),
+        categoryApi.getAllCategories(0, 1000),
       ]);
+
+      if (fullCats.status === 'fulfilled' && fullCats.value?.content) {
+        setAllCategoriesFull(fullCats.value.content);
+      }
 
       if (cats.status === 'fulfilled' && cats.value.length > 0) {
         setCategories(cats.value);
@@ -1027,7 +1052,7 @@ export const CreateProductPage: React.FC = () => {
                 <label style={{ margin: 0 }}>Select Category *</label>
                 <button
                   type="button"
-                  onClick={() => navigate('/admin/categories?create=true')}
+                  onClick={() => setShowCategoryModal(true)}
                   style={{
                     background: '#eff6ff',
                     border: '1px solid #bfdbfe',
@@ -1041,9 +1066,9 @@ export const CreateProductPage: React.FC = () => {
                     alignItems: 'center',
                     gap: '4px',
                   }}
-                  title="Open Category Create Form Route"
+                  title="Add New Category"
                 >
-                  <FiPlus size={11} /> Add New Category
+                  <FiPlus size={11} /> + Add New Category
                 </button>
               </div>
               <div className={styles.categoryBrandRow}>
@@ -1053,7 +1078,7 @@ export const CreateProductPage: React.FC = () => {
                   value={selectedCategory}
                   onChange={(e) => {
                     if (e.target.value === '__NEW_CATEGORY__') {
-                      navigate('/admin/categories?create=true');
+                      setShowCategoryModal(true);
                     } else {
                       handleCategorySelect(e.target.value);
                     }
@@ -1061,7 +1086,7 @@ export const CreateProductPage: React.FC = () => {
                 >
                   <option value="">Select Category</option>
                   <option value="__NEW_CATEGORY__" style={{ color: '#2563eb', fontWeight: 600 }}>
-                    + Add New Category (Go to Route)...
+                    + Add New Category...
                   </option>
                   {categories.map((c) => (
                     <option key={c.categoryId} value={String(c.categoryId)}>
@@ -1085,7 +1110,7 @@ export const CreateProductPage: React.FC = () => {
                 <label style={{ margin: 0 }}>Select Brand (Optional)</label>
                 <button
                   type="button"
-                  onClick={() => navigate('/admin/brands?create=true')}
+                  onClick={() => setShowBrandModal(true)}
                   style={{
                     background: '#eff6ff',
                     border: '1px solid #bfdbfe',
@@ -1099,9 +1124,9 @@ export const CreateProductPage: React.FC = () => {
                     alignItems: 'center',
                     gap: '4px',
                   }}
-                  title="Open Brand Create Form Route"
+                  title="Add New Brand"
                 >
-                  <FiPlus size={11} /> Add New Brand
+                  <FiPlus size={11} /> + Add New Brand
                 </button>
               </div>
               <div className={styles.categoryBrandRow}>
@@ -1110,7 +1135,7 @@ export const CreateProductPage: React.FC = () => {
                   value={selectedBrand}
                   onChange={(e) => {
                     if (e.target.value === '__NEW_BRAND__') {
-                      navigate('/admin/brands?create=true');
+                      setShowBrandModal(true);
                     } else {
                       setSelectedBrand(e.target.value);
                     }
@@ -1118,7 +1143,7 @@ export const CreateProductPage: React.FC = () => {
                 >
                   <option value="">Select Brand (Optional)</option>
                   <option value="__NEW_BRAND__" style={{ color: '#2563eb', fontWeight: 600 }}>
-                    + Add New Brand (Go to Route)...
+                    + Add New Brand...
                   </option>
                   {brands.map((b) => (
                     <option key={b.brandId} value={String(b.brandId)}>
@@ -1146,7 +1171,7 @@ export const CreateProductPage: React.FC = () => {
               </label>
               <button
                 type="button"
-                onClick={() => navigate('/admin/tags')}
+                onClick={() => setShowTagModal(true)}
                 style={{
                   background: '#eff6ff',
                   border: '1px solid #bfdbfe',
@@ -1160,11 +1185,12 @@ export const CreateProductPage: React.FC = () => {
                   alignItems: 'center',
                   gap: '4px',
                 }}
-                title="Open Tag Management Route"
+                title="Add New Tag"
               >
-                <FiPlus size={11} /> Add New Tag
+                <FiPlus size={11} /> + Add New Tag
               </button>
             </div>
+
             <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#64748b' }}>
               Assign tags to this product for customer search, promo badges, and filtering.
             </p>
@@ -1925,239 +1951,34 @@ export const CreateProductPage: React.FC = () => {
       {/* QUICK CREATE MODALS (Category, Brand, Tag) */}
       {/* ==================================================== */}
 
-      {/* 1. Category Modal */}
-      {showCategoryModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.55)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            backdropFilter: 'blur(3px)',
-          }}
-          onClick={() => setShowCategoryModal(false)}
-        >
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              width: '90%',
-              maxWidth: '460px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-              overflow: 'hidden',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid #e2e8f0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
-                + Add New Category
-              </h3>
-              <button
-                type="button"
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}
-                onClick={() => setShowCategoryModal(false)}
-              >
-                <FiX />
-              </button>
-            </div>
+      {/* 1. Category Form Modal (Exact modal from Category page with Parent Category & full styling) */}
+      <CategoryFormModal
+        isOpen={showCategoryModal}
+        formData={categoryFormData}
+        editingId={null}
+        saving={catLoading}
+        errorMessage={categoryModalError}
+        availableParents={allCategoriesFull}
+        onInputChange={handleCategoryInputChange}
+        onSubmit={handleCategorySubmit}
+        onClose={() => {
+          setShowCategoryModal(false);
+          setCategoryModalError(null);
+        }}
+      />
 
-            <div style={{ padding: '20px' }}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Category Name *
-                </label>
-                <input
-                  type="text"
-                  className={styles.inputField}
-                  placeholder="e.g. Footwear, Electronics"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  autoFocus
-                />
-              </div>
-
-              <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Description (Optional)
-                </label>
-                <textarea
-                  className={styles.textareaField}
-                  placeholder="Brief category description..."
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                  rows={3}
-                  value={newCatDesc}
-                  onChange={(e) => setNewCatDesc(e.target.value)}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  type="button"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    color: '#475569',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setShowCategoryModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={catLoading || !newCatName.trim()}
-                  style={{
-                    padding: '8px 20px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: '#2563eb',
-                    color: '#ffffff',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: catLoading || !newCatName.trim() ? 'not-allowed' : 'pointer',
-                    opacity: catLoading || !newCatName.trim() ? 0.6 : 1,
-                  }}
-                  onClick={handleQuickCreateCategory}
-                >
-                  {catLoading ? 'Creating...' : 'Create Category'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 2. Brand Modal */}
-      {showBrandModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.55)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            backdropFilter: 'blur(3px)',
-          }}
-          onClick={() => setShowBrandModal(false)}
-        >
-          <div
-            style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              width: '90%',
-              maxWidth: '460px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-              overflow: 'hidden',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid #e2e8f0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
-                + Add New Brand
-              </h3>
-              <button
-                type="button"
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}
-                onClick={() => setShowBrandModal(false)}
-              >
-                <FiX />
-              </button>
-            </div>
-
-            <div style={{ padding: '20px' }}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Brand Name *
-                </label>
-                <input
-                  type="text"
-                  className={styles.inputField}
-                  placeholder="e.g. Nike, Apple, Zara"
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                  value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
-                  autoFocus
-                />
-              </div>
-
-              <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Description (Optional)
-                </label>
-                <textarea
-                  className={styles.textareaField}
-                  placeholder="Brief brand description..."
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                  rows={3}
-                  value={newBrandDesc}
-                  onChange={(e) => setNewBrandDesc(e.target.value)}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  type="button"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    color: '#475569',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setShowBrandModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={brandLoading || !newBrandName.trim()}
-                  style={{
-                    padding: '8px 20px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: '#2563eb',
-                    color: '#ffffff',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: brandLoading || !newBrandName.trim() ? 'not-allowed' : 'pointer',
-                    opacity: brandLoading || !newBrandName.trim() ? 0.6 : 1,
-                  }}
-                  onClick={handleQuickCreateBrand}
-                >
-                  {brandLoading ? 'Creating...' : 'Create Brand'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 2. Brand Modal (Exact modal from Brand page with Logo, Categories & full styling) */}
+      <BrandModal
+        show={showBrandModal}
+        brand={null}
+        loading={brandLoading}
+        categories={categories.map((c) => ({
+          categoryId: c.categoryId,
+          categoryName: c.categoryName,
+        }))}
+        onClose={() => setShowBrandModal(false)}
+        onSubmit={handleBrandModalSubmit}
+      />
 
       {/* 3. Tag Modal */}
       {showTagModal && (
@@ -2206,61 +2027,63 @@ export const CreateProductPage: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ padding: '20px' }}>
-              <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Tag Name *
-                </label>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', fontWeight: 700 }}>#</span>
-                  <input
-                    type="text"
-                    className={styles.inputField}
-                    placeholder="e.g. summer, hot-deal, unisex"
-                    style={{ width: '100%', paddingLeft: '28px', boxSizing: 'border-box' }}
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                    autoFocus
-                  />
+            <form onSubmit={handleQuickCreateTag}>
+              <div style={{ padding: '20px' }}>
+                <div style={{ marginBottom: '18px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                    Tag Name *
+                  </label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', fontWeight: 700 }}>#</span>
+                    <input
+                      type="text"
+                      required
+                      className={styles.inputField}
+                      placeholder="e.g. summer, hot-deal, unisex"
+                      style={{ width: '100%', paddingLeft: '28px', boxSizing: 'border-box' }}
+                      value={newTagName}
+                      onChange={(e) => setNewTagName(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <button
+                    type="button"
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      background: '#ffffff',
+                      color: '#475569',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setShowTagModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={tagLoading || !newTagName.trim()}
+                    style={{
+                      padding: '8px 20px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#2563eb',
+                      color: '#ffffff',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: tagLoading || !newTagName.trim() ? 'not-allowed' : 'pointer',
+                      opacity: tagLoading || !newTagName.trim() ? 0.6 : 1,
+                    }}
+                  >
+                    {tagLoading ? 'Creating...' : 'Create Tag'}
+                  </button>
                 </div>
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  type="button"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    color: '#475569',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setShowTagModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={tagLoading || !newTagName.trim()}
-                  style={{
-                    padding: '8px 20px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: '#2563eb',
-                    color: '#ffffff',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: tagLoading || !newTagName.trim() ? 'not-allowed' : 'pointer',
-                    opacity: tagLoading || !newTagName.trim() ? 0.6 : 1,
-                  }}
-                  onClick={handleQuickCreateTag}
-                >
-                  {tagLoading ? 'Creating...' : 'Create Tag'}
-                </button>
-              </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

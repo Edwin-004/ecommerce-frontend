@@ -210,3 +210,257 @@ body,
 .spin {
   animation: spin 0.8s linear infinite;
 }
+
+/* ==========================================================
+   Universal Page Headers
+   ========================================================== */
+.page-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+/* ==========================================================
+   Universal Card Panels & Surfaces
+   ========================================================== */
+.card-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+
+/* ==========================================================
+   Universal Form Layout & Field Controls
+   ========================================================== */
+.form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 9px 13px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: var(--text-main);
+  font-size: 13.5px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* ==========================================================
+   Universal Data Table System
+   ========================================================== */
+.table-responsive-wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.modern-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13.5px;
+}
+
+.modern-data-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.modern-data-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.modern-data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.modern-data-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.modern-data-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* ==========================================================
+   Universal Status Badges / Pills
+   ========================================================== */
+.badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-status-active,
+.badge-status-success {
+  background: var(--success-light);
+  color: #059669;
+  border: 1px solid var(--success-border);
+}
+
+.badge-status-inactive,
+.badge-status-danger {
+  background: var(--danger-light);
+  color: #dc2626;
+  border: 1px solid var(--danger-border);
+}
+
+.badge-status-warning,
+.badge-status-pending {
+  background: var(--warning-light);
+  color: #d97706;
+  border: 1px solid var(--warning-border);
+}
+
+.badge-status-neutral {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid var(--border-color);
+}
+
+/* ==========================================================
+   Table Action Buttons (Edit, Delete, View, Status)
+   Exact Match to ProductManagementPage Action Buttons
+   ========================================================== */
+.table-btn-view,
+.btn-action-view {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.table-btn-view:hover,
+.btn-action-view:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.table-btn-edit,
+.btn-action-edit {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.table-btn-edit:hover,
+.btn-action-edit:hover {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.table-btn-delete,
+.btn-action-delete {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.table-btn-delete:hover:not(:disabled),
+.btn-action-delete:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
