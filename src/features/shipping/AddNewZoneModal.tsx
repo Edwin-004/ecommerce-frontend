@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-toastify';
 import {
   useGetLocationsQuery,
   useCreateZoneGroupMutation,
   useGetZoneGroupsQuery,
+  useGetAssignedTownshipsQuery,
 } from './shippingApi';
 import styles from './AddNewZoneModal.module.css';
 
@@ -33,7 +35,6 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
   const [selectedTownships, setSelectedTownships] = useState<string[]>([]);
   const [shippingFee, setShippingFee] = useState<number>(0);
   const [estimatedDays, setEstimatedDays] = useState<number>(1);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -42,9 +43,12 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
   const [defaultEstimatedDays, setDefaultEstimatedDays] = useState<number>(1);
 
   //အသစ်ထပ်ထည့်ရန် - ရွေးချယ်ထားသော မြို့အတွက် Default Zone (isCityDefault = true) ရှိပြီးသားလား စစ်ဆေးမည်
-  const isDefaultAlreadyExists = existingZones.some(
-    (zone) => zone.city === selectedCity && zone.isCityDefault
-  );
+  const isDefaultAlreadyExists = existingZones.some((zone) => {
+    const isDefault =
+      zone.isCityDefault === true || (zone as any).cityDefault === true;
+
+    return zone.city?.trim() === selectedCity?.trim() && isDefault;
+  });
 
   // Dropdown အပြင်ဘက်ကို နှိပ်လိုက်ပါက ပိတ်သွားစေရန်
   useEffect(() => {
@@ -68,10 +72,18 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
     ? currentRegionData.townships
     : [];
 
+  const { data: assignedTownships = [] } = useGetAssignedTownshipsQuery(
+    selectedCity,
+    {
+      skip: !selectedCity,
+    }
+  );
+
   // Search လုပ်ထားသော မြို့နယ်စာရင်း
   const filteredTownships = availableTownships.filter(
     (t) =>
       !selectedTownships.includes(t) &&
+      !assignedTownships.includes(t) &&
       t.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -101,10 +113,9 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
   // Form Submit လုပ်သည့်အခါ
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
 
     if (!zoneName || !selectedRegionOrState || !shippingFee) {
-      setErrorMessage('ကျေးဇူးပြု၍ လိုအပ်သော အချက်အလက်များကို ဖြည့်စွက်ပါ။');
+      toast.error('Please fill in all required fields.');
       return;
     }
 
@@ -127,6 +138,7 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
       }).unwrap();
 
       // အောင်မြင်ပါက Modal ပိတ်ပြီး Form ကို ရှင်းလင်းမည်
+      toast.success(' New delivery zone created successfully!');
       onClose();
       setZoneName('');
       setSelectedRegionOrState('');
@@ -134,9 +146,16 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
       setShippingFee(0);
       setEstimatedDays(1);
     } catch (err: any) {
-      setErrorMessage(
-        err?.data?.message || 'Zone အသစ် ဖန်တီးရာတွင် အမှားအယွင်း ရှိ နေပါသည်။'
-      );
+      const backendMessage =
+        err?.data?.message || // မင်းရဲ့ ErrorResponse ထဲက message
+        err?.data?.error || // Spring Boot ရဲ့ Default Error
+        err?.message || // General JS Error
+        'There was an error while creating the zone. Please try again.';
+
+      toast.error(backendMessage, {
+        position: 'top-right', // ညာဘက် အပေါ်ထောင့်တွင် ပေါ်မည်
+        autoClose: 4000, // ၄ စက္ကန့်ကြာလျှင် အလိုလို ပျောက်သွားမည်
+      });
     }
   };
 
@@ -149,10 +168,6 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
             &times;
           </button>
         </div>
-
-        {errorMessage && (
-          <div className={styles.errorBanner}>{errorMessage}</div>
-        )}
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
@@ -322,8 +337,7 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
           {isDefaultAlreadyExists && selectedCity && (
             <div className={styles.infoBanner}>
               <span className={styles.infoIcon}>💡</span>A default shipping rate
-              is already configured for {selectedCity}. You only need to set the
-              specific rate for the selected townships.
+              is already configured for {selectedCity}.
             </div>
           )}
 

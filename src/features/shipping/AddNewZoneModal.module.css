@@ -242,3 +242,33 @@
   position: relative; /* absolute ပေးထားသော dropdownList အတွက် Parent အဖြစ် အလုပ်လုပ်ရန် */
   width: 100%;
 }
+
+/* Divider Line */
+.divider {
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Info Banner for Existing Default Rate */
+.infoBanner {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.infoIcon {
+  font-size: 16px;
+}
+
+/* Default Rate Form Wrapper */
+.defaultRateWrapper {
+  background-color: #f8fafc;
+  padding: 12px;
+  border-radius: 6px;
+}
