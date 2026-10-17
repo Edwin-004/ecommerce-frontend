@@ -16,7 +16,7 @@ import CategoryManagement from './features/categories/CategoryManagement';
 // --- Conflict ရှင်းလင်းပြီးသား Imports များ ---
 import { BrandsPage } from './features/brand/BrandsPage';
 import TagManagement from './features/tags/TagManagement';
-import { StaffList } from "./features/staff/StaffList"; 
+import { StaffList } from './features/staff/StaffList';
 import { CreateStaff } from './features/staff/CreateStaff'; // <--- အသစ်ထည့်ထားသော Import
 // ---------------------------------------------
 
@@ -24,6 +24,7 @@ import { Profile } from './components/Profile';
 import { ReportsPage } from './features/reports/ReportsPage';
 import './App.css';
 import { ShippingRates } from './features/shipping/ShippingRates';
+import { ToastContainer } from 'react-toastify';
 
 function App() {
   return (
@@ -43,38 +44,33 @@ function App() {
             {/* Dashboard & Profile */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/profile" element={<Profile />} />
-
             {/* Product Catalog & Stock */}
             <Route path="/admin/products" element={<ProductManagementPage />} />
             <Route path="/productlist" element={<ProductManagementPage />} />
             <Route path="/admin/products/new" element={<CreateProductPage />} />
-            <Route path="/admin/products/edit/:id" element={<EditProductPage />} />
+            <Route
+              path="/admin/products/edit/:id"
+              element={<EditProductPage />}
+            />
             <Route path="/product" element={<CreateProductPage />} />
-
             <Route path="/admin/variants" element={<VariantsPage />} />
             <Route path="/admin/variations" element={<VariantsPage />} />
             <Route path="/admin/inventory" element={<InventoryPage />} />
-
             {/* Categories */}
             <Route path="/admin/categories" element={<CategoryManagement />} />
-
             {/* Brands & Tags */}
             <Route path="/admin/brands" element={<BrandsPage />} />
             <Route path="/admin/tags" element={<TagManagement />} />
-
             {/* Staff Management */}
             <Route path="/admin/staff" element={<StaffList />} />
-            <Route path="/admin/staff/new" element={<CreateStaff />} /> {/* <--- အသစ်ထည့်ထားသော Route */}
-
+            <Route path="/admin/staff/new" element={<CreateStaff />} />{' '}
+            {/* <--- အသစ်ထည့်ထားသော Route */}
             {/* Reports */}
             <Route path="/admin/reports" element={<ReportsPage />} />
-
             {/* Orders Management */}
             <Route path="/admin/orders" element={<AllOrders />} />
-
             {/* Shipping Rates Management */}
             <Route path="/admin/shipping-rates" element={<ShippingRates />} />
-
             {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
             <Route
               path="/admin"
@@ -86,6 +82,11 @@ function App() {
         {/* မရှိသော URL ရိုက်ထည့်မိပါက Login သို့ အလိုအလျောက် ပြန်ပို့မည် */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+      />
     </BrowserRouter>
   );
 }
