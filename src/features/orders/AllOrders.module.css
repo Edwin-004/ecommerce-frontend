@@ -442,3 +442,148 @@
   color: #999;
   border-color: #e9ecef;
 }
+
+/* ==================== Filter Section & Tabs ==================== */
+.filterSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap; 
+  gap: 16px;
+}
+
+.tabsContainer {
+  display: flex;
+  gap: 12px;
+  border-bottom: 2px solid #e2e8f0;
+  flex-grow: 1;
+  overflow-x: auto; /* ဖုန်းနဲ့ကြည့်ရင် ဘေးတိုက်ပွတ်ဆွဲလို့ရအောင် */
+  padding-bottom: 2px;
+}
+
+.tabButton {
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -4px; /* Border အချင်းချင်း ထပ်နေစေရန် */
+  color: #64748b;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tabButton:hover {
+  color: #334155;
+}
+
+.activeTab {
+  color: #4f46e5; /* Primary လှပသော အပြာရောင် */
+  border-bottom-color: #4f46e5;
+  font-weight: 600;
+}
+
+/* ==================== Search Bar ==================== */
+.searchContainer {
+  position: relative;
+  width: 280px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: #4f46e5;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* ==================== Status Count Badge ==================== */
+.statusCountBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f5f9; /* မီးခိုးရောင်ဖျော့ဖျော့ */
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  transition: all 0.2s ease;
+}
+
+/* Tab ကို ရွေးထားချိန်တွင် Badge အရောင်ကိုပါ ပြောင်းပေးမည် */
+.activeCountBadge {
+  background-color: #e0e7ff; /* အပြာရောင်ဖျော့ဖျော့ */
+  color: #4f46e5;
+}
+
+/* ==================== Status History Table ==================== */
+.historyTableWrapper {
+  margin-top: 12px;
+  max-height: 250px; 
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.historyTable th {
+  background-color: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-transform: uppercase;
+}
+
+.historyTable td {
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.historyTable tr:last-child td {
+  border-bottom: none;
+}
+
+.historyTable tr:hover {
+  background-color: #f8fafc; /* Mouse ထောက်ရင် အရောင်ပြောင်းရန် */
+}
+
+.historyTimeCell {
+  color: #475569;
+  white-space: nowrap; 
+}
+
+.historyUserCell {
+  color: #334155;
+  font-weight: 500;
+}
