@@ -45,8 +45,6 @@ export const orderApi = createApi({
 
     // ၁။ Courier List ဆွဲယူရန် (GET Query)
     getCouriers: builder.query<string[], void>({
-      // သင့် Backend တွင် @GetMapping("/couriers") ဟု သီးသန့်ရေးထားပါက /couriers ကိုသုံးပါ။
-      // OrderManagementController ၏ @RequestMapping အောက်တွင် ရေးထားပါက /orders/couriers ဟုသုံးပါ။
       query: () => 'orders/couriers', 
     }),
 
@@ -71,6 +69,11 @@ export const orderApi = createApi({
       // API အောင်မြင်ပါက Auto-refresh လုပ်ပေးမည်
       invalidatesTags: (_result, _error, { orderNo }) => ['Order', { type: 'Order', id: orderNo }],
     }),
+
+    getOrderStatusHistory: builder.query<any[], string>({
+      query: (orderNo) => `/orders/${orderNo}/history`, // မင်းရဲ့ Backend URL လမ်းကြောင်းအတိုင်း ဖြစ်ရပါမည်
+      providesTags: ['Order'],
+    }),
     
   }),
 });
@@ -82,4 +85,5 @@ export const {
   useGetPaymentByOrderNoQuery,
   useGetCouriersQuery,
   useCreateShipmentMutation,
-  useUpdateOrderStatusMutation} = orderApi;
+  useUpdateOrderStatusMutation,
+  useGetOrderStatusHistoryQuery,} = orderApi;
