@@ -8,10 +8,7 @@ import {
   FiChevronRight,
   FiEdit2,
   FiTrash2,
-  FiDownload,
-  FiFileText,
-  FiCheckCircle,
-  FiX,
+  FiCornerDownRight,
 } from "react-icons/fi";
 import api from "../../utils/axiosConfig";
 import { type CategoryResponseDto } from "../../types/category";
@@ -46,75 +43,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
-  const exportMenuRef = useRef<HTMLDivElement>(null);
-  const [exportingFormat, setExportingFormat] = useState<'pdf' | 'excel' | null>(null);
-  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
-
-  // Click outside to close export menu
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        exportMenuRef.current &&
-        !exportMenuRef.current.contains(event.target as Node)
-      ) {
-        setShowExportMenu(false);
-      }
-    };
-    if (showExportMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showExportMenu]);
-
-  // Auto-dismiss export success message after 5 seconds
-  useEffect(() => {
-    if (exportSuccessMessage) {
-      const timer = setTimeout(() => {
-        setExportSuccessMessage(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [exportSuccessMessage]);
-
-  const handleExportCategoryReport = async (format: 'pdf' | 'excel') => {
-    setExportingFormat(format);
-    setExportSuccessMessage(null);
-
-    try {
-      const response = await api.get('/reports/categories', {
-        params: { format },
-        responseType: 'blob',
-      });
-
-      const contentType =
-        format === 'pdf'
-          ? 'application/pdf'
-          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-      const blob = new Blob([response.data], { type: contentType });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const ext = format === 'excel' ? 'xlsx' : 'pdf';
-      const filename = `Category_Summary_Report_${todayStr}.${ext}`;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-
-      setExportSuccessMessage(`Downloaded: ${filename}`);
-    } catch (err: any) {
-      console.error(`Export Category ${format.toUpperCase()} error:`, err);
-      alert(`Failed to export Category ${format.toUpperCase()}. Please check your connection or login session.`);
-    } finally {
-      setExportingFormat(null);
-    }
-  };
+  // Tree View ကို အဆင့်လိုက် (Indentation) သေချာခွဲပြရန်
   const renderTree = (
     nodes: CategoryResponseDto[],
     depth = 0
@@ -127,7 +56,10 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
         return (
           <div key={node.categoryId} className={styles.treeItem}>
-            <div className={styles.treeRow}>
+            <div
+              className={styles.treeRow}
+              style={{ paddingLeft: `${depth * 28 + 12}px` }} // Depth အလိုက် ညာဘက်သို့ ရွှေ့ပေးခြင်း
+            >
               <div className={styles.treeName}>
                 {hasChildren ? (
                   <button
@@ -138,19 +70,36 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                   >
                     {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
                   </button>
+                ) : depth > 0 ? (
+                  <FiCornerDownRight
+                    className="text-muted me-1"
+                    style={{ color: "#94a3b8" }}
+                  />
                 ) : (
                   <span className={styles.expandSpace} />
                 )}
 
                 <span className={styles.folderIcon}>
-                  <FiFolder />
+                  {depth === 0 ? (
+                    <FiFolder className="text-primary" />
+                  ) : (
+                    <FiGitBranch style={{ color: "#8b5cf6" }} />
+                  )}
                 </span>
 
-                <span>{node.categoryName}</span>
+                <span className={depth === 0 ? "fw-bold" : "fw-medium"}>
+                  {node.categoryName}
+                </span>
 
-                {/* Tree View ထဲတွင် Main Category လုို့ ပြင်ဆင်ထားပါသည် */}
-                {depth === 0 && (
+                {depth === 0 ? (
                   <span className={styles.rootBadge}>Main Category</span>
+                ) : (
+                  <span
+                    className="badge bg-light text-dark border ms-2"
+                    style={{ fontSize: "11px" }}
+                  >
+                    Subcategory
+                  </span>
                 )}
               </div>
 
@@ -185,6 +134,20 @@ export const CategoryList: React.FC<CategoryListProps> = ({
       })}
     </div>
   );
+
+  // Flat View မှာလည်း Parent အလိုက် စီပေးထားခြင်း
+  const sortedFlatCategories = React.useMemo(() => {
+    const list = [...filteredCategories];
+    return list.sort((a, b) => {
+      // Main categories များကို အထက်သို့ တင်ပေးပြီး Parent တူရာများကို စီပေးခြင်း
+      const parentA = a.parentId ?? a.categoryId;
+      const parentB = b.parentId ?? b.categoryId;
+      if (parentA === parentB) {
+        return a.parentId === null ? -1 : 1;
+      }
+      return parentA - parentB;
+    });
+  }, [filteredCategories]);
 
   return (
     <section className={styles.card}>
@@ -344,14 +307,14 @@ export const CategoryList: React.FC<CategoryListProps> = ({
               <tr>
                 <th>ID</th>
                 <th>Category</th>
-                <th>Parent</th>
+                <th>Parent Category</th>
                 <th>Description</th>
                 <th>Actions</th>
               </tr>
             </thead>
 
             <tbody>
-              {filteredCategories.map((cat) => (
+              {sortedFlatCategories.map((cat) => (
                 <tr key={cat.categoryId}>
                   <td>
                     <span className={styles.idText}>#{cat.categoryId}</span>
@@ -360,19 +323,24 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                   <td>
                     <div className={styles.categoryCell}>
                       <span className={styles.categoryIcon}>
-                        <FiFolder />
+                        {cat.parentId ? (
+                          <FiGitBranch style={{ color: "#8b5cf6" }} />
+                        ) : (
+                          <FiFolder className="text-primary" />
+                        )}
                       </span>
-                      <span>{cat.categoryName}</span>
+                      <span className={cat.parentId ? "" : "fw-bold"}>
+                        {cat.categoryName}
+                      </span>
                     </div>
                   </td>
 
                   <td>
                     {cat.parentName ? (
                       <span className={styles.parentBadge}>
-                        {cat.parentName}
+                        ↳ {cat.parentName}
                       </span>
                     ) : (
-                      /* Flat View ထဲတွင် Root အစား Main Category ဟု ပြင်ဆင်ထားပါသည် */
                       <span className={styles.rootBadge}>Main Category</span>
                     )}
                   </td>
