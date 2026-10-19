@@ -1,0 +1,946 @@
+/* ==========================================================================
+   REFUND MANAGEMENT PAGE STYLES
+   Corporate layout matching ProductManagementPage & BrandsPage
+   ========================================================================== */
+
+.container {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* ==========================================================================
+   PAGE HEADER
+   ========================================================================== */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+}
+
+.smallBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6366f1;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.3px;
+}
+
+.subtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ==========================================================================
+   STATS CARDS GRID
+   ========================================================================== */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 540px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.statCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.statIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.statLabel {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.statValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.purple {
+  color: #6f42c1;
+  background: #eee5ff;
+}
+
+.amber {
+  color: #d97706;
+  background: #fef3c7;
+}
+
+.green {
+  color: #16a34a;
+  background: #dcfce7;
+}
+
+.red {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+.blue {
+  color: #2563eb;
+  background: #dbeafe;
+}
+
+/* ==========================================================================
+   MODERN FILTER & SEARCH TOOLBAR
+   ========================================================================== */
+.filterCardModern {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.filterInputsGroup {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.fieldWithLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldWithLabel label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 38px;
+  width: 250px;
+  transition: all 0.15s ease;
+}
+
+.searchBox:focus-within {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.searchIcon {
+  color: #94a3b8;
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.fieldInputSearch {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.fieldInputSearch::placeholder {
+  color: #94a3b8;
+}
+
+.clearSearchBtn {
+  background: none;
+  border: none;
+  padding: 2px;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.clearSearchBtn:hover {
+  color: #475569;
+}
+
+.fieldSelectControl {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #334155;
+  outline: none;
+  background: #ffffff;
+  min-width: 125px;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.fieldSelectControl:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.dateRangeGroup {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.fieldDateControl {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #334155;
+  outline: none;
+  background: #ffffff;
+  width: 135px;
+  transition: all 0.15s;
+}
+
+.fieldDateControl:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.filterActionsBar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btnResetFilter {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btnResetFilter:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.btnActionItem {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btnActionItem:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.columnSelectorContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.columnDropdownMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1050;
+  width: 220px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  padding: 12px 14px;
+  animation: fadeInDown 0.18s ease-out;
+}
+
+.columnDropdownHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.columnDropdownTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #475569;
+}
+
+.columnDropdownAction {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6366f1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.columnDropdownAction:hover {
+  text-decoration: underline;
+}
+
+.columnCheckboxList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.columnCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.columnCheckboxLabel input[type="checkbox"] {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  accent-color: #6366f1;
+}
+
+.columnCheckboxLabel:hover {
+  color: #0f172a;
+}
+
+.exportDropdownContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.btnActionExporting {
+  background: #eef2ff !important;
+  color: #4f46e5 !important;
+  border-color: #c7d2fe !important;
+}
+
+.exportSpinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #c7d2fe;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spinExport 0.8s linear infinite;
+}
+
+@keyframes spinExport {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.exportDropdownMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  width: 220px;
+  padding: 8px;
+  z-index: 1050;
+  animation: fadeInDown 0.18s ease-out;
+}
+
+.exportDropdownHeader {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #64748b;
+  padding: 6px 10px 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.exportMenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.exportMenuItem:hover {
+  background: #f1f5f9;
+}
+
+.exportMenuIconExcel {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #ecfdf5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.exportMenuIconPdf {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.exportMenuText {
+  display: flex;
+  flex-direction: column;
+}
+
+.exportMenuTitle {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.exportMenuSub {
+  font-size: 10.5px;
+  color: #94a3b8;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   DATA TABLE STYLES
+   ========================================================================== */
+.tableCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.tableResponsive {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.modernTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.modernTable th {
+  background: #f8fafc;
+  padding: 13px 18px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.modernTable td {
+  padding: 13px 18px;
+  font-size: 13px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.modernTable tr:last-child td {
+  border-bottom: none;
+}
+
+.modernTable tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.modernTable tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.orderBadge {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.customerName {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.customerEmail {
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.amountText {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.quantityText {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+.reasonText {
+  font-size: 12.5px;
+  color: #475569;
+}
+
+.dateText {
+  font-size: 12.5px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.tableFooter {
+  padding: 14px 20px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footerCount {
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+/* ==========================================================================
+   STATUS BADGES
+   ========================================================================== */
+.badgePending {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.badgeApproved {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.badgeRejected {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   TABLE ACTION BUTTONS
+   ========================================================================== */
+.actionGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.btnApprove {
+  padding: 5px 11px;
+  border-radius: 6px;
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btnApprove:hover {
+  background: #dcfce7;
+  border-color: #4ade80;
+  color: #166534;
+}
+
+.btnReject {
+  padding: 5px 11px;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btnReject:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  color: #991b1b;
+}
+
+.btnNote {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btnNote:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.closedText {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ==========================================================================
+   EMPTY & LOADING STATES
+   ========================================================================== */
+.emptyStateBox {
+  padding: 56px 20px;
+  text-align: center;
+}
+
+.emptyStateIconWrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.emptyStateSmallTag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.emptyStateBigTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.emptyStateSubtext {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.loadingBox {
+  padding: 48px 20px;
+  text-align: center;
+  color: #64748b;
+}
+
+/* ==========================================================================
+   NOTIFICATION BANNERS
+   ========================================================================== */
+.exportSuccessBanner {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.bannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.bannerCloseBtn {
+  background: none;
+  border: none;
+  color: #065f46;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.bannerCloseBtn:hover {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   MODAL STYLES
+   ========================================================================== */
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1060;
+  animation: fadeIn 0.18s ease;
+}
+
+.modalDialog {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 520px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  animation: scaleUp 0.18s ease;
+}
+
+.modalHeader {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modalBody {
+  padding: 24px;
+}
+
+.modalFooter {
+  padding: 16px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.detailCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 16px;
+  font-size: 12.5px;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.detailLabel {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.detailValue {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}

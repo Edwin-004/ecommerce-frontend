@@ -17,6 +17,7 @@ import {
   FiTruck,
   FiUserPlus,
   FiBarChart2,
+  FiRotateCcw,
   FiX,
 } from 'react-icons/fi';
 
@@ -194,6 +195,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         <NavLink to="/admin/orders" className={navClass}>
           <FiShoppingCart className={styles.linkIcon} />
           <span>Orders</span>
+        </NavLink>
+
+        {/* Refunds */}
+        <NavLink to="/admin/refunds" className={navClass}>
+          <FiRotateCcw className={styles.linkIcon} />
+          <span>Refunds</span>
         </NavLink>
 
         {/* Shipping rate */}
