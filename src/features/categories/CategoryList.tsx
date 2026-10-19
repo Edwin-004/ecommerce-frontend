@@ -8,6 +8,7 @@ import {
   FiChevronRight,
   FiEdit2,
   FiTrash2,
+  FiCornerDownRight,
 } from "react-icons/fi";
 import { type CategoryResponseDto } from "../../types/category";
 import styles from "./CategoryManagement.module.css";
@@ -41,6 +42,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
   onEdit,
   onDelete,
 }) => {
+  // Tree View ကို အဆင့်လိုက် (Indentation) သေချာခွဲပြရန်
   const renderTree = (
     nodes: CategoryResponseDto[],
     depth = 0
@@ -53,7 +55,10 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
         return (
           <div key={node.categoryId} className={styles.treeItem}>
-            <div className={styles.treeRow}>
+            <div
+              className={styles.treeRow}
+              style={{ paddingLeft: `${depth * 28 + 12}px` }} // Depth အလိုက် ညာဘက်သို့ ရွှေ့ပေးခြင်း
+            >
               <div className={styles.treeName}>
                 {hasChildren ? (
                   <button
@@ -64,19 +69,36 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                   >
                     {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
                   </button>
+                ) : depth > 0 ? (
+                  <FiCornerDownRight
+                    className="text-muted me-1"
+                    style={{ color: "#94a3b8" }}
+                  />
                 ) : (
                   <span className={styles.expandSpace} />
                 )}
 
                 <span className={styles.folderIcon}>
-                  <FiFolder />
+                  {depth === 0 ? (
+                    <FiFolder className="text-primary" />
+                  ) : (
+                    <FiGitBranch style={{ color: "#8b5cf6" }} />
+                  )}
                 </span>
 
-                <span>{node.categoryName}</span>
+                <span className={depth === 0 ? "fw-bold" : "fw-medium"}>
+                  {node.categoryName}
+                </span>
 
-                {/* Tree View ထဲတွင် Main Category လုို့ ပြင်ဆင်ထားပါသည် */}
-                {depth === 0 && (
+                {depth === 0 ? (
                   <span className={styles.rootBadge}>Main Category</span>
+                ) : (
+                  <span
+                    className="badge bg-light text-dark border ms-2"
+                    style={{ fontSize: "11px" }}
+                  >
+                    Subcategory
+                  </span>
                 )}
               </div>
 
@@ -111,6 +133,20 @@ export const CategoryList: React.FC<CategoryListProps> = ({
       })}
     </div>
   );
+
+  // Flat View မှာလည်း Parent အလိုက် စီပေးထားခြင်း
+  const sortedFlatCategories = React.useMemo(() => {
+    const list = [...filteredCategories];
+    return list.sort((a, b) => {
+      // Main categories များကို အထက်သို့ တင်ပေးပြီး Parent တူရာများကို စီပေးခြင်း
+      const parentA = a.parentId ?? a.categoryId;
+      const parentB = b.parentId ?? b.categoryId;
+      if (parentA === parentB) {
+        return a.parentId === null ? -1 : 1;
+      }
+      return parentA - parentB;
+    });
+  }, [filteredCategories]);
 
   return (
     <section className={styles.card}>
@@ -169,14 +205,14 @@ export const CategoryList: React.FC<CategoryListProps> = ({
               <tr>
                 <th>ID</th>
                 <th>Category</th>
-                <th>Parent</th>
+                <th>Parent Category</th>
                 <th>Description</th>
                 <th>Actions</th>
               </tr>
             </thead>
 
             <tbody>
-              {filteredCategories.map((cat) => (
+              {sortedFlatCategories.map((cat) => (
                 <tr key={cat.categoryId}>
                   <td>
                     <span className={styles.idText}>#{cat.categoryId}</span>
@@ -185,19 +221,24 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                   <td>
                     <div className={styles.categoryCell}>
                       <span className={styles.categoryIcon}>
-                        <FiFolder />
+                        {cat.parentId ? (
+                          <FiGitBranch style={{ color: "#8b5cf6" }} />
+                        ) : (
+                          <FiFolder className="text-primary" />
+                        )}
                       </span>
-                      <span>{cat.categoryName}</span>
+                      <span className={cat.parentId ? "" : "fw-bold"}>
+                        {cat.categoryName}
+                      </span>
                     </div>
                   </td>
 
                   <td>
                     {cat.parentName ? (
                       <span className={styles.parentBadge}>
-                        {cat.parentName}
+                        ↳ {cat.parentName}
                       </span>
                     ) : (
-                      /* Flat View ထဲတွင် Root အစား Main Category ဟု ပြင်ဆင်ထားပါသည် */
                       <span className={styles.rootBadge}>Main Category</span>
                     )}
                   </td>

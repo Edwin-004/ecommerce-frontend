@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 
 import {
@@ -28,6 +27,7 @@ import {
   FiChevronDown,
   FiChevronUp,
 } from 'react-icons/fi';
+import { apiFetch } from '../../utils/api';
 
 import styles from './Brands.module.css';
 
@@ -56,25 +56,19 @@ const getLogoUrl = (
 };
 
 // =====================================================
-// CATEGORY API
+// CATEGORY API (apiFetch ကို အသုံးပြုရန် ပြင်ဆင်ထားသည်)
 // =====================================================
 
 const getCategories = async (): Promise<Category[]> => {
-  const response = await fetch(
-    `${API_BASE_URL}/api/backoffice/categories?page=0&size=1000&sort=categoryName,asc`
+  const response = await apiFetch<any>(
+    '/api/backoffice/categories?page=0&size=1000&sort=categoryName,asc'
   );
 
-  if (!response.ok) {
-    throw new Error('Failed to load categories');
+  if (Array.isArray(response)) {
+    return response;
   }
 
-  const data = await response.json();
-
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  return data.content ?? [];
+  return response.content ?? [];
 };
 
 // =====================================================
@@ -753,4 +747,3 @@ export function BrandsPage() {
     </div>
   );
 }
-
