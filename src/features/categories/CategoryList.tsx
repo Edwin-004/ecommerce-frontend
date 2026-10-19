@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiSearch,
   FiList,
@@ -9,9 +10,12 @@ import {
   FiEdit2,
   FiTrash2,
   FiCornerDownRight,
+  FiCheckCircle,
+  FiX,
+  FiDownload,
+  FiFileText,
 } from "react-icons/fi";
-import api from "../../utils/axiosConfig";
-import { type CategoryResponseDto } from "../../types/category";
+import type { CategoryResponseDto } from "../../types/category";
 import styles from "./CategoryManagement.module.css";
 
 interface CategoryListProps {
@@ -29,6 +33,8 @@ interface CategoryListProps {
   onDelete: (id: number) => Promise<void>;
 }
 
+type ExportFormat = "pdf" | "excel";
+
 export const CategoryList: React.FC<CategoryListProps> = ({
   viewMode,
   setViewMode,
@@ -43,22 +49,236 @@ export const CategoryList: React.FC<CategoryListProps> = ({
   onEdit,
   onDelete,
 }) => {
-  // Tree View ကို အဆင့်လိုက် (Indentation) သေချာခွဲပြရန်
+  const [exportingFormat, setExportingFormat] =
+    useState<ExportFormat | null>(null);
+  const [exportSuccessMessage, setExportSuccessMessage] =
+    useState<string | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Export dropdown အပြင်ဘက်ကို click လုပ်လျှင် menu ပိတ်ရန်
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowExportMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, []);
+
+  // CSV cell တစ်ခုချင်းစီကို Excel ဖတ်နိုင်အောင် escape လုပ်ခြင်း
+  const escapeCsv = (value: unknown): string => {
+    const text = String(value ?? "");
+    return `"${text.replace(/"/g, '""')}"`;
+  };
+
+  const escapeHtml = (value: unknown): string => {
+    return String(value ?? "").replace(/[&<>"']/g, (char) => {
+      const entities: Record<string, string> = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      };
+      return entities[char];
+    });
+  };
+
+  const handleExportCategoryReport = (format: ExportFormat): void => {
+    setShowExportMenu(false);
+    setExportSuccessMessage(null);
+    setExportingFormat(format);
+
+    try {
+      const date = new Date().toISOString().slice(0, 10);
+
+      if (format === "excel") {
+        const headers = [
+          "Category ID",
+          "Category Name",
+          "Parent Category",
+          "Description",
+          "Type",
+        ];
+
+        const rows = filteredCategories.map((category) => [
+          category.categoryId,
+          category.categoryName,
+          category.parentName ?? "",
+          category.description ?? "",
+          category.parentId == null ? "Main Category" : "Subcategory",
+        ]);
+
+        // UTF-8 BOM ထည့်ထားသောကြောင့် Excel တွင် မြန်မာစာဖတ်ရလွယ်ကူမည်
+        const csvContent = [
+          headers.map(escapeCsv).join(","),
+          ...rows.map((row) => row.map(escapeCsv).join(",")),
+        ].join("\r\n");
+
+        const blob = new Blob(["\uFEFF", csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = `category-report-${date}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        URL.revokeObjectURL(url);
+
+        setExportSuccessMessage(
+          "Category report exported successfully as CSV. You can open it with Excel."
+        );
+      } else {
+        // PDF အတွက် browser Print dialog ကို အသုံးပြုခြင်း
+        const printWindow = window.open("", "_blank");
+
+        if (!printWindow) {
+          throw new Error(
+            "Print window was blocked. Please allow pop-ups and try again."
+          );
+        }
+
+        const tableRows = filteredCategories
+          .map(
+            (category) => `
+              <tr>
+                <td>${escapeHtml(category.categoryId)}</td>
+                <td>${escapeHtml(category.categoryName)}</td>
+                <td>${escapeHtml(category.parentName || "Main Category")}</td>
+                <td>${escapeHtml(category.description || "-")}</td>
+                <td>${category.parentId == null ? "Main Category" : "Subcategory"}</td>
+              </tr>
+            `
+          )
+          .join("");
+
+        printWindow.document.open();
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8" />
+              <title>Category Report</title>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  padding: 24px;
+                  color: #222;
+                }
+                h1 { margin-bottom: 8px; }
+                .meta {
+                  color: #555;
+                  margin-bottom: 20px;
+                  font-size: 13px;
+                }
+                table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  font-size: 12px;
+                }
+                th, td {
+                  border: 1px solid #ccc;
+                  padding: 8px;
+                  text-align: left;
+                  overflow-wrap: anywhere;
+                }
+                th {
+                  background: #f1f5f9;
+                }
+                @media print {
+                  body { padding: 0; }
+                  tr { break-inside: avoid; }
+                }
+              </style>
+            </head>
+            <body>
+              <h1>Category Summary Report</h1>
+              <div class="meta">
+                Generated: ${escapeHtml(date)} |
+                Total categories in this report: ${filteredCategories.length}
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Category</th>
+                    <th>Parent Category</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+              </table>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+
+        printWindow.focus();
+
+        // Print dialog တွင် Save as PDF ကို ရွေးနိုင်သည်
+        printWindow.print();
+
+        setExportSuccessMessage(
+          "Print dialog opened. Choose Save as PDF to save the report."
+        );
+      }
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Export failed.";
+      window.alert(message);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
+  const sortedFlatCategories = useMemo(() => {
+    return [...filteredCategories].sort((a, b) => {
+      const parentA = a.parentId ?? a.categoryId;
+      const parentB = b.parentId ?? b.categoryId;
+
+      if (parentA !== parentB) {
+        return parentA - parentB;
+      }
+
+      // Parent category ကို ၎င်း၏ subcategory များထက် အပေါ်တွင်ထားရန်
+      if (a.parentId == null && b.parentId != null) return -1;
+      if (a.parentId != null && b.parentId == null) return 1;
+
+      return a.categoryName.localeCompare(b.categoryName);
+    });
+  }, [filteredCategories]);
+
   const renderTree = (
     nodes: CategoryResponseDto[],
     depth = 0
   ): React.ReactNode => (
     <div className={styles.treeList}>
       {nodes.map((node) => {
-        const hasChildren = (node.children?.length || 0) > 0;
+        const hasChildren = (node.children?.length ?? 0) > 0;
         const isExpanded =
-          expanded.includes(node.categoryId) || search.length > 0;
+          expanded.includes(node.categoryId) || search.trim().length > 0;
 
         return (
           <div key={node.categoryId} className={styles.treeItem}>
             <div
               className={styles.treeRow}
-              style={{ paddingLeft: `${depth * 28 + 12}px` }} // Depth အလိုက် ညာဘက်သို့ ရွှေ့ပေးခြင်း
+              style={{ paddingLeft: `${depth * 28 + 12}px` }}
             >
               <div className={styles.treeName}>
                 {hasChildren ? (
@@ -66,7 +286,9 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                     type="button"
                     className={styles.expandBtn}
                     onClick={() => onToggleExpand(node.categoryId)}
-                    aria-label="Toggle category"
+                    aria-label={
+                      isExpanded ? "Collapse category" : "Expand category"
+                    }
                   >
                     {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
                   </button>
@@ -108,7 +330,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                   type="button"
                   className="table-btn-edit"
                   onClick={() => onEdit(node)}
-                  title="Edit"
+                  title="Edit category"
                 >
                   <FiEdit2 size={12} /> Edit
                 </button>
@@ -116,8 +338,10 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                 <button
                   type="button"
                   className="table-btn-delete"
-                  onClick={() => onDelete(node.categoryId)}
-                  title="Delete"
+                  onClick={() => {
+                    void onDelete(node.categoryId);
+                  }}
+                  title="Delete category"
                 >
                   <FiTrash2 size={12} /> Delete
                 </button>
@@ -126,7 +350,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
             {hasChildren && isExpanded && (
               <div className={styles.treeChildren}>
-                {renderTree(node.children || [], depth + 1)}
+                {renderTree(node.children ?? [], depth + 1)}
               </div>
             )}
           </div>
@@ -135,52 +359,47 @@ export const CategoryList: React.FC<CategoryListProps> = ({
     </div>
   );
 
-  // Flat View မှာလည်း Parent အလိုက် စီပေးထားခြင်း
-  const sortedFlatCategories = React.useMemo(() => {
-    const list = [...filteredCategories];
-    return list.sort((a, b) => {
-      // Main categories များကို အထက်သို့ တင်ပေးပြီး Parent တူရာများကို စီပေးခြင်း
-      const parentA = a.parentId ?? a.categoryId;
-      const parentB = b.parentId ?? b.categoryId;
-      if (parentA === parentB) {
-        return a.parentId === null ? -1 : 1;
-      }
-      return parentA - parentB;
-    });
-  }, [filteredCategories]);
-
   return (
     <section className={styles.card}>
-      {/* Exporting In-Progress Floating Banner */}
       {exportingFormat && (
-        <div className={styles.exportProgressBanner}>
+        <div
+          className={styles.exportProgressBanner}
+          role="status"
+          aria-live="polite"
+        >
           <div className={styles.exportProgressSpinner} />
           <div className={styles.exportProgressContent}>
             <span className={styles.exportProgressTitle}>
-              Generating Category {exportingFormat === 'pdf' ? 'PDF Report' : 'Excel Document'}...
+              {exportingFormat === "pdf"
+                ? "Preparing Category PDF Report..."
+                : "Generating Excel-compatible CSV..."}
             </span>
             <span className={styles.exportProgressSubtitle}>
-              Compiling category summary report. Your download will start shortly.
+              Preparing your category report.
             </span>
           </div>
         </div>
       )}
 
-      {/* Export Success Floating Toast */}
       {exportSuccessMessage && (
-        <div className={styles.exportSuccessToast}>
+        <div className={styles.exportSuccessToast} role="status">
           <div className={styles.exportSuccessIcon}>
             <FiCheckCircle size={20} />
           </div>
           <div className={styles.exportSuccessContent}>
-            <span className={styles.exportSuccessTitle}>Export Successful!</span>
-            <span className={styles.exportSuccessSubtitle}>{exportSuccessMessage}</span>
+            <span className={styles.exportSuccessTitle}>
+              Export Completed
+            </span>
+            <span className={styles.exportSuccessSubtitle}>
+              {exportSuccessMessage}
+            </span>
           </div>
           <button
             type="button"
             className={styles.exportToastClose}
             onClick={() => setExportSuccessMessage(null)}
             title="Dismiss"
+            aria-label="Dismiss export message"
           >
             <FiX size={15} />
           </button>
@@ -195,7 +414,6 @@ export const CategoryList: React.FC<CategoryListProps> = ({
         <span className={styles.countBadge}>{totalCount} Total</span>
       </div>
 
-      {/* Toolbar */}
       <div className={styles.toolbar}>
         <div className={styles.searchBox}>
           <FiSearch />
@@ -203,7 +421,8 @@ export const CategoryList: React.FC<CategoryListProps> = ({
             type="text"
             placeholder="Search categories..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
+            aria-label="Search categories"
           />
         </div>
 
@@ -232,14 +451,19 @@ export const CategoryList: React.FC<CategoryListProps> = ({
             </button>
           </div>
 
-          {/* Unified Category Export Dropdown */}
-          <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
+          <div
+            className={styles.exportDropdownContainer}
+            ref={exportMenuRef}
+          >
             <button
               type="button"
-              className={`${styles.exportBtn} ${exportingFormat ? styles.btnActionExporting : ''}`}
-              onClick={() => setShowExportMenu((prev) => !prev)}
-              disabled={!!exportingFormat}
-              title="Export Category Summary Report as PDF or Excel"
+              className={`${styles.exportBtn} ${
+                exportingFormat ? styles.btnActionExporting : ""
+              }`}
+              onClick={() => setShowExportMenu((previous) => !previous)}
+              disabled={exportingFormat !== null}
+              title="Export category report"
+              aria-expanded={showExportMenu}
             >
               {exportingFormat ? (
                 <>
@@ -258,37 +482,38 @@ export const CategoryList: React.FC<CategoryListProps> = ({
             {showExportMenu && !exportingFormat && (
               <div className={styles.exportDropdownMenu}>
                 <div className={styles.exportDropdownHeader}>Export As</div>
+
                 <button
                   type="button"
                   className={styles.exportMenuItem}
-                  onClick={() => {
-                    setShowExportMenu(false);
-                    handleExportCategoryReport('excel');
-                  }}
+                  onClick={() => handleExportCategoryReport("excel")}
                 >
                   <div className={styles.exportMenuIconExcel}>
                     <FiFileText size={16} />
                   </div>
                   <div className={styles.exportMenuText}>
-                    <span className={styles.exportMenuTitle}>Excel Document</span>
-                    <span className={styles.exportMenuSub}>Spreadsheet (.xlsx)</span>
+                    <span className={styles.exportMenuTitle}>
+                      Excel-compatible CSV
+                    </span>
+                    <span className={styles.exportMenuSub}>
+                      Spreadsheet (.csv)
+                    </span>
                   </div>
                 </button>
 
                 <button
                   type="button"
                   className={styles.exportMenuItem}
-                  onClick={() => {
-                    setShowExportMenu(false);
-                    handleExportCategoryReport('pdf');
-                  }}
+                  onClick={() => handleExportCategoryReport("pdf")}
                 >
                   <div className={styles.exportMenuIconPdf}>
                     <FiFileText size={16} />
                   </div>
                   <div className={styles.exportMenuText}>
-                    <span className={styles.exportMenuTitle}>PDF Document</span>
-                    <span className={styles.exportMenuSub}>Summary Report (.pdf)</span>
+                    <span className={styles.exportMenuTitle}>PDF Report</span>
+                    <span className={styles.exportMenuSub}>
+                      Print or Save as PDF
+                    </span>
                   </div>
                 </button>
               </div>
@@ -297,7 +522,6 @@ export const CategoryList: React.FC<CategoryListProps> = ({
         </div>
       </div>
 
-      {/* Content */}
       {loading ? (
         <div className={styles.emptyState}>Loading categories...</div>
       ) : viewMode === "flat" ? (
@@ -314,31 +538,37 @@ export const CategoryList: React.FC<CategoryListProps> = ({
             </thead>
 
             <tbody>
-              {sortedFlatCategories.map((cat) => (
-                <tr key={cat.categoryId}>
+              {sortedFlatCategories.map((category) => (
+                <tr key={category.categoryId}>
                   <td>
-                    <span className={styles.idText}>#{cat.categoryId}</span>
+                    <span className={styles.idText}>
+                      #{category.categoryId}
+                    </span>
                   </td>
 
                   <td>
                     <div className={styles.categoryCell}>
                       <span className={styles.categoryIcon}>
-                        {cat.parentId ? (
+                        {category.parentId != null ? (
                           <FiGitBranch style={{ color: "#8b5cf6" }} />
                         ) : (
                           <FiFolder className="text-primary" />
                         )}
                       </span>
-                      <span className={cat.parentId ? "" : "fw-bold"}>
-                        {cat.categoryName}
+                      <span
+                        className={
+                          category.parentId == null ? "fw-bold" : ""
+                        }
+                      >
+                        {category.categoryName}
                       </span>
                     </div>
                   </td>
 
                   <td>
-                    {cat.parentName ? (
+                    {category.parentName ? (
                       <span className={styles.parentBadge}>
-                        ↳ {cat.parentName}
+                        ↳ {category.parentName}
                       </span>
                     ) : (
                       <span className={styles.rootBadge}>Main Category</span>
@@ -347,9 +577,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
                   <td>
                     <span className={styles.descriptionText}>
-                      {cat.description && cat.description.trim() !== ""
-                        ? cat.description
-                        : "-"}
+                      {category.description?.trim() || "-"}
                     </span>
                   </td>
 
@@ -358,7 +586,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                       <button
                         type="button"
                         className="table-btn-edit"
-                        onClick={() => onEdit(cat)}
+                        onClick={() => onEdit(category)}
                         title="Edit category"
                       >
                         <FiEdit2 size={12} /> Edit
@@ -367,7 +595,9 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                       <button
                         type="button"
                         className="table-btn-delete"
-                        onClick={() => onDelete(cat.categoryId)}
+                        onClick={() => {
+                          void onDelete(category.categoryId);
+                        }}
                         title="Delete category"
                       >
                         <FiTrash2 size={12} /> Delete
