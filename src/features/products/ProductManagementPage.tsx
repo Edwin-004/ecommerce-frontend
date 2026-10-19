@@ -418,6 +418,23 @@ export const ProductManagementPage: React.FC = () => {
     }
   };
 
+  // Bulk Delete
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) {
+      alert('Please select at least one product to delete.');
+      return;
+    }
+    if (confirm(`Are you sure you want to delete ${selectedIds.length} selected product(s)?`)) {
+      try {
+        await Promise.all(selectedIds.map((id) => productManagementApi.deleteProduct(id)));
+      } catch (err) {
+        console.error('Error deleting products:', err);
+      }
+      setProducts((prev) => prev.filter((p) => !selectedIds.includes(p.productId)));
+      setSelectedIds([]);
+    }
+  };
+
   // Create New Attribute
   const handleCreateAttribute = async (e: React.FormEvent) => {
     e.preventDefault();

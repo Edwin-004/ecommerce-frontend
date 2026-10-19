@@ -22,6 +22,7 @@ import { CreateStaff } from './features/staff/CreateStaff'; // <--- အသစ်
 
 import { Profile } from './components/Profile';
 import { ReportsPage } from './features/reports/ReportsPage';
+import { RefundManagementPage } from './features/refunds/RefundManagementPage';
 import './App.css';
 import { ShippingRates } from './features/shipping/ShippingRates';
 import { ToastContainer } from 'react-toastify';
@@ -67,8 +68,9 @@ function App() {
             {/* <--- အသစ်ထည့်ထားသော Route */}
             {/* Reports */}
             <Route path="/admin/reports" element={<ReportsPage />} />
-            {/* Orders Management */}
+            {/* Orders & Refunds Management */}
             <Route path="/admin/orders" element={<AllOrders />} />
+            <Route path="/admin/refunds" element={<RefundManagementPage />} />
             {/* Shipping Rates Management */}
             <Route path="/admin/shipping-rates" element={<ShippingRates />} />
             {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
