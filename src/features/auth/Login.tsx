@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setCredentials } from './authSlice';
-import './Login.css'; 
+import { FiShoppingBag, FiLogIn } from 'react-icons/fi';
+import './Login.css';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
+  const [loading, setLoading] = useState(false);
+
   // States for Validation Errors
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [apiError, setApiError] = useState('');
-  
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -53,11 +55,13 @@ export const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Check Frontend Validation first. Do not call API if validation fails.
     if (!validateForm()) {
-      return; 
+      return;
     }
+
+    setLoading(true);
 
     try {
       const response = await fetch('http://localhost:8080/api/backoffice/auth/login', {
@@ -67,37 +71,63 @@ export const Login = () => {
       });
 
       if (!response.ok) {
-          // If Backend returns 400 Bad Request due to @Valid
-          throw new Error('Login failed');
+        // If Backend returns 400 Bad Request due to @Valid
+        throw new Error('Login failed');
       }
 
       const data = await response.json();
-      
-      dispatch(setCredentials({ 
-          token: data.token, 
-          username: data.username, 
+
+      dispatch(
+        setCredentials({
+          token: data.token,
+          username: data.username,
           email: data.email,
-          role: data.role 
-      }));
-      
+          role: data.role,
+        })
+      );
+
       if (['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF'].includes(data.role)) {
-          navigate('/admin/dashboard');
+        navigate('/admin/dashboard');
       } else {
-          setApiError('Unauthorized account access.');
+        setApiError('Unauthorized account access.');
       }
     } catch (error) {
       setApiError('Invalid email or password.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
-        <div className="login-logo">E-Commerce <span>Portal</span></div>
-        <p className="login-subtitle">Welcome back! Please login to your account.</p>
-        
+        {/* Brand Badge */}
+        <div className="login-badge-wrapper">
+          <div className="login-logo-badge">
+            <FiShoppingBag size={24} />
+          </div>
+        </div>
+
+        {/* E-commerce နှင့် လိုက်ဖက်သော ခေါင်းစဉ် */}
+        <div className="login-logo">
+          Ecommerce <span>Admin Portal</span>
+        </div>
+        <p className="login-subtitle">
+          Welcome back! Please sign in to your dashboard.
+        </p>
+
         {apiError && (
-          <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px', textAlign: 'center' }}>
+          <div
+            style={{
+              backgroundColor: '#fee2e2',
+              color: '#dc2626',
+              padding: '10px',
+              borderRadius: '6px',
+              marginBottom: '15px',
+              fontSize: '14px',
+              textAlign: 'center',
+            }}
+          >
             {apiError}
           </div>
         )}
@@ -105,29 +135,54 @@ export const Login = () => {
         <form className="login-form" onSubmit={handleLogin}>
           <div className="input-group">
             <label>Email Address</label>
-            <input 
-              type="text" 
-              placeholder="admin@ecommerce.com" 
+            <input
+              type="text"
+              placeholder="admin@ecommerce.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)} 
+              onChange={(e) => setEmail(e.target.value)}
               style={{ borderColor: emailError ? '#dc2626' : '' }}
             />
-            {emailError && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>{emailError}</span>}
+            {emailError && (
+              <span
+                style={{
+                  color: '#dc2626',
+                  fontSize: '12px',
+                  marginTop: '4px',
+                  display: 'block',
+                }}
+              >
+                {emailError}
+              </span>
+            )}
           </div>
-          
+
           <div className="input-group">
             <label>Password</label>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
+            <input
+              type="password"
+              placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)} 
+              onChange={(e) => setPassword(e.target.value)}
               style={{ borderColor: passwordError ? '#dc2626' : '' }}
             />
-            {passwordError && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>{passwordError}</span>}
+            {passwordError && (
+              <span
+                style={{
+                  color: '#dc2626',
+                  fontSize: '12px',
+                  marginTop: '4px',
+                  display: 'block',
+                }}
+              >
+                {passwordError}
+              </span>
+            )}
           </div>
-          
-          <button type="submit" className="login-btn">Sign In</button>
+
+          <button type="submit" disabled={loading} className="login-btn">
+            <FiLogIn size={16} />
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
         </form>
       </div>
     </div>

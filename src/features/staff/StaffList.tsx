@@ -94,7 +94,9 @@ export const StaffList: React.FC = () => {
                     <h2 className="header-title">Staff Management</h2>
                     <p className="header-subtitle">Manage system users, roles, and account statuses</p>
                 </div>
-             
+                <button className="btn-add" onClick={() => navigate('/admin/staff/new')}>
+                    + Add New Staff
+                </button>
             </div>
 
             {/* Summary Cards */}

@@ -298,20 +298,22 @@ export const VariantsPage: React.FC = () => {
                       </span>
                     </td>
                     <td>
-                      <div className={styles.actionGroup}>
+                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                         <button
-                          className={`${styles.btnAction} ${styles.btnEdit}`}
+                          type="button"
+                          className="table-btn-edit"
                           onClick={() => setSelectedVariant(v)}
                           title="Edit pricing / status"
                         >
-                          <FiEdit2 /> Edit
+                          <FiEdit2 size={12} /> Edit
                         </button>
                         <button
-                          className={`${styles.btnAction} ${styles.btnDelete}`}
+                          type="button"
+                          className="table-btn-delete"
                           onClick={() => handleDeleteVariant(v.variantId)}
                           title="Delete variant"
                         >
-                          <FiTrash2 /> Delete
+                          <FiTrash2 size={12} /> Delete
                         </button>
                       </div>
                     </td>

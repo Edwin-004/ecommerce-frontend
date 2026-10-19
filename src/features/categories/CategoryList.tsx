@@ -157,20 +157,20 @@ export const CategoryList: React.FC<CategoryListProps> = ({
               <div className={styles.actions}>
                 <button
                   type="button"
-                  className={styles.editBtn}
+                  className="table-btn-edit"
                   onClick={() => onEdit(node)}
                   title="Edit"
                 >
-                  <FiEdit2 />
+                  <FiEdit2 size={12} /> Edit
                 </button>
 
                 <button
                   type="button"
-                  className={styles.deleteBtn}
+                  className="table-btn-delete"
                   onClick={() => onDelete(node.categoryId)}
                   title="Delete"
                 >
-                  <FiTrash2 />
+                  <FiTrash2 size={12} /> Delete
                 </button>
               </div>
             </div>
@@ -389,20 +389,20 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                     <div className={styles.actions}>
                       <button
                         type="button"
-                        className={styles.editBtn}
+                        className="table-btn-edit"
                         onClick={() => onEdit(cat)}
                         title="Edit category"
                       >
-                        <FiEdit2 />
+                        <FiEdit2 size={12} /> Edit
                       </button>
 
                       <button
                         type="button"
-                        className={styles.deleteBtn}
+                        className="table-btn-delete"
                         onClick={() => onDelete(cat.categoryId)}
                         title="Delete category"
                       >
-                        <FiTrash2 />
+                        <FiTrash2 size={12} /> Delete
                       </button>
                     </div>
                   </td>

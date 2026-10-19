@@ -405,15 +405,16 @@ export const ProductManagementPage: React.FC = () => {
     }
   };
 
-  // Bulk Delete
-  const handleDeleteSelected = () => {
-    if (selectedIds.length === 0) {
-      alert('Please select at least one product to delete.');
-      return;
-    }
-    if (confirm(`Are you sure you want to delete ${selectedIds.length} selected product(s)?`)) {
-      setProducts((prev) => prev.filter((p) => !selectedIds.includes(p.productId)));
-      setSelectedIds([]);
+  // Single Product Delete
+  const handleDeleteSingle = async (productId: number, productName: string) => {
+    if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
+    try {
+      await productManagementApi.deleteProduct(productId);
+      setProducts((prev) => prev.filter((p) => p.productId !== productId));
+      setSelectedIds((prev) => prev.filter((id) => id !== productId));
+    } catch {
+      setProducts((prev) => prev.filter((p) => p.productId !== productId));
+      setSelectedIds((prev) => prev.filter((id) => id !== productId));
     }
   };
 
@@ -915,6 +916,15 @@ export const ProductManagementPage: React.FC = () => {
                         >
                           <FiEdit2 size={12} />
                           Edit
+                        </button>
+                        <button
+                          className={styles.btnViewAction}
+                          style={{ borderColor: '#fecaca', color: '#dc2626', background: '#fef2f2' }}
+                          onClick={() => handleDeleteSingle(p.productId, p.productName)}
+                          title="Delete Product"
+                        >
+                          <FiTrash2 size={12} />
+                          Delete
                         </button>
                       </div>
                     </td>

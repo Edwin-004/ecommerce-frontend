@@ -9,7 +9,10 @@ import {
 } from './productManagementApi';
 import { tagApi } from '../tags/tagApi';
 import { categoryApi } from '../categories/categoryApi';
-import { createBrand } from '../brand/brandApi';
+import { createBrand, type BrandRequest } from '../brand/brandApi';
+import { CategoryFormModal } from '../categories/CategoryFormModal';
+import { BrandModal } from '../brand/BrandModels';
+import type { CategoryRequestDto, CategoryResponseDto } from '../../types/category';
 import { inventoryApi } from '../inventory/inventoryApi';
 import {
   FiPackage,
@@ -64,13 +67,16 @@ export const EditProductPage: React.FC = () => {
 
   // Quick Create Modals
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
-  const [newCatName, setNewCatName] = useState<string>('');
-  const [newCatDesc, setNewCatDesc] = useState<string>('');
+  const [categoryFormData, setCategoryFormData] = useState<CategoryRequestDto>({
+    categoryName: '',
+    description: '',
+    parentId: null,
+  });
+  const [categoryModalError, setCategoryModalError] = useState<string | null>(null);
+  const [allCategoriesFull, setAllCategoriesFull] = useState<CategoryResponseDto[]>([]);
   const [catLoading, setCatLoading] = useState<boolean>(false);
 
   const [showBrandModal, setShowBrandModal] = useState<boolean>(false);
-  const [newBrandName, setNewBrandName] = useState<string>('');
-  const [newBrandDesc, setNewBrandDesc] = useState<string>('');
   const [brandLoading, setBrandLoading] = useState<boolean>(false);
 
   const [showTagModal, setShowTagModal] = useState<boolean>(false);
@@ -92,16 +98,20 @@ export const EditProductPage: React.FC = () => {
       setErrorMessage('');
 
       // 1. Fetch Lookups
-      const [catsRes, brandsRes, tagsRes] = await Promise.allSettled([
+      const [catsRes, brandsRes, tagsRes, fullCatsRes] = await Promise.allSettled([
         productManagementApi.getCategories(),
         productManagementApi.getBrands(),
         tagApi.getAllTags(0, 100),
+        categoryApi.getAllCategories(0, 1000),
       ]);
 
       if (catsRes.status === 'fulfilled') setCategories(catsRes.value);
       if (brandsRes.status === 'fulfilled') setBrands(brandsRes.value);
       if (tagsRes.status === 'fulfilled' && tagsRes.value?.content) {
         setAllTags(tagsRes.value.content.map((t: any) => ({ tagId: t.tagId, tagName: t.tagName })));
+      }
+      if (fullCatsRes.status === 'fulfilled' && fullCatsRes.value?.content) {
+        setAllCategoriesFull(fullCatsRes.value.content);
       }
 
       // 2. Fetch Product Info
@@ -171,49 +181,63 @@ export const EditProductPage: React.FC = () => {
   };
 
   // Quick Create Handlers
-  const handleQuickCreateCategory = async (e: React.FormEvent) => {
+  const handleCategoryInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setCategoryFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === 'parentId'
+          ? value
+            ? Number(value)
+            : null
+          : value,
+    }));
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCatName.trim()) return;
+    if (!categoryFormData.categoryName.trim()) {
+      setCategoryModalError('Category name is required.');
+      return;
+    }
     try {
       setCatLoading(true);
-      const res = await categoryApi.createCategory({
-        categoryName: newCatName.trim(),
-        description: newCatDesc.trim() || undefined,
-      });
+      setCategoryModalError(null);
+      const res = await categoryApi.createCategory(categoryFormData);
       setCategories((prev) => [...prev, { categoryId: res.categoryId, categoryName: res.categoryName }]);
+      setAllCategoriesFull((prev) => [...prev, res]);
       setSelectedCategory(String(res.categoryId));
       setShowCategoryModal(false);
-      setNewCatName('');
-      setNewCatDesc('');
+      setCategoryFormData({
+        categoryName: '',
+        description: '',
+        parentId: null,
+      });
     } catch (err: any) {
-      alert(err.message || 'Failed to create category');
+      setCategoryModalError(
+        err.response?.data?.message || err.message || 'Failed to create category'
+      );
     } finally {
       setCatLoading(false);
     }
   };
 
-  const handleQuickCreateBrand = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBrandName.trim()) return;
+  const handleBrandModalSubmit = async (
+    data: BrandRequest,
+    file: File | null
+  ) => {
     try {
       setBrandLoading(true);
-      const res = await createBrand(
-        {
-          brandName: newBrandName.trim(),
-          brandLogoUrl: '',
-          description: newBrandDesc.trim() || '',
-          status: 'ACTIVE',
-          categoryIds: selectedCategory ? [Number(selectedCategory)] : [],
-        },
-        null
-      );
+      const res = await createBrand(data, file);
       setBrands((prev) => [...prev, { brandId: res.brandId, brandName: res.brandName }]);
       setSelectedBrand(String(res.brandId));
       setShowBrandModal(false);
-      setNewBrandName('');
-      setNewBrandDesc('');
     } catch (err: any) {
-      alert(err.message || 'Failed to create brand');
+      alert(err.response?.data?.message || err.message || 'Failed to create brand');
     } finally {
       setBrandLoading(false);
     }
@@ -883,101 +907,34 @@ export const EditProductPage: React.FC = () => {
         </div>
       </form>
 
-      {/* Quick Category Modal */}
-      {showCategoryModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBox} style={{ maxWidth: '420px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>+ Add New Category</h3>
-              <button type="button" onClick={() => setShowCategoryModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                <FiX size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleQuickCreateCategory}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                  Category Name *
-                </label>
-                <input
-                  type="text"
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  placeholder="e.g. Health & Wellness"
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  required
-                />
-              </div>
-              <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                  Description (Optional)
-                </label>
-                <textarea
-                  value={newCatDesc}
-                  onChange={(e) => setNewCatDesc(e.target.value)}
-                  rows={3}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" className={styles.btnActionOutline} onClick={() => setShowCategoryModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={catLoading} className={styles.btnPrimary}>
-                  {catLoading ? 'Creating...' : 'Create Category'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Quick Category Form Modal (Exact modal from Category page with Parent Category & full styling) */}
+      <CategoryFormModal
+        isOpen={showCategoryModal}
+        formData={categoryFormData}
+        editingId={null}
+        saving={catLoading}
+        errorMessage={categoryModalError}
+        availableParents={allCategoriesFull}
+        onInputChange={handleCategoryInputChange}
+        onSubmit={handleCategorySubmit}
+        onClose={() => {
+          setShowCategoryModal(false);
+          setCategoryModalError(null);
+        }}
+      />
 
-      {/* Quick Brand Modal */}
-      {showBrandModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBox} style={{ maxWidth: '420px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>+ Add New Brand</h3>
-              <button type="button" onClick={() => setShowBrandModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                <FiX size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleQuickCreateBrand}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                  Brand Name *
-                </label>
-                <input
-                  type="text"
-                  value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
-                  placeholder="e.g. Dior"
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  required
-                />
-              </div>
-              <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                  Description
-                </label>
-                <textarea
-                  value={newBrandDesc}
-                  onChange={(e) => setNewBrandDesc(e.target.value)}
-                  rows={3}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" className={styles.btnActionOutline} onClick={() => setShowBrandModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={brandLoading} className={styles.btnPrimary}>
-                  {brandLoading ? 'Creating...' : 'Create Brand'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Quick Brand Modal (Exact modal from Brand page with Logo, Categories & full styling) */}
+      <BrandModal
+        show={showBrandModal}
+        brand={null}
+        loading={brandLoading}
+        categories={categories.map((c) => ({
+          categoryId: c.categoryId,
+          categoryName: c.categoryName,
+        }))}
+        onClose={() => setShowBrandModal(false)}
+        onSubmit={handleBrandModalSubmit}
+      />
 
       {/* Quick Tag Modal */}
       {showTagModal && (
