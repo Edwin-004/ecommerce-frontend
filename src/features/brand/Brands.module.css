@@ -89,3 +89,354 @@ table td {
 table tbody tr {
   transition: background 0.15s ease;
 }
+
+/* ==========================================================================
+   DYNAMIC COLUMN SELECTOR & EXPORT DROPDOWN STYLES
+   ========================================================================== */
+
+.btnActionItem {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btnActionItem:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.columnSelectorContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.columnDropdownMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1050;
+  width: 210px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  padding: 12px 14px;
+  animation: fadeInDown 0.18s ease-out;
+}
+
+.columnDropdownHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.columnDropdownTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #475569;
+}
+
+.columnDropdownAction {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6366f1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.columnDropdownAction:hover {
+  text-decoration: underline;
+}
+
+.columnCheckboxList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.columnCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.columnCheckboxLabel input[type="checkbox"] {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  accent-color: #6366f1;
+}
+
+.columnCheckboxLabel:hover {
+  color: #0f172a;
+}
+
+.exportDropdownContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.btnActionExporting {
+  background: #eef2ff !important;
+  color: #4f46e5 !important;
+  border-color: #c7d2fe !important;
+}
+
+.exportSpinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #c7d2fe;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spinExport 0.8s linear infinite;
+}
+
+@keyframes spinExport {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.exportDropdownMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  width: 220px;
+  padding: 8px;
+  z-index: 1050;
+  animation: fadeInDown 0.18s ease-out;
+}
+
+.exportDropdownHeader {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #64748b;
+  padding: 6px 10px 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.exportMenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.exportMenuItem:hover {
+  background: #f8fafc;
+}
+
+.exportMenuIconExcel {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #ecfdf5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.exportMenuIconPdf {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.exportMenuText {
+  display: flex;
+  flex-direction: column;
+}
+
+.exportMenuTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.exportMenuSub {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Floating Export Progress Notification */
+.exportProgressBanner {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #ffffff;
+  border: 1px solid #c7d2fe;
+  border-left: 5px solid #4f46e5;
+  padding: 14px 18px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(79, 70, 229, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+  animation: slideInRight 0.25s ease-out;
+  min-width: 320px;
+  max-width: 440px;
+}
+
+.exportProgressSpinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #e0e7ff;
+  border-top-color: #4f46e5;
+  border-radius: 50%;
+  animation: spinExport 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.exportProgressContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.exportProgressTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e1b4b;
+}
+
+.exportProgressSub {
+  font-size: 11px;
+  color: #475569;
+  margin-top: 2px;
+}
+
+/* Export Success Notification */
+.exportSuccessBanner {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #ffffff;
+  border: 1px solid #a7f3d0;
+  border-left: 5px solid #10b981;
+  padding: 14px 18px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+  animation: slideInRight 0.25s ease-out;
+  min-width: 320px;
+  max-width: 440px;
+}
+
+.exportSuccessIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #d1fae5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.exportSuccessContent {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.exportSuccessTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #064e3b;
+}
+
+.exportSuccessSub {
+  font-size: 11px;
+  color: #047857;
+  margin-top: 2px;
+}
+
+.exportCloseBtn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exportCloseBtn:hover {
+  color: #334155;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

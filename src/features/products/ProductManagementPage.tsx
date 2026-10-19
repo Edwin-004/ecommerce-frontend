@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
+import api from '../../utils/axiosConfig';
 import {
   productManagementApi,
   getAssetUrl,
@@ -17,6 +18,10 @@ import {
   FiX,
   FiCheck,
   FiSliders,
+  FiChevronDown,
+  FiDownload,
+  FiFileText,
+  FiCheckCircle,
 } from 'react-icons/fi';
 import { Pagination } from '../../components/common/Pagination';
 
@@ -54,6 +59,14 @@ interface VariationWithOpts {
   options: { optionId: number; value: string }[];
 }
 
+const EXPORT_COLUMNS = [
+  { key: 'productName', label: 'Product' },
+  { key: 'sku', label: 'SKU' },
+  { key: 'price', label: 'Price' },
+  { key: 'stock', label: 'Stock' },
+  { key: 'status', label: 'Status' },
+];
+
 export const ProductManagementPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -69,6 +82,21 @@ export const ProductManagementPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedBrand, setSelectedBrand] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
+
+  // Dynamic Export Column Selector state
+  const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>([
+    'productName',
+    'sku',
+    'price',
+    'stock',
+    'status',
+  ]);
+  const [showColumnDropdown, setShowColumnDropdown] = useState<boolean>(false);
+  const columnDropdownRef = useRef<HTMLDivElement>(null);
+  const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [exportingFormat, setExportingFormat] = useState<'pdf' | 'excel' | null>(null);
+  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
 
   // Table selection
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -123,6 +151,40 @@ export const ProductManagementPage: React.FC = () => {
       setActiveImageIdx(0);
     }
   }, [viewProduct]);
+
+  // Click outside to close column dropdown or export menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        columnDropdownRef.current &&
+        !columnDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowColumnDropdown(false);
+      }
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showColumnDropdown || showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnDropdown, showExportMenu]);
+
+  // Auto-dismiss export success message after 5 seconds
+  useEffect(() => {
+    if (exportSuccessMessage) {
+      const timer = setTimeout(() => {
+        setExportSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [exportSuccessMessage]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -266,36 +328,81 @@ export const ProductManagementPage: React.FC = () => {
     );
   };
 
-  // Export CSV
-  const handleExportCsv = () => {
-    const headers = ['Product ID', 'Product Name', 'SKU', 'Price (MMK)', 'Stock', 'Category', 'Brand', 'Status'];
-    const rows = filteredProducts.map((p) => [
-      p.productId,
-      `"${p.productName.replace(/"/g, '""')}"`,
-      p.sku || 'N/A',
-      p.sellingPrice || 0,
-      p.stock || 0,
-      p.categoryName || 'N/A',
-      p.brandName || 'N/A',
-      p.status,
-    ]);
-
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `products_export_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Dynamic Column Selector handlers
+  const handleToggleColumn = (colKey: string) => {
+    setSelectedExportColumns((prev) => {
+      if (prev.includes(colKey)) {
+        if (prev.length <= 1) {
+          alert('At least one column must be selected for export.');
+          return prev;
+        }
+        return prev.filter((k) => k !== colKey);
+      } else {
+        return [...prev, colKey];
+      }
+    });
   };
 
-  // Export PDF / Print
-  const handleExportPdf = () => {
-    window.print();
+  const handleSelectAllColumns = () => {
+    setSelectedExportColumns(EXPORT_COLUMNS.map((c) => c.key));
+  };
+
+  // Dynamic Export (calls backend Stored Procedure with active filters & selected columns)
+  const handleDynamicExport = async (format: 'pdf' | 'excel') => {
+    if (selectedExportColumns.length === 0) {
+      alert('Please select at least one column to export.');
+      return;
+    }
+
+    setExportingFormat(format);
+    setExportSuccessMessage(null);
+
+    try {
+      const catObj = categories.find((c) => c.categoryName === selectedCategory);
+      const catId = catObj ? catObj.categoryId : undefined;
+
+      const brandObj = brands.find((b) => b.brandName === selectedBrand);
+      const bId = brandObj ? brandObj.brandId : undefined;
+
+      const params: Record<string, any> = {
+        columns: selectedExportColumns.join(','),
+      };
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (catId) params.categoryId = catId;
+      if (bId) params.brandId = bId;
+      if (selectedStatus) params.status = selectedStatus;
+
+      const response = await api.get(`/reports/products/export/${format}`, {
+        params,
+        responseType: 'blob',
+      });
+
+      const contentType =
+        format === 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      const blob = new Blob([response.data], { type: contentType });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const ext = format === 'excel' ? 'xlsx' : 'pdf';
+      const filename = `products_export_${todayStr}.${ext}`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      // Show prominent success notification
+      setExportSuccessMessage(`Downloaded: ${filename} (${selectedExportColumns.length} columns)`);
+    } catch (err: any) {
+      console.error(`Export ${format.toUpperCase()} error:`, err);
+      alert(`Failed to export ${format.toUpperCase()}. Please check your connection or login session.`);
+    } finally {
+      setExportingFormat(null);
+    }
   };
 
   // Bulk Delete
@@ -426,6 +533,42 @@ export const ProductManagementPage: React.FC = () => {
 
   return (
     <div className={styles.dashboardContainer}>
+      {/* Exporting In-Progress Floating Banner */}
+      {exportingFormat && (
+        <div className={styles.exportProgressBanner}>
+          <div className={styles.exportProgressSpinner} />
+          <div className={styles.exportProgressContent}>
+            <span className={styles.exportProgressTitle}>
+              Generating {exportingFormat === 'pdf' ? 'PDF Report' : 'Excel Document'}...
+            </span>
+            <span className={styles.exportProgressSubtitle}>
+              Building dynamic columns & corporate layout. Your download will start shortly.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Export Success Floating Toast */}
+      {exportSuccessMessage && (
+        <div className={styles.exportSuccessToast}>
+          <div className={styles.exportSuccessIcon}>
+            <FiCheckCircle size={20} />
+          </div>
+          <div className={styles.exportSuccessContent}>
+            <span className={styles.exportSuccessTitle}>Export Successful!</span>
+            <span className={styles.exportSuccessSubtitle}>{exportSuccessMessage}</span>
+          </div>
+          <button
+            type="button"
+            className={styles.exportToastClose}
+            onClick={() => setExportSuccessMessage(null)}
+            title="Dismiss"
+          >
+            <FiX size={15} />
+          </button>
+        </div>
+      )}
+
       {/* 1. Header (Catalogue Tag + Title + Subtitle + Add Product Button) */}
       <div className={styles.managementHeaderRow}>
         <div className={styles.managementHeaderLeft}>
@@ -555,13 +698,108 @@ export const ProductManagementPage: React.FC = () => {
             Delete
           </button>
 
-          <button className={styles.btnActionItem} onClick={handleExportCsv}>
-            Export CSV
-          </button>
+          {/* Column Selector Popover */}
+          <div className={styles.columnSelectorContainer} ref={columnDropdownRef}>
+            <button
+              type="button"
+              className={styles.btnActionItem}
+              onClick={() => setShowColumnDropdown((prev) => !prev)}
+              title="Select columns to export"
+            >
+              <FiSliders size={12} />
+              Columns ({selectedExportColumns.length}/5)
+            </button>
 
-          <button className={styles.btnActionItem} onClick={handleExportPdf}>
-            Export PDF
-          </button>
+            {showColumnDropdown && (
+              <div className={styles.columnDropdownMenu}>
+                <div className={styles.columnDropdownHeader}>
+                  <span className={styles.columnDropdownTitle}>Export Columns</span>
+                  <button
+                    type="button"
+                    className={styles.columnDropdownAction}
+                    onClick={handleSelectAllColumns}
+                  >
+                    Select All
+                  </button>
+                </div>
+                <div className={styles.columnCheckboxList}>
+                  {EXPORT_COLUMNS.map((col) => (
+                    <label key={col.key} className={styles.columnCheckboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={selectedExportColumns.includes(col.key)}
+                        onChange={() => handleToggleColumn(col.key)}
+                      />
+                      <span>{col.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Unified Export Dropdown */}
+          <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
+            <button
+              type="button"
+              className={`${styles.btnActionItem} ${exportingFormat ? styles.btnActionExporting : ''}`}
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              disabled={!!exportingFormat}
+              title="Export filtered products as PDF or Excel"
+            >
+              {exportingFormat ? (
+                <>
+                  <span className={styles.exportSpinner} />
+                  Exporting {exportingFormat.toUpperCase()}...
+                </>
+              ) : (
+                <>
+                  <FiDownload size={12} />
+                  Export
+                  <FiChevronDown size={12} style={{ marginLeft: 2 }} />
+                </>
+              )}
+            </button>
+
+            {showExportMenu && !exportingFormat && (
+              <div className={styles.exportDropdownMenu}>
+                <div className={styles.exportDropdownHeader}>Export As</div>
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    handleDynamicExport('excel');
+                  }}
+                >
+                  <div className={styles.exportMenuIconExcel}>
+                    <FiFileText size={16} />
+                  </div>
+                  <div className={styles.exportMenuText}>
+                    <span className={styles.exportMenuTitle}>Excel Document</span>
+                    <span className={styles.exportMenuSub}>Spreadsheet (.xlsx)</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    handleDynamicExport('pdf');
+                  }}
+                >
+                  <div className={styles.exportMenuIconPdf}>
+                    <FiFileText size={16} />
+                  </div>
+                  <div className={styles.exportMenuText}>
+                    <span className={styles.exportMenuTitle}>PDF Document</span>
+                    <span className={styles.exportMenuSub}>Corporate Report (.pdf)</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
