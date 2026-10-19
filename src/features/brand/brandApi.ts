@@ -81,7 +81,7 @@ export async function getBrands(
   page = 0,
   size = 10,
   keyword = '',
-  status: BrandStatus | '' = '',
+  status: BrandStatus | 'ALL' | '' = '',
   sortBy = 'brandName',
   sortDir: 'asc' | 'desc' = 'asc'
 ): Promise<PageResponse<Brand>> {
@@ -118,7 +118,7 @@ export async function getBrands(
     );
   }
 
-  if (status) {
+  if (status && status !== 'ALL') {
 
     params.set(
       'status',

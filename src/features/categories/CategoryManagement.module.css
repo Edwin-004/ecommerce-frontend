@@ -623,3 +623,277 @@
     min-width: 550px;
   }
 }
+
+/* ==========================================================================
+   EXPORT DROPDOWN, PROGRESS BANNER & SUCCESS TOAST STYLES
+   ========================================================================== */
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exportDropdownContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.exportBtn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.btnActionExporting {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  border-color: #bfdbfe !important;
+}
+
+.exportSpinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid #bfdbfe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  display: inline-block;
+  animation: spinExport 0.8s linear infinite;
+}
+
+@keyframes spinExport {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.exportDropdownMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  width: 220px;
+  padding: 8px;
+  z-index: 100;
+  animation: fadeInDown 0.18s ease-out;
+}
+
+.exportDropdownHeader {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #64748b;
+  padding: 6px 10px 8px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.exportMenuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.exportMenuItem:hover {
+  background: #f8fafc;
+}
+
+.exportMenuIconExcel {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #ecfdf5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.exportMenuIconPdf {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.exportMenuText {
+  display: flex;
+  flex-direction: column;
+}
+
+.exportMenuTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.exportMenuSub {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Floating Export Progress Notification */
+.exportProgressBanner {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  border-left: 5px solid #2563eb;
+  padding: 14px 18px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+  animation: slideInRight 0.25s ease-out;
+  min-width: 320px;
+  max-width: 440px;
+}
+
+.exportProgressSpinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #dbeafe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spinExport 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.exportProgressContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.exportProgressTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.exportProgressSubtitle {
+  font-size: 11.5px;
+  color: #3b82f6;
+  margin-top: 2px;
+}
+
+/* Floating Export Success Toast */
+.exportSuccessToast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #bbf7d0;
+  border-left: 5px solid #16a34a;
+  padding: 14px 18px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(22, 163, 74, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+  animation: slideInRight 0.25s ease-out;
+  min-width: 320px;
+  max-width: 440px;
+}
+
+.exportSuccessIcon {
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.exportSuccessContent {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.exportSuccessTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.exportSuccessSubtitle {
+  font-size: 11.5px;
+  color: #15803d;
+  margin-top: 2px;
+}
+
+.exportToastClose {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.exportToastClose:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

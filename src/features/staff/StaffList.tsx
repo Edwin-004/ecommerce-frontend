@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../../utils/axiosConfig'; 
 import './StaffList.css';
 
@@ -13,7 +12,6 @@ interface StaffResponseDTO {
 }
 
 export const StaffList: React.FC = () => {
-    const navigate = useNavigate();
     const [staffList, setStaffList] = useState<StaffResponseDTO[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);

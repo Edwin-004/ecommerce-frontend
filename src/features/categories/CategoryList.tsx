@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FiSearch,
   FiList,
@@ -10,6 +10,7 @@ import {
   FiTrash2,
   FiCornerDownRight,
 } from "react-icons/fi";
+import api from "../../utils/axiosConfig";
 import { type CategoryResponseDto } from "../../types/category";
 import styles from "./CategoryManagement.module.css";
 
@@ -150,6 +151,42 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
   return (
     <section className={styles.card}>
+      {/* Exporting In-Progress Floating Banner */}
+      {exportingFormat && (
+        <div className={styles.exportProgressBanner}>
+          <div className={styles.exportProgressSpinner} />
+          <div className={styles.exportProgressContent}>
+            <span className={styles.exportProgressTitle}>
+              Generating Category {exportingFormat === 'pdf' ? 'PDF Report' : 'Excel Document'}...
+            </span>
+            <span className={styles.exportProgressSubtitle}>
+              Compiling category summary report. Your download will start shortly.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Export Success Floating Toast */}
+      {exportSuccessMessage && (
+        <div className={styles.exportSuccessToast}>
+          <div className={styles.exportSuccessIcon}>
+            <FiCheckCircle size={20} />
+          </div>
+          <div className={styles.exportSuccessContent}>
+            <span className={styles.exportSuccessTitle}>Export Successful!</span>
+            <span className={styles.exportSuccessSubtitle}>{exportSuccessMessage}</span>
+          </div>
+          <button
+            type="button"
+            className={styles.exportToastClose}
+            onClick={() => setExportSuccessMessage(null)}
+            title="Dismiss"
+          >
+            <FiX size={15} />
+          </button>
+        </div>
+      )}
+
       <div className={styles.listHeader}>
         <div>
           <h3>All Categories</h3>
@@ -170,28 +207,93 @@ export const CategoryList: React.FC<CategoryListProps> = ({
           />
         </div>
 
-        <div className={styles.viewTabs}>
-          <button
-            type="button"
-            className={
-              viewMode === "flat" ? styles.activeTab : styles.tabBtn
-            }
-            onClick={() => setViewMode("flat")}
-          >
-            <FiList />
-            Flat
-          </button>
+        <div className={styles.toolbarActions}>
+          <div className={styles.viewTabs}>
+            <button
+              type="button"
+              className={
+                viewMode === "flat" ? styles.activeTab : styles.tabBtn
+              }
+              onClick={() => setViewMode("flat")}
+            >
+              <FiList />
+              Flat
+            </button>
 
-          <button
-            type="button"
-            className={
-              viewMode === "tree" ? styles.activeTab : styles.tabBtn
-            }
-            onClick={() => setViewMode("tree")}
-          >
-            <FiGitBranch />
-            Tree
-          </button>
+            <button
+              type="button"
+              className={
+                viewMode === "tree" ? styles.activeTab : styles.tabBtn
+              }
+              onClick={() => setViewMode("tree")}
+            >
+              <FiGitBranch />
+              Tree
+            </button>
+          </div>
+
+          {/* Unified Category Export Dropdown */}
+          <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
+            <button
+              type="button"
+              className={`${styles.exportBtn} ${exportingFormat ? styles.btnActionExporting : ''}`}
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              disabled={!!exportingFormat}
+              title="Export Category Summary Report as PDF or Excel"
+            >
+              {exportingFormat ? (
+                <>
+                  <span className={styles.exportSpinner} />
+                  Exporting {exportingFormat.toUpperCase()}...
+                </>
+              ) : (
+                <>
+                  <FiDownload size={14} />
+                  Export
+                  <FiChevronDown size={13} style={{ marginLeft: 2 }} />
+                </>
+              )}
+            </button>
+
+            {showExportMenu && !exportingFormat && (
+              <div className={styles.exportDropdownMenu}>
+                <div className={styles.exportDropdownHeader}>Export As</div>
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    handleExportCategoryReport('excel');
+                  }}
+                >
+                  <div className={styles.exportMenuIconExcel}>
+                    <FiFileText size={16} />
+                  </div>
+                  <div className={styles.exportMenuText}>
+                    <span className={styles.exportMenuTitle}>Excel Document</span>
+                    <span className={styles.exportMenuSub}>Spreadsheet (.xlsx)</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    handleExportCategoryReport('pdf');
+                  }}
+                >
+                  <div className={styles.exportMenuIconPdf}>
+                    <FiFileText size={16} />
+                  </div>
+                  <div className={styles.exportMenuText}>
+                    <span className={styles.exportMenuTitle}>PDF Document</span>
+                    <span className={styles.exportMenuSub}>Summary Report (.pdf)</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
