@@ -462,15 +462,6 @@ export const CreateProductPage: React.FC = () => {
     if (!checked) {
       setAttributes([]);
       setGeneratedVariants([]);
-    } else if (attributes.length === 0) {
-      // Auto-populate 'Color' attribute so user can immediately click color presets
-      setAttributes([
-        {
-          id: Date.now(),
-          name: 'Color',
-          values: [],
-        },
-      ]);
     }
   };
 
