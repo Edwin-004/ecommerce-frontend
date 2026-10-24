@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { type RootState } from '../store';
 import styles from './Sidebar.module.css';
 
 import {
@@ -27,6 +29,17 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const location = useLocation();
+  const { role, permissions } = useSelector((state: RootState) => state.auth);
+
+  const isAdmin = role === 'ADMIN';
+  const isInventoryStaff = role === 'INVENTORY_STAFF';
+  const isOrderStaff = role === 'ORDER_STAFF' || role === 'SALES_STAFF';
+
+  const canAccessCatalog = isAdmin || isInventoryStaff || permissions?.includes('MANAGE_PRODUCT');
+  const canAccessInventory = isAdmin || isInventoryStaff || permissions?.includes('MANAGE_INVENTORY');
+  const canAccessOperations = isAdmin || isOrderStaff || permissions?.includes('VIEW_ORDERS') || permissions?.includes('MANAGE_ORDERS');
+  const canAccessStaff = isAdmin || permissions?.includes('MANAGE_STAFF');
+  const canAccessReports = isAdmin;
 
   const handleLinkClick = () => {
     if (onCloseMobile) onCloseMobile();
@@ -99,155 +112,171 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         </NavLink>
 
         {/* ================= 2. CATALOG & STOCK ================= */}
-        <div className={styles.navSectionTitle}>CATALOG & STOCK</div>
+        {(canAccessCatalog || canAccessInventory) && (
+          <>
+            <div className={styles.navSectionTitle}>CATALOG & STOCK</div>
 
-        {/* Product Catalog Dropdown */}
-        <div className={styles.dropdownGroup}>
-          <button
-            type="button"
-            className={`${styles.dropdownToggle} ${
-              isCatalogActive ? styles.parentActive : ''
-            }`}
-            onClick={() => setCatalogOpen(!catalogOpen)}
-          >
-            <div className={styles.dropdownLeft}>
-              <FiPackage className={styles.linkIcon} />
-              <span>Product Catalog</span>
-            </div>
-            <FiChevronDown
-              className={`${styles.chevron} ${
-                catalogOpen ? styles.chevronRotated : ""
-              }`}
-            />
-          </button>
+            {/* Product Catalog Dropdown */}
+            {canAccessCatalog && (
+              <div className={styles.dropdownGroup}>
+                <button
+                  type="button"
+                  className={`${styles.dropdownToggle} ${
+                    isCatalogActive ? styles.parentActive : ''
+                  }`}
+                  onClick={() => setCatalogOpen(!catalogOpen)}
+                >
+                  <div className={styles.dropdownLeft}>
+                    <FiPackage className={styles.linkIcon} />
+                    <span>Product Catalog</span>
+                  </div>
+                  <FiChevronDown
+                    className={`${styles.chevron} ${
+                      catalogOpen ? styles.chevronRotated : ''
+                    }`}
+                  />
+                </button>
 
-          {catalogOpen && (
-            <div className={styles.submenu}>
-              <NavLink to="/admin/products" end className={subNavClass}>
-                <FiPackage size={14} className={styles.subIcon} />
-                <span>Product List</span>
-              </NavLink>
+                {catalogOpen && (
+                  <div className={styles.submenu}>
+                    <NavLink to="/admin/products" end className={subNavClass}>
+                      <FiPackage size={14} className={styles.subIcon} />
+                      <span>Product List</span>
+                    </NavLink>
 
-              <NavLink to="/admin/categories" className={subNavClass}>
-                <FiFolder size={14} className={styles.subIcon} />
-                <span>Categories</span>
-              </NavLink>
+                    <NavLink to="/admin/categories" className={subNavClass}>
+                      <FiFolder size={14} className={styles.subIcon} />
+                      <span>Categories</span>
+                    </NavLink>
 
-              <NavLink to="/admin/brands" className={subNavClass}>
-                <FiGrid size={14} className={styles.subIcon} />
-                <span>Brands</span>
-              </NavLink>
+                    <NavLink to="/admin/brands" className={subNavClass}>
+                      <FiGrid size={14} className={styles.subIcon} />
+                      <span>Brands</span>
+                    </NavLink>
 
-              <NavLink to="/admin/tags" className={subNavClass}>
-                <FiTag size={14} className={styles.subIcon} />
-                <span>Tags</span>
-              </NavLink>
+                    <NavLink to="/admin/tags" className={subNavClass}>
+                      <FiTag size={14} className={styles.subIcon} />
+                      <span>Tags</span>
+                    </NavLink>
 
-              <NavLink to="/admin/variants" className={subNavClass}>
-                <FiLayers size={14} className={styles.subIcon} />
-                <span>Variants & Options</span>
-              </NavLink>
-            </div>
-          )}
-        </div>
+                    <NavLink to="/admin/variants" className={subNavClass}>
+                      <FiLayers size={14} className={styles.subIcon} />
+                      <span>Variants & Options</span>
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+            )}
 
-        {/* Stock Management (Inventory) */}
-        <div className={styles.dropdownGroup}>
-          <button
-            type="button"
-            className={`${styles.dropdownToggle} ${
-              isInventoryActive ? styles.parentActive : ''
-            }`}
-            onClick={() => setInventoryOpen(!inventoryOpen)}
-          >
-            <div className={styles.dropdownLeft}>
-              <FiBox className={styles.linkIcon} />
-              <span>Inventory</span>
-            </div>
-            <FiChevronDown
-              className={`${styles.chevron} ${
-                inventoryOpen ? styles.chevronRotated : ""
-              }`}
-            />
-          </button>
+            {/* Stock Management (Inventory) */}
+            {canAccessInventory && (
+              <div className={styles.dropdownGroup}>
+                <button
+                  type="button"
+                  className={`${styles.dropdownToggle} ${
+                    isInventoryActive ? styles.parentActive : ''
+                  }`}
+                  onClick={() => setInventoryOpen(!inventoryOpen)}
+                >
+                  <div className={styles.dropdownLeft}>
+                    <FiBox className={styles.linkIcon} />
+                    <span>Inventory</span>
+                  </div>
+                  <FiChevronDown
+                    className={`${styles.chevron} ${
+                      inventoryOpen ? styles.chevronRotated : ''
+                    }`}
+                  />
+                </button>
 
-          {inventoryOpen && (
-            <div className={styles.submenu}>
-              <NavLink to="/admin/inventory" end className={subNavClass}>
-                <FiBox size={14} className={styles.subIcon} />
-                <span>Stock Management</span>
-              </NavLink>
-              <NavLink
-                to="/admin/inventory?tab=low-stock"
-                className={subNavClass}
-              >
-                <span className={styles.warningDot} />
-                <span>Low Stock Alerts</span>
-              </NavLink>
-            </div>
-          )}
-        </div>
+                {inventoryOpen && (
+                  <div className={styles.submenu}>
+                    <NavLink to="/admin/inventory" end className={subNavClass}>
+                      <FiBox size={14} className={styles.subIcon} />
+                      <span>Stock Management</span>
+                    </NavLink>
+                    <NavLink
+                      to="/admin/inventory?tab=low-stock"
+                      className={subNavClass}
+                    >
+                      <span className={styles.warningDot} />
+                      <span>Low Stock Alerts</span>
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
 
         {/* ================= 3. OPERATIONS ================= */}
-        <div className={styles.navSectionTitle}>OPERATIONS</div>
+        {canAccessOperations && (
+          <>
+            <div className={styles.navSectionTitle}>OPERATIONS</div>
 
-        {/* Orders */}
-        <NavLink to="/admin/orders" className={navClass}>
-          <FiShoppingCart className={styles.linkIcon} />
-          <span>Orders</span>
-        </NavLink>
+            {/* Orders */}
+            <NavLink to="/admin/orders" className={navClass}>
+              <FiShoppingCart className={styles.linkIcon} />
+              <span>Orders</span>
+            </NavLink>
 
-        {/* Refunds */}
-        <NavLink to="/admin/refunds" className={navClass}>
-          <FiRotateCcw className={styles.linkIcon} />
-          <span>Refunds</span>
-        </NavLink>
+            {/* Refunds */}
+            <NavLink to="/admin/refunds" className={navClass}>
+              <FiRotateCcw className={styles.linkIcon} />
+              <span>Refunds</span>
+            </NavLink>
 
-        {/* Shipping rate */}
-        <NavLink to="/admin/shipping-rates" className={navClass}>
-          <FiTruck className={styles.linkIcon} />
-          <span>Shipping Rates</span>
-        </NavLink>
+            {/* Shipping rate */}
+            <NavLink to="/admin/shipping-rates" className={navClass}>
+              <FiTruck className={styles.linkIcon} />
+              <span>Shipping Rates</span>
+            </NavLink>
+          </>
+        )}
 
-        {/* Staff Management Dropdown */}
-        <div className={styles.dropdownGroup}>
-          <button
-            type="button"
-            className={`${styles.dropdownToggle} ${
-              isStaffActive ? styles.parentActive : ''
-            }`}
-            onClick={() => setStaffOpen(!staffOpen)}
-          >
-            <div className={styles.dropdownLeft}>
-              <FiUsers className={styles.linkIcon} />
-              <span>Staff Management</span>
-            </div>
-            <FiChevronDown
-              className={`${styles.chevron} ${
-                staffOpen ? styles.chevronRotated : ''
+        {/* ================= 4. STAFF MANAGEMENT (Admin only) ================= */}
+        {canAccessStaff && (
+          <div className={styles.dropdownGroup}>
+            <button
+              type="button"
+              className={`${styles.dropdownToggle} ${
+                isStaffActive ? styles.parentActive : ''
               }`}
-            />
-          </button>
+              onClick={() => setStaffOpen(!staffOpen)}
+            >
+              <div className={styles.dropdownLeft}>
+                <FiUsers className={styles.linkIcon} />
+                <span>Staff Management</span>
+              </div>
+              <FiChevronDown
+                className={`${styles.chevron} ${
+                  staffOpen ? styles.chevronRotated : ''
+                }`}
+              />
+            </button>
 
-          {staffOpen && (
-            <div className={styles.submenu}>
-              <NavLink to="/admin/staff" end className={subNavClass}>
-                <FiUsers size={14} className={styles.subIcon} />
-                <span>All Staff</span>
-              </NavLink>
-              <NavLink to="/admin/staff/new" className={subNavClass}>
-                <FiUserPlus size={14} className={styles.subIcon} />
-                <span>Add New Staff</span>
-              </NavLink>
-            </div>
-          )}
-        </div>
+            {staffOpen && (
+              <div className={styles.submenu}>
+                <NavLink to="/admin/staff" end className={subNavClass}>
+                  <FiUsers size={14} className={styles.subIcon} />
+                  <span>All Staff</span>
+                </NavLink>
+                <NavLink to="/admin/staff/new" className={subNavClass}>
+                  <FiUserPlus size={14} className={styles.subIcon} />
+                  <span>Add New Staff</span>
+                </NavLink>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Reports & Analytics (Main Branch မှ အသစ်ပါလာသော အပိုင်း) */}
-        <NavLink to="/admin/reports" className={navClass}>
-          <FiBarChart2 className={styles.linkIcon} />
-          <span>Reports & Analytics</span>
-        </NavLink>
+        {/* ================= 5. REPORTS & ANALYTICS (Admin only) ================= */}
+        {canAccessReports && (
+          <NavLink to="/admin/reports" className={navClass}>
+            <FiBarChart2 className={styles.linkIcon} />
+            <span>Reports & Analytics</span>
+          </NavLink>
+        )}
       </nav>
     </aside>
   );

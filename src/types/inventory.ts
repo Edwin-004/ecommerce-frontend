@@ -14,6 +14,7 @@ export interface InventoryItem {
   batchNumber?: string | null;
   daysUntilExpiry?: number | null;
   expiryStatus?: 'GOOD' | 'EXPIRING_SOON' | 'EXPIRED' | 'NON_PERISHABLE';
+  attributeSummary?: string | null;
   createdAt: string;
   modifiedAt: string;
 }

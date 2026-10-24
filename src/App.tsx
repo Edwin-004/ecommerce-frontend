@@ -17,7 +17,7 @@ import CategoryManagement from './features/categories/CategoryManagement';
 import { BrandsPage } from './features/brand/BrandsPage';
 import TagManagement from './features/tags/TagManagement';
 import { StaffList } from './features/staff/StaffList';
-import { CreateStaff } from './features/staff/CreateStaff'; // <--- အသစ်ထည့်ထားသော Import
+import { CreateStaff } from './features/staff/CreateStaff';
 // ---------------------------------------------
 
 import { Profile } from './components/Profile';
@@ -33,47 +33,70 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
 
-        {/* ADMIN ရော STAFF ပါ ဝင်ခွင့်ပြုမည့် လမ်းကြောင်းများ */}
+        {/* Back-office authenticated users check */}
         <Route
           element={
             <ProtectedRoute
-              allowedRoles={['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF']}
+              allowedRoles={['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF']}
             />
           }
         >
           <Route element={<AdminLayout />}>
-            {/* Dashboard & Profile */}
+            {/* Common Routes: Dashboard & Profile */}
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/profile" element={<Profile />} />
-            {/* Product Catalog & Stock */}
-            <Route path="/admin/products" element={<ProductManagementPage />} />
-            <Route path="/productlist" element={<ProductManagementPage />} />
-            <Route path="/admin/products/new" element={<CreateProductPage />} />
+
+            {/* Product Catalog & Stock (ADMIN & INVENTORY_STAFF) */}
             <Route
-              path="/admin/products/edit/:id"
-              element={<EditProductPage />}
-            />
-            <Route path="/product" element={<CreateProductPage />} />
-            <Route path="/admin/variants" element={<VariantsPage />} />
-            <Route path="/admin/variations" element={<VariantsPage />} />
-            <Route path="/admin/inventory" element={<InventoryPage />} />
-            {/* Categories */}
-            <Route path="/admin/categories" element={<CategoryManagement />} />
-            {/* Brands & Tags */}
-            <Route path="/admin/brands" element={<BrandsPage />} />
-            <Route path="/admin/tags" element={<TagManagement />} />
-            {/* Staff Management */}
-            <Route path="/admin/staff" element={<StaffList />} />
-            <Route path="/admin/staff/new" element={<CreateStaff />} />{' '}
-            {/* <--- အသစ်ထည့်ထားသော Route */}
-            {/* Reports */}
-            <Route path="/admin/reports" element={<ReportsPage />} />
-            {/* Orders & Refunds Management */}
-            <Route path="/admin/orders" element={<AllOrders />} />
-            <Route path="/admin/refunds" element={<RefundManagementPage />} />
-            {/* Shipping Rates Management */}
-            <Route path="/admin/shipping-rates" element={<ShippingRates />} />
-            {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
+              element={
+                <ProtectedRoute
+                  allowedRoles={['ADMIN', 'INVENTORY_STAFF']}
+                />
+              }
+            >
+              <Route path="/admin/products" element={<ProductManagementPage />} />
+              <Route path="/productlist" element={<ProductManagementPage />} />
+              <Route path="/admin/products/new" element={<CreateProductPage />} />
+              <Route
+                path="/admin/products/edit/:id"
+                element={<EditProductPage />}
+              />
+              <Route path="/product" element={<CreateProductPage />} />
+              <Route path="/admin/variants" element={<VariantsPage />} />
+              <Route path="/admin/variations" element={<VariantsPage />} />
+              <Route path="/admin/inventory" element={<InventoryPage />} />
+              <Route path="/admin/categories" element={<CategoryManagement />} />
+              <Route path="/admin/brands" element={<BrandsPage />} />
+              <Route path="/admin/tags" element={<TagManagement />} />
+            </Route>
+
+            {/* Operations: Orders, Refunds, Shipping (ADMIN & SALES_STAFF / ORDER_STAFF) */}
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={['ADMIN', 'SALES_STAFF', 'ORDER_STAFF']}
+                />
+              }
+            >
+              <Route path="/admin/orders" element={<AllOrders />} />
+              <Route path="/admin/refunds" element={<RefundManagementPage />} />
+              <Route path="/admin/shipping-rates" element={<ShippingRates />} />
+            </Route>
+
+            {/* Admin-only Routes: Staff Management & Reports */}
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={['ADMIN']}
+                />
+              }
+            >
+              <Route path="/admin/staff" element={<StaffList />} />
+              <Route path="/admin/staff/new" element={<CreateStaff />} />
+              <Route path="/admin/reports" element={<ReportsPage />} />
+            </Route>
+
+            {/* Direct /admin redirects to dashboard */}
             <Route
               path="/admin"
               element={<Navigate to="/admin/dashboard" replace />}
@@ -81,7 +104,7 @@ function App() {
           </Route>
         </Route>
 
-        {/* မရှိသော URL ရိုက်ထည့်မိပါက Login သို့ အလိုအလျောက် ပြန်ပို့မည် */}
+        {/* Fallback to login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
       <ToastContainer

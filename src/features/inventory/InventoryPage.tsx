@@ -125,11 +125,12 @@ export const InventoryPage: React.FC = () => {
       alert('No inventory data to export');
       return;
     }
-    const headers = ['Variant ID', 'SKU', 'Product Name', 'Price (MMK)', 'Physical Qty', 'Reserved', 'Available', 'Reorder Level', 'Expiry Status', 'Expiry Date', 'Batch', 'Status'];
+    const headers = ['Variant ID', 'SKU', 'Product Name', 'Attributes / Options', 'Price (MMK)', 'Physical Qty', 'Reserved', 'Available', 'Reorder Level', 'Expiry Status', 'Expiry Date', 'Batch', 'Status'];
     const rows = filteredItems.map((item) => [
       item.variantId,
       `"${item.sku || ''}"`,
       `"${item.productName || ''}"`,
+      `"${item.attributeSummary || ''}"`,
       item.sellingPrice || 0,
       item.quantity || 0,
       item.reservedQuantity || 0,
@@ -157,7 +158,8 @@ export const InventoryPage: React.FC = () => {
       .filter((item) => {
         const matchesSearch =
           (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (item.productName && item.productName.toLowerCase().includes(searchQuery.toLowerCase()));
+          (item.productName && item.productName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (item.attributeSummary && item.attributeSummary.toLowerCase().includes(searchQuery.toLowerCase()));
 
         const matchesStatus =
           statusFilter === 'ALL' || item.status === statusFilter;

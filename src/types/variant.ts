@@ -22,6 +22,7 @@ export interface ProductVariant {
   sellingPrice: number;
   costPrice?: number;
   status: 'ACTIVE' | 'INACTIVE';
+  attributeSummary?: string | null;
 }
 
 export interface VariantOptionValue {
