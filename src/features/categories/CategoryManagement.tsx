@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import {
   FiLayers,
@@ -7,23 +8,26 @@ import {
   FiX,
   FiPlus,
 } from "react-icons/fi";
+
 import { categoryApi } from "./categoryApi";
 import { CategoryFormModal } from "./CategoryFormModal";
 import { CategoryList } from "./CategoryList";
+
 import {
   type CategoryRequestDto,
   type CategoryResponseDto,
 } from "../../types/category";
+
 import styles from "./CategoryManagement.module.css";
 
 export const CategoryManagement: React.FC = () => {
   const [viewMode, setViewMode] = useState<"flat" | "tree">("flat");
+
   const [categories, setCategories] = useState<CategoryResponseDto[]>([]);
   const [treeCategories, setTreeCategories] = useState<CategoryResponseDto[]>([]);
   const [flatAll, setFlatAll] = useState<CategoryResponseDto[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
 
-  // Modal Open/Close State
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -40,8 +44,10 @@ export const CategoryManagement: React.FC = () => {
     parentId: null,
   });
 
+  // Load category data
   const fetchData = async () => {
     setLoading(true);
+
     try {
       const [flat, tree, all] = await Promise.all([
         categoryApi.getAllCategories(0, 50),
@@ -54,7 +60,8 @@ export const CategoryManagement: React.FC = () => {
       setFlatAll(all.content);
     } catch (err: any) {
       setErrorMessage(
-        err.response?.data?.message || "Failed to load categories."
+        err?.response?.data?.message ||
+          "Failed to load categories."
       );
     } finally {
       setLoading(false);
@@ -62,21 +69,25 @@ export const CategoryManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
+
     const params = new URLSearchParams(window.location.search);
+
     if (params.get("create") === "true") {
       openCreateModal();
     }
   }, []);
 
+  // Handle form inputs
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
+
+    setFormData((previous) => ({
+      ...previous,
       [name]:
         name === "parentId"
           ? value
@@ -86,30 +97,48 @@ export const CategoryManagement: React.FC = () => {
     }));
   };
 
+  // Open create modal
   const openCreateModal = () => {
     setEditingId(null);
+
     setFormData({
       categoryName: "",
       description: "",
       parentId: null,
     });
+
     setErrorMessage(null);
+    setSuccessMessage(null);
     setIsModalOpen(true);
   };
 
+  // Close modal
   const closeModal = () => {
+    if (saving) return;
+
     setIsModalOpen(false);
     setEditingId(null);
     setErrorMessage(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Create or update category, optionally creating child categories
+  const handleSubmit = async (
+    e: React.FormEvent,
+    subcategoryNames: string[] = []
+  ): Promise<void> => {
     e.preventDefault();
 
-    if (!formData.categoryName.trim()) {
+    const categoryName = formData.categoryName.trim();
+
+    if (!categoryName) {
       setErrorMessage("Category name is required.");
       return;
     }
+
+    // Validate subcategory names
+    const validSubcategories = subcategoryNames
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0);
 
     setSaving(true);
     setErrorMessage(null);
@@ -117,40 +146,102 @@ export const CategoryManagement: React.FC = () => {
 
     try {
       if (editingId !== null) {
-        await categoryApi.updateCategory(editingId, formData);
+        // Update an existing category
+        await categoryApi.updateCategory(editingId, {
+          ...formData,
+          categoryName,
+        });
+
         setSuccessMessage("Category updated successfully.");
       } else {
-        await categoryApi.createCategory(formData);
-        setSuccessMessage("Category created successfully.");
+        // 1. Create the main category first
+        const result = await categoryApi.createCategory({
+          ...formData,
+          categoryName,
+          parentId: formData.parentId ?? null,
+        });
+
+        // 2. Read the newly created category ID.
+        // Adjust this section if your API uses a different response shape.
+        const response = result as any;
+
+        const createdCategory =
+          response?.categoryId != null
+            ? response
+            : response?.data?.categoryId != null
+              ? response.data
+              : response?.data?.data?.categoryId != null
+                ? response.data.data
+                : null;
+
+        const mainCategoryId = createdCategory?.categoryId;
+
+        // A parent ID is necessary to create child categories.
+        if (
+          formData.parentId == null &&
+          validSubcategories.length > 0 &&
+          mainCategoryId == null
+        ) {
+          throw new Error(
+            "The main category was created, but its ID was not returned by the API. The subcategories could not be created."
+          );
+        }
+
+        // 3. Create each subcategory under the new main category.
+        for (const subcategoryName of validSubcategories) {
+          await categoryApi.createCategory({
+            categoryName: subcategoryName,
+            description: "",
+            parentId: mainCategoryId,
+          });
+        }
+
+        setSuccessMessage(
+          validSubcategories.length > 0
+            ? "Main category and subcategories created successfully."
+            : "Category created successfully."
+        );
       }
 
-      // အောင်မြင်မှသာ Modal ကို ပိတ်မည်
-      closeModal();
+      // Close only after all requested operations succeed.
+      setIsModalOpen(false);
+      setEditingId(null);
+      setErrorMessage(null);
+
       await fetchData();
     } catch (err: any) {
-      // Error တက်ပါက Modal ကို မပိတ်ဘဲ Modal ထဲတွင် Error တိုက်ရိုက်ပြပါမည်
       setErrorMessage(
-        err.response?.data?.message || "Operation failed."
+        err?.response?.data?.message ||
+          err?.message ||
+          "Operation failed."
       );
     } finally {
       setSaving(false);
     }
   };
 
+  // Edit category
   const handleEdit = (category: CategoryResponseDto) => {
     setEditingId(category.categoryId);
+
     setFormData({
       categoryName: category.categoryName,
       description: category.description || "",
       parentId: category.parentId ?? null,
     });
+
     setErrorMessage(null);
     setSuccessMessage(null);
     setIsModalOpen(true);
   };
 
+  // Delete category
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this category?")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this category?"
+      )
+    ) {
       return;
     }
 
@@ -159,47 +250,61 @@ export const CategoryManagement: React.FC = () => {
 
     try {
       await categoryApi.deleteCategory(id);
+
       setSuccessMessage("Category deleted successfully.");
+
       await fetchData();
     } catch (err: any) {
       setErrorMessage(
-        err.response?.data?.message || "Cannot delete this category."
+        err?.response?.data?.message ||
+          "Cannot delete this category."
       );
     }
   };
 
+  // Get the IDs of a category and all its descendants
   const getDescendantIds = (
     id: number,
     visited = new Set<number>()
   ): Set<number> => {
     if (visited.has(id)) return visited;
+
     visited.add(id);
 
     flatAll
-      .filter((cat) => cat.parentId === id)
-      .forEach((cat) => getDescendantIds(cat.categoryId, visited));
+      .filter((category) => category.parentId === id)
+      .forEach((category) => {
+        getDescendantIds(category.categoryId, visited);
+      });
 
     return visited;
   };
 
+  // Prevent selecting the category itself or its descendants as parent
   const invalidParentIds =
-    editingId !== null ? getDescendantIds(editingId) : new Set<number>();
+    editingId !== null
+      ? getDescendantIds(editingId)
+      : new Set<number>();
 
   const availableParents = flatAll.filter(
-    (cat) => !invalidParentIds.has(cat.categoryId)
+    (category) => !invalidParentIds.has(category.categoryId)
   );
 
-  const filteredCategories = categories.filter((cat) => {
+  // Flat view search
+  const filteredCategories = categories.filter((category) => {
     const keyword = search.toLowerCase().trim();
+
     return (
-      cat.categoryName.toLowerCase().includes(keyword) ||
-      (cat.parentName || "").toLowerCase().includes(keyword) ||
-      (cat.description || "").toLowerCase().includes(keyword)
+      category.categoryName.toLowerCase().includes(keyword) ||
+      (category.parentName || "").toLowerCase().includes(keyword) ||
+      (category.description || "").toLowerCase().includes(keyword)
     );
   });
 
+  // Tree view search
   const matchesSearch = (node: CategoryResponseDto): boolean => {
     const keyword = search.toLowerCase().trim();
+
     return (
       node.categoryName.toLowerCase().includes(keyword) ||
       (node.description || "").toLowerCase().includes(keyword) ||
@@ -211,14 +316,23 @@ export const CategoryManagement: React.FC = () => {
     (node) => !search || matchesSearch(node)
   );
 
+  // Expand/collapse tree nodes
   const toggleExpand = (id: number) => {
-    setExpanded((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    setExpanded((previous) =>
+      previous.includes(id)
+        ? previous.filter((value) => value !== id)
+        : [...previous, id]
     );
   };
 
-  const rootCount = flatAll.filter((cat) => cat.parentId == null).length;
-  const subCount = flatAll.filter((cat) => cat.parentId != null).length;
+  // Category statistics
+  const rootCount = flatAll.filter(
+    (category) => category.parentId == null
+  ).length;
+
+  const subCount = flatAll.filter(
+    (category) => category.parentId != null
+  ).length;
 
   return (
     <div className={styles.container}>
@@ -234,15 +348,17 @@ export const CategoryManagement: React.FC = () => {
             type="button"
             className="btn btn-primary d-flex align-items-center gap-2 px-3"
             onClick={openCreateModal}
+            disabled={saving}
           >
-            <FiPlus /> Add Category
+            <FiPlus />
+            Add Category
           </button>
 
           <button
             type="button"
             className={styles.refreshBtn}
-            onClick={fetchData}
-            disabled={loading}
+            onClick={() => void fetchData()}
+            disabled={loading || saving}
           >
             <FiRefreshCw />
             Refresh
@@ -250,12 +366,13 @@ export const CategoryManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Statistics */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.blue}`}>
             <FiLayers />
           </div>
+
           <div>
             <h2>{flatAll.length}</h2>
             <p>Total Categories</p>
@@ -266,6 +383,7 @@ export const CategoryManagement: React.FC = () => {
           <div className={`${styles.statIcon} ${styles.green}`}>
             <FiFolder />
           </div>
+
           <div>
             <h2>{rootCount}</h2>
             <p>Main Categories</p>
@@ -276,6 +394,7 @@ export const CategoryManagement: React.FC = () => {
           <div className={`${styles.statIcon} ${styles.purple}`}>
             <FiGitBranch />
           </div>
+
           <div>
             <h2>{subCount}</h2>
             <p>Subcategories</p>
@@ -283,26 +402,37 @@ export const CategoryManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Page Alerts (Delete သို့မဟုတ် အခြားနေရာမှ လာသော Alert များ) */}
+      {/* Page-level error alerts */}
       {errorMessage && !isModalOpen && (
-        <div className={styles.errorAlert}>
+        <div className={styles.errorAlert} role="alert">
           <span>{errorMessage}</span>
-          <button type="button" onClick={() => setErrorMessage(null)}>
+
+          <button
+            type="button"
+            onClick={() => setErrorMessage(null)}
+            aria-label="Dismiss error"
+          >
             <FiX />
           </button>
         </div>
       )}
 
+      {/* Success alert */}
       {successMessage && (
-        <div className={styles.successAlert}>
+        <div className={styles.successAlert} role="status">
           <span>{successMessage}</span>
-          <button type="button" onClick={() => setSuccessMessage(null)}>
+
+          <button
+            type="button"
+            onClick={() => setSuccessMessage(null)}
+            aria-label="Dismiss success message"
+          >
             <FiX />
           </button>
         </div>
       )}
 
-      {/* Category List */}
+      {/* Category list */}
       <CategoryList
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -318,13 +448,13 @@ export const CategoryManagement: React.FC = () => {
         onDelete={handleDelete}
       />
 
-      {/* Create / Edit Modal Popup */}
+      {/* Create / Edit Modal */}
       <CategoryFormModal
         isOpen={isModalOpen}
         formData={formData}
         editingId={editingId}
         saving={saving}
-        errorMessage={errorMessage} // Pass error to modal
+        errorMessage={errorMessage}
         availableParents={availableParents}
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}

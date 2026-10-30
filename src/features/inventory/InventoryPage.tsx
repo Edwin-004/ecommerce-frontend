@@ -244,6 +244,38 @@ export const InventoryPage: React.FC = () => {
     [items]
   );
 
+  // CSV Export
+  const handleExportCsv = () => {
+    if (items.length === 0) {
+      alert('No inventory data to export');
+      return;
+    }
+    const headers = ['Variant ID', 'SKU', 'Product Name', 'Attributes / Options', 'Price (MMK)', 'Physical Qty', 'Reserved', 'Available', 'Reorder Level', 'Expiry Status', 'Expiry Date', 'Batch', 'Status'];
+    const rows = filteredItems.map((item) => [
+      item.variantId,
+      `"${item.sku || ''}"`,
+      `"${item.productName || ''}"`,
+      `"${item.attributeSummary || ''}"`,
+      item.sellingPrice || 0,
+      item.quantity || 0,
+      item.reservedQuantity || 0,
+      item.availableQuantity || 0,
+      item.reorderLevel || 10,
+      item.expiryStatus || 'NON_PERISHABLE',
+      `"${item.expiryDate || ''}"`,
+      `"${item.batchNumber || ''}"`,
+      item.status || 'NORMAL',
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `inventory_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Filtered Items based on active tab, status, and search (latest first)
   const filteredItems = useMemo(() => {
     return [...items]
@@ -251,7 +283,8 @@ export const InventoryPage: React.FC = () => {
       .filter((item) => {
         const matchesSearch =
           (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (item.productName && item.productName.toLowerCase().includes(searchQuery.toLowerCase()));
+          (item.productName && item.productName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (item.attributeSummary && item.attributeSummary.toLowerCase().includes(searchQuery.toLowerCase()));
 
         const matchesStatus =
           statusFilter === 'ALL' || item.status === statusFilter;

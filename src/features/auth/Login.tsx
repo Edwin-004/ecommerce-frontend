@@ -83,10 +83,11 @@ export const Login = () => {
           username: data.username,
           email: data.email,
           role: data.role,
+          permissions: data.permissions || [],
         })
       );
 
-      if (['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF'].includes(data.role)) {
+      if (['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF'].includes(data.role)) {
         navigate('/admin/dashboard');
       } else {
         setApiError('Unauthorized account access.');

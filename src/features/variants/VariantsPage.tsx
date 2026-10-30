@@ -81,7 +81,7 @@ export const VariantsPage: React.FC = () => {
 
   // Delete Variant
   const handleDeleteVariant = async (variantId: number) => {
-    if (!window.confirm('Are you sure you want to delete this product variant?')) return;
+    if (!window.confirm('Are you sure you want to deactivate this product variant? (Historical orders and stock audit will be safely preserved)')) return;
     try {
       setLoading(true);
       await variantApi.deleteProductVariant(variantId);
@@ -139,7 +139,8 @@ export const VariantsPage: React.FC = () => {
         const q = searchQuery.toLowerCase();
         return (
           (v.sku && v.sku.toLowerCase().includes(q)) ||
-          (v.product?.productName && v.product.productName.toLowerCase().includes(q))
+          (v.product?.productName && v.product.productName.toLowerCase().includes(q)) ||
+          (v.attributeSummary && v.attributeSummary.toLowerCase().includes(q))
         );
       });
   }, [variants, searchQuery]);
@@ -272,7 +273,7 @@ export const VariantsPage: React.FC = () => {
             <tbody>
               {filteredVariants.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className={styles.emptyState}>
+                  <td colSpan={8} className={styles.emptyState}>
                     <FiPackage />
                     <p>No product variants found.</p>
                   </td>
@@ -311,9 +312,9 @@ export const VariantsPage: React.FC = () => {
                           type="button"
                           className="table-btn-delete"
                           onClick={() => handleDeleteVariant(v.variantId)}
-                          title="Delete variant"
+                          title="Deactivate variant (Soft Delete)"
                         >
-                          <FiTrash2 size={12} /> Delete
+                          <FiTrash2 size={12} /> Deactivate
                         </button>
                       </div>
                     </td>
