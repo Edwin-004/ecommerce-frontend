@@ -25,6 +25,10 @@ import {
   FiArrowLeft,
   FiSave,
   FiUploadCloud,
+  FiTrash2,
+  FiStar,
+  FiRefreshCw,
+  FiImage,
 } from 'react-icons/fi';
 
 
@@ -56,6 +60,12 @@ export const EditProductPage: React.FC = () => {
   const [existingImages, setExistingImages] = useState<any[]>([]);
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+
+  // Image Action States
+  const [imageActionLoading, setImageActionLoading] = useState<number | null>(null);
+  const [replacingTarget, setReplacingTarget] = useState<{ imageId: number; isPrimary: boolean } | null>(null);
+  const [uploadingNewImages, setUploadingNewImages] = useState<boolean>(false);
+  const replaceInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Variants list
   const [variants, setVariants] = useState<any[]>([]);
@@ -178,6 +188,101 @@ export const EditProductPage: React.FC = () => {
   const handleRemoveNewImage = (idx: number) => {
     setNewImageFiles((prev) => prev.filter((_, i) => i !== idx));
     setNewImagePreviews((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Existing Image Management Handlers
+  const handleDeleteExistingImage = async (imageId: number) => {
+    if (!window.confirm('Are you sure you want to delete this product image?')) return;
+    try {
+      setImageActionLoading(imageId);
+      await productManagementApi.deleteProductImage(imageId);
+      const updated = existingImages.filter((img) => img.imageId !== imageId);
+      setExistingImages(updated);
+      setSuccessMessage('Image deleted successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to delete image');
+      setTimeout(() => setErrorMessage(''), 4000);
+    } finally {
+      setImageActionLoading(null);
+    }
+  };
+
+  const handleSetPrimaryImage = async (imageId: number) => {
+    try {
+      setImageActionLoading(imageId);
+      await productManagementApi.setPrimaryProductImage(imageId);
+      setExistingImages((prev) =>
+        prev.map((img) => ({
+          ...img,
+          isPrimary: img.imageId === imageId,
+        }))
+      );
+      setSuccessMessage('Primary image updated!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to set primary image');
+      setTimeout(() => setErrorMessage(''), 4000);
+    } finally {
+      setImageActionLoading(null);
+    }
+  };
+
+  const handleOpenReplace = (imageId: number, isPrimary: boolean) => {
+    setReplacingTarget({ imageId, isPrimary });
+    replaceInputRef.current?.click();
+  };
+
+  const handleReplaceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !replacingTarget) return;
+
+    const { imageId, isPrimary } = replacingTarget;
+    try {
+      setImageActionLoading(imageId);
+      const newImg = await productManagementApi.uploadProductImage(productId, file, isPrimary);
+      try {
+        await productManagementApi.deleteProductImage(imageId);
+      } catch (delErr) {
+        console.warn('Old image deletion warning during replace:', delErr);
+      }
+      setExistingImages((prev) =>
+        prev.map((img) => (img.imageId === imageId ? newImg : (isPrimary ? { ...img, isPrimary: false } : img)))
+      );
+      setSuccessMessage('Image replaced successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to replace image');
+      setTimeout(() => setErrorMessage(''), 4000);
+    } finally {
+      setImageActionLoading(null);
+      setReplacingTarget(null);
+      if (replaceInputRef.current) replaceInputRef.current.value = '';
+    }
+  };
+
+  const handleUploadNewImagesNow = async () => {
+    if (newImageFiles.length === 0) return;
+    setUploadingNewImages(true);
+    try {
+      const hasPrimary = existingImages.some((img) => img.isPrimary);
+      const uploadedList: any[] = [];
+      for (let i = 0; i < newImageFiles.length; i++) {
+        const isPrimary = !hasPrimary && i === 0;
+        const res = await productManagementApi.uploadProductImage(productId, newImageFiles[i], isPrimary);
+        uploadedList.push(res);
+      }
+      setExistingImages((prev) => [...prev, ...uploadedList]);
+      setNewImageFiles([]);
+      setNewImagePreviews([]);
+      setSuccessMessage(uploadedList.length + ' image(s) uploaded successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to upload new images');
+      setTimeout(() => setErrorMessage(''), 4000);
+    } finally {
+      setUploadingNewImages(false);
+    }
   };
 
   // Quick Create Handlers
@@ -312,7 +417,7 @@ export const EditProductPage: React.FC = () => {
             await productManagementApi.uploadProductImage(
               productId,
               newImageFiles[i],
-              existingImages.length === 0 && i === 0
+              !existingImages.some((img) => img.isPrimary) && i === 0
             );
           } catch (imgErr) {
             console.warn('Image upload skipped:', imgErr);
@@ -523,60 +628,204 @@ export const EditProductPage: React.FC = () => {
 
             {/* Product Images Card */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px 0', color: '#0f172a' }}>
-                Product Media &amp; Images
-              </h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FiImage size={18} color="#2563eb" /> Product Media &amp; Images
+                  </h2>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                    Manage gallery images, change primary display photo, replace, or delete.
+                  </p>
+                </div>
+                {existingImages.length > 0 && (
+                  <span style={{ fontSize: '12px', fontWeight: 600, background: '#eff6ff', color: '#2563eb', padding: '4px 10px', borderRadius: '20px' }}>
+                    {existingImages.length} image{existingImages.length > 1 ? 's' : ''} in gallery
+                  </span>
+                )}
+              </div>
 
-              {/* Existing Images */}
-              {existingImages.length > 0 && (
-                <div style={{ marginBottom: '18px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '8px' }}>
-                    Current Gallery ({existingImages.length})
+              {/* Hidden file input for Replace */}
+              <input
+                ref={replaceInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleReplaceFileChange}
+              />
+
+              {/* Existing Images Gallery */}
+              {existingImages.length > 0 ? (
+                <div style={{ marginBottom: '22px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '10px' }}>
+                    Current Gallery Photos:
                   </label>
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                     {existingImages.map((img: any) => (
                       <div
                         key={img.imageId}
                         style={{
-                          width: '84px',
-                          height: '84px',
-                          borderRadius: '10px',
-                          border: '1px solid #e2e8f0',
+                          width: '130px',
+                          borderRadius: '12px',
+                          border: img.isPrimary ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                          background: '#fff',
                           overflow: 'hidden',
                           position: 'relative',
+                          boxShadow: img.isPrimary ? '0 3px 10px rgba(37,99,235,0.2)' : '0 1px 3px rgba(0,0,0,0.06)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          transition: 'all 0.2s',
                         }}
                       >
-                        <img
-                          src={getAssetUrl(img.imageUrl)}
-                          alt="product"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                        {img.isPrimary && (
-                          <span
+                        {/* Image Thumbnail */}
+                        <div style={{ position: 'relative', width: '100%', height: '110px', background: '#f8fafc' }}>
+                          <img
+                            src={getAssetUrl(img.imageUrl)}
+                            alt="product"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+
+                          {/* Primary Badge */}
+                          {img.isPrimary && (
+                            <span
+                              style={{
+                                position: 'absolute',
+                                top: '6px',
+                                left: '6px',
+                                background: '#2563eb',
+                                color: '#fff',
+                                fontSize: '9px',
+                                fontWeight: 700,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
+                              }}
+                            >
+                              <FiStar size={9} style={{ fill: '#fff' }} /> PRIMARY
+                            </span>
+                          )}
+
+                          {/* Loading Overlay during Action */}
+                          {imageActionLoading === img.imageId && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'rgba(255,255,255,0.85)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                color: '#2563eb',
+                              }}
+                            >
+                              <FiRefreshCw size={20} className={styles.exportSpinner} />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions Toolbar */}
+                        <div
+                          style={{
+                            padding: '6px 8px',
+                            background: '#f8fafc',
+                            borderTop: '1px solid #e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '4px',
+                          }}
+                        >
+                          {!img.isPrimary ? (
+                            <button
+                              type="button"
+                              title="Set as Primary display image"
+                              onClick={() => handleSetPrimaryImage(img.imageId)}
+                              disabled={imageActionLoading !== null}
+                              style={{
+                                flex: 1,
+                                padding: '3px 6px',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                borderRadius: '5px',
+                                border: '1px solid #cbd5e1',
+                                background: '#fff',
+                                color: '#334155',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '3px',
+                              }}
+                            >
+                              <FiStar size={10} color="#f59e0b" /> Primary
+                            </button>
+                          ) : (
+                            <span style={{ flex: 1, fontSize: '10px', fontWeight: 700, color: '#2563eb', textAlign: 'center' }}>
+                              Main
+                            </span>
+                          )}
+
+                          {/* Replace Button */}
+                          <button
+                            type="button"
+                            title="Replace this image file"
+                            onClick={() => handleOpenReplace(img.imageId, img.isPrimary)}
+                            disabled={imageActionLoading !== null}
                             style={{
-                              position: 'absolute',
-                              bottom: '4px',
-                              left: '4px',
-                              background: '#2563eb',
-                              color: '#fff',
-                              fontSize: '9px',
-                              fontWeight: 700,
-                              padding: '1px 5px',
-                              borderRadius: '4px',
+                              padding: '3px 6px',
+                              fontSize: '11px',
+                              borderRadius: '5px',
+                              border: '1px solid #cbd5e1',
+                              background: '#fff',
+                              color: '#475569',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
                           >
-                            PRIMARY
-                          </span>
-                        )}
+                            <FiRefreshCw size={11} />
+                          </button>
+
+                          {/* Delete Button */}
+                          <button
+                            type="button"
+                            title="Delete this image"
+                            onClick={() => handleDeleteExistingImage(img.imageId)}
+                            disabled={imageActionLoading !== null}
+                            style={{
+                              padding: '3px 6px',
+                              fontSize: '11px',
+                              borderRadius: '5px',
+                              border: '1px solid #fecaca',
+                              background: '#fff',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <FiTrash2 size={11} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
+              ) : (
+                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', marginBottom: '18px', textAlign: 'center' }}>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>No images currently attached to this product.</p>
+                </div>
               )}
 
-              {/* New Images to upload */}
+              {/* Add More Images Section */}
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '8px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
                   Add More Images
                 </label>
                 <div
@@ -594,6 +843,7 @@ export const EditProductPage: React.FC = () => {
                   <p style={{ margin: 0, fontSize: '13px', color: '#475569', fontWeight: 500 }}>
                     Click to select files from device
                   </p>
+                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>Supports PNG, JPG, JPEG, WEBP</span>
                   <input
                     id="edit-product-img-input"
                     type="file"
@@ -604,44 +854,83 @@ export const EditProductPage: React.FC = () => {
                   />
                 </div>
 
+                {/* Staged New Images Previews */}
                 {newImagePreviews.length > 0 && (
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '12px' }}>
-                    {newImagePreviews.map((url, i) => (
-                      <div
-                        key={i}
+                  <div style={{ marginTop: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                        Selected New Files ({newImagePreviews.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleUploadNewImagesNow}
+                        disabled={uploadingNewImages}
                         style={{
-                          width: '74px',
-                          height: '74px',
-                          borderRadius: '8px',
-                          border: '1px solid #93c5fd',
-                          overflow: 'hidden',
-                          position: 'relative',
+                          background: '#2563eb',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '5px 12px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
                         }}
                       >
-                        <img src={url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveNewImage(i)}
+                        {uploadingNewImages ? (
+                          <>
+                            <FiRefreshCw size={11} className={styles.exportSpinner} /> Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <FiUploadCloud size={12} /> Upload Now ({newImagePreviews.length})
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                      {newImagePreviews.map((url, i) => (
+                        <div
+                          key={i}
                           style={{
-                            position: 'absolute',
-                            top: '2px',
-                            right: '2px',
-                            background: '#ef4444',
-                            border: 'none',
-                            color: '#fff',
-                            borderRadius: '50%',
-                            width: '20px',
-                            height: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
+                            width: '84px',
+                            height: '84px',
+                            borderRadius: '8px',
+                            border: '1px solid #93c5fd',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                           }}
                         >
-                          <FiX size={12} />
-                        </button>
-                      </div>
-                    ))}
+                          <img src={url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button
+                            type="button"
+                            title="Discard"
+                            onClick={() => handleRemoveNewImage(i)}
+                            style={{
+                              position: 'absolute',
+                              top: '3px',
+                              right: '3px',
+                              background: 'rgba(239,68,68,0.9)',
+                              border: 'none',
+                              color: '#fff',
+                              borderRadius: '50%',
+                              width: '20px',
+                              height: '20px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <FiX size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
