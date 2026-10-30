@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   FiBox,
@@ -13,6 +13,8 @@ import {
   FiCheckCircle,
   FiPackage,
   FiDownload,
+  FiChevronDown,
+  FiFileText,
 } from 'react-icons/fi';
 import styles from './Inventory.module.css';
 import { inventoryApi } from './inventoryApi';
@@ -25,6 +27,19 @@ import {
 } from './InventoryModals';
 import { Pagination } from '../../components/common/Pagination';
 
+
+const INVENTORY_EXPORT_COLUMNS = [
+  { key: 'variantAndSku', label: 'Variant & SKU' },
+  { key: 'product', label: 'Product' },
+  { key: 'sellingPrice', label: 'Selling Price' },
+  { key: 'physicalStock', label: 'Physical Stock' },
+  { key: 'reservedStock', label: 'Reserved' },
+  { key: 'availableStock', label: 'Available' },
+  { key: 'reorderLevel', label: 'Reorder Level' },
+  { key: 'expiryAndBatch', label: 'Expiry & Batch' },
+  { key: 'status', label: 'Status' },
+];
+
 export const InventoryPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -35,6 +50,116 @@ export const InventoryPage: React.FC = () => {
   const [txnTypeFilter, setTxnTypeFilter] = useState('ALL');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Dynamic Export Column Selector state (PDF & Excel ONLY)
+  const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>([
+    'variantAndSku',
+    'product',
+    'sellingPrice',
+    'physicalStock',
+    'reservedStock',
+    'availableStock',
+    'reorderLevel',
+    'expiryAndBatch',
+    'status',
+  ]);
+  const [showColumnDropdown, setShowColumnDropdown] = useState<boolean>(false);
+  const columnDropdownRef = useRef<HTMLDivElement>(null);
+  const [showExportDropdown, setShowExportDropdown] = useState<boolean>(false);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+  const [exportingFormat, setExportingFormat] = useState<'excel' | 'pdf' | null>(null);
+  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        columnDropdownRef.current &&
+        !columnDropdownRef.current.contains(target)
+      ) {
+        setShowColumnDropdown(false);
+      }
+      if (
+        exportDropdownRef.current &&
+        !exportDropdownRef.current.contains(target)
+      ) {
+        setShowExportDropdown(false);
+      }
+    };
+    if (showColumnDropdown || showExportDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnDropdown, showExportDropdown]);
+
+  // Auto-dismiss export success message
+  useEffect(() => {
+    if (exportSuccessMessage) {
+      const timer = setTimeout(() => {
+        setExportSuccessMessage(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [exportSuccessMessage]);
+
+  const handleToggleColumn = (colKey: string) => {
+    setSelectedExportColumns((prev) => {
+      if (prev.includes(colKey)) {
+        if (prev.length === 1) {
+          alert('You must select at least one column to export.');
+          return prev;
+        }
+        return prev.filter((k) => k !== colKey);
+      } else {
+        return [...prev, colKey];
+      }
+    });
+  };
+
+  const handleSelectAllColumns = () => {
+    if (selectedExportColumns.length === INVENTORY_EXPORT_COLUMNS.length) {
+      setSelectedExportColumns([INVENTORY_EXPORT_COLUMNS[0].key]);
+    } else {
+      setSelectedExportColumns(INVENTORY_EXPORT_COLUMNS.map((c) => c.key));
+    }
+  };
+
+  // Dynamic Export Handler (PDF and Excel ONLY)
+  const handleDynamicExport = async (format: 'excel' | 'pdf') => {
+    if (selectedExportColumns.length === 0) {
+      alert('Please select at least one column to export.');
+      return;
+    }
+    try {
+      setExportingFormat(format);
+      const blob = await inventoryApi.exportInventoryReport(format, {
+        tabFilter: activeTab,
+        search: searchQuery,
+        status: statusFilter,
+        columns: selectedExportColumns,
+      });
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      const filename = format === 'excel' ? 'inventory-report.xlsx' : 'inventory-report.pdf';
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      setExportSuccessMessage(`Downloaded ${filename} successfully (${selectedExportColumns.length} columns)`);
+    } catch (err: any) {
+      console.error(`Export ${format.toUpperCase()} error:`, err);
+      alert(`Failed to export ${format.toUpperCase()}: ${err.message || 'Please check backend server'}`);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
 
   // Pagination states
   const [itemsPage, setItemsPage] = useState(1);
@@ -119,37 +244,6 @@ export const InventoryPage: React.FC = () => {
     [items]
   );
 
-  // CSV Export
-  const handleExportCsv = () => {
-    if (items.length === 0) {
-      alert('No inventory data to export');
-      return;
-    }
-    const headers = ['Variant ID', 'SKU', 'Product Name', 'Price (MMK)', 'Physical Qty', 'Reserved', 'Available', 'Reorder Level', 'Expiry Status', 'Expiry Date', 'Batch', 'Status'];
-    const rows = filteredItems.map((item) => [
-      item.variantId,
-      `"${item.sku || ''}"`,
-      `"${item.productName || ''}"`,
-      item.sellingPrice || 0,
-      item.quantity || 0,
-      item.reservedQuantity || 0,
-      item.availableQuantity || 0,
-      item.reorderLevel || 10,
-      item.expiryStatus || 'NON_PERISHABLE',
-      `"${item.expiryDate || ''}"`,
-      `"${item.batchNumber || ''}"`,
-      item.status || 'NORMAL',
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `inventory_report_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   // Filtered Items based on active tab, status, and search (latest first)
   const filteredItems = useMemo(() => {
     return [...items]
@@ -210,9 +304,6 @@ export const InventoryPage: React.FC = () => {
         </div>
 
         <div className={styles.headerActions}>
-          <button className={styles.btnExportCsv} onClick={handleExportCsv}>
-            <FiDownload size={14} /> Export CSV
-          </button>
           <button className={styles.btnSecondary} onClick={loadData} disabled={loading}>
             <FiRefreshCw className={loading ? 'spin' : ''} size={14} /> Refresh
           </button>
@@ -326,7 +417,7 @@ export const InventoryPage: React.FC = () => {
         </div>
 
         {activeTab !== 'TRANSACTIONS' ? (
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div className={styles.filtersAndExports}>
             <div className={styles.searchBox}>
               <FiSearch color="#94a3b8" />
               <input
@@ -340,21 +431,118 @@ export const InventoryPage: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                padding: '7px 12px',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                background: '#f8fafc',
-                fontSize: '13px',
-                color: '#334155',
-                outline: 'none',
-              }}
+              className={styles.statusSelect}
             >
               <option value="ALL">All Status</option>
               <option value="NORMAL">Normal</option>
               <option value="LOW_STOCK">Low Stock</option>
               <option value="OUT_OF_STOCK">Out of Stock</option>
             </select>
+
+            {/* Column Selector Dropdown / Popover */}
+            <div className={styles.columnSelectorContainer} ref={columnDropdownRef}>
+              <button
+                type="button"
+                className={styles.btnColumnSelector}
+                onClick={() => setShowColumnDropdown((prev) => !prev)}
+                title="Select columns to export"
+              >
+                <FiSliders size={13} />
+                <span>Columns ({selectedExportColumns.length}/9)</span>
+                <FiChevronDown size={12} />
+              </button>
+
+              {showColumnDropdown && (
+                <div className={styles.columnDropdownMenu}>
+                  <div className={styles.columnDropdownHeader}>
+                    <span className={styles.columnDropdownTitle}>Export Columns</span>
+                    <button
+                      type="button"
+                      className={styles.columnDropdownAction}
+                      onClick={handleSelectAllColumns}
+                    >
+                      {selectedExportColumns.length === INVENTORY_EXPORT_COLUMNS.length ? 'Deselect All' : 'Select All'}
+                    </button>
+                  </div>
+                  <div className={styles.columnCheckboxList}>
+                    {INVENTORY_EXPORT_COLUMNS.map((col) => (
+                      <label key={col.key} className={styles.columnCheckboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={selectedExportColumns.includes(col.key)}
+                          onChange={() => handleToggleColumn(col.key)}
+                        />
+                        <span>{col.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Unified Export Dropdown Menu */}
+            <div className={styles.exportDropdownContainer} ref={exportDropdownRef}>
+              <button
+                type="button"
+                className={`${styles.btnExportDropdown} ${exportingFormat ? styles.btnExporting : ''}`}
+                onClick={() => setShowExportDropdown((prev) => !prev)}
+                disabled={!!exportingFormat || selectedExportColumns.length === 0}
+                title="Export report as Excel or PDF"
+              >
+                {exportingFormat ? (
+                  <>
+                    <span className={styles.exportSpinner} />
+                    <span>Exporting {exportingFormat.toUpperCase()}...</span>
+                  </>
+                ) : (
+                  <>
+                    <FiDownload size={13} />
+                    <span>Export</span>
+                    <FiChevronDown size={12} />
+                  </>
+                )}
+              </button>
+
+              {showExportDropdown && !exportingFormat && (
+                <div className={styles.exportDropdownMenu}>
+                  <div className={styles.exportDropdownHeader}>Export As</div>
+
+                  <button
+                    type="button"
+                    className={styles.exportMenuItem}
+                    onClick={() => {
+                      setShowExportDropdown(false);
+                      handleDynamicExport('excel');
+                    }}
+                  >
+                    <div className={styles.exportMenuIconExcel}>
+                      <FiFileText size={16} />
+                    </div>
+                    <div className={styles.exportMenuText}>
+                      <span className={styles.exportMenuTitle}>Excel Document</span>
+                      <span className={styles.exportMenuSub}>Spreadsheet (.xlsx)</span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.exportMenuItem}
+                    onClick={() => {
+                      setShowExportDropdown(false);
+                      handleDynamicExport('pdf');
+                    }}
+                  >
+                    <div className={styles.exportMenuIconPdf}>
+                      <FiFileText size={16} />
+                    </div>
+                    <div className={styles.exportMenuText}>
+                      <span className={styles.exportMenuTitle}>PDF Document</span>
+                      <span className={styles.exportMenuSub}>Corporate Report (.pdf)</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -373,6 +561,13 @@ export const InventoryPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {exportSuccessMessage && (
+        <div className={styles.exportSuccessBanner}>
+          <FiCheckCircle size={15} />
+          <span>{exportSuccessMessage}</span>
+        </div>
+      )}
 
       {/* Data Views */}
       <div className={styles.tableContainer}>

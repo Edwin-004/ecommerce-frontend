@@ -169,23 +169,6 @@
   background: #fef2f2;
 }
 
-.btnExportCsv {
-  background: #2563eb;
-  color: white;
-  border: none;
-  padding: 7px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btnExportCsv:hover {
-  background: #1d4ed8;
-}
 
 .btnExportPdf {
   background: white;

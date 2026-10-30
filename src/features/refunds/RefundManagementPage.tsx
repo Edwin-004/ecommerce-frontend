@@ -17,6 +17,7 @@ import {
   approveRefund,
   rejectRefund,
   exportRefundReport,
+  seedMockRefundData,
   type RefundRequestItem,
   type RefundStats,
   type RefundStatusFilter,
@@ -89,6 +90,101 @@ export function RefundManagementPage() {
 
   // Note View Modal State (for viewed processed items)
   const [viewNoteItem, setViewNoteItem] = useState<RefundRequestItem | null>(null);
+
+  // Table Drag-To-Scroll & Modern Slide Toggle Bar
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [startX, setStartX] = useState<number>(0);
+  const [scrollLeftState, setScrollLeftState] = useState<number>(0);
+  const [scrollPercent, setScrollPercent] = useState<number>(0);
+
+  const updateScrollProgress = () => {
+    if (!tableRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = tableRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll > 0) {
+      const pct = Math.min(100, Math.max(0, Math.round((scrollLeft / maxScroll) * 100)));
+      setScrollPercent(pct);
+    } else {
+      setScrollPercent(0);
+    }
+  };
+
+  const handleTableScroll = () => {
+    updateScrollProgress();
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea, .btn')) {
+      return;
+    }
+    if (!tableRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - tableRef.current.offsetLeft);
+    setScrollLeftState(tableRef.current.scrollLeft);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!tableRef.current) return;
+      e.preventDefault();
+      const x = e.pageX - tableRef.current.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      tableRef.current.scrollLeft = scrollLeftState - walk;
+      updateScrollProgress();
+    };
+
+    const onMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isDragging, startX, scrollLeftState]);
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setScrollPercent(val);
+    if (!tableRef.current) return;
+    const { scrollWidth, clientWidth } = tableRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll > 0) {
+      tableRef.current.scrollLeft = (val / 100) * maxScroll;
+    }
+  };
+
+  const scrollToEndpoint = (endpoint: 'start' | 'end') => {
+    if (!tableRef.current) return;
+    const { scrollWidth, clientWidth } = tableRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    tableRef.current.scrollTo({
+      left: endpoint === 'start' ? 0 : maxScroll,
+      behavior: 'smooth',
+    });
+  };
+
+  const [seedingMock, setSeedingMock] = useState<boolean>(false);
+
+  const handleSeedMockData = async () => {
+    try {
+      setSeedingMock(true);
+      const res = await seedMockRefundData();
+      await loadData();
+      setExportSuccessMessage(`Mock Data Ready: ${res.message} (Total: ${res.totalRequests})`);
+      setTimeout(() => setExportSuccessMessage(null), 4000);
+    } catch (err: any) {
+      console.error('Failed to seed mock data:', err);
+      alert('Failed to seed mock data: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSeedingMock(false);
+    }
+  };
 
   // =====================================================
   // FETCH DATA
@@ -379,9 +475,10 @@ export function RefundManagementPage() {
 
       {/* FILTER & TOOLBAR CARD */}
       <div className={styles.filterCardModern}>
-        <div className={styles.filterInputsGroup}>
+        {/* Row 1: Search, Status, Dates, Reset */}
+        <div className={styles.filterTopRow}>
           {/* Search */}
-          <div className={styles.fieldWithLabel}>
+          <div className={styles.fieldWithLabel} style={{ flex: '1 1 260px', minWidth: '220px' }}>
             <label>SEARCH</label>
             <div className={styles.searchBox}>
               <FiSearch className={styles.searchIcon} />
@@ -406,7 +503,7 @@ export function RefundManagementPage() {
           </div>
 
           {/* Status Filter */}
-          <div className={styles.fieldWithLabel}>
+          <div className={styles.fieldWithLabel} style={{ width: '150px' }}>
             <label>STATUS</label>
             <select
               className={styles.fieldSelectControl}
@@ -420,170 +517,245 @@ export function RefundManagementPage() {
             </select>
           </div>
 
-          {/* Date Range: FROM & TO side-by-side */}
-          <div className={styles.dateRangeGroup}>
-            <div className={styles.fieldWithLabel}>
-              <label>FROM</label>
-              <input
-                type="date"
-                className={styles.fieldDateControl}
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                title="Start Date"
-              />
-            </div>
-
-            <div className={styles.fieldWithLabel}>
-              <label>TO</label>
-              <input
-                type="date"
-                className={styles.fieldDateControl}
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                title="End Date"
-              />
-            </div>
+          {/* Date Range: FROM */}
+          <div className={styles.fieldWithLabel} style={{ width: '145px' }}>
+            <label>FROM</label>
+            <input
+              type="date"
+              className={styles.fieldDateControl}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              title="Start Date"
+            />
           </div>
-        </div>
 
-        {/* Filter Action Buttons (Reset, Columns, Export) */}
-        <div className={styles.filterActionsBar}>
+          {/* Date Range: TO */}
+          <div className={styles.fieldWithLabel} style={{ width: '145px' }}>
+            <label>TO</label>
+            <input
+              type="date"
+              className={styles.fieldDateControl}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              title="End Date"
+            />
+          </div>
+
           {/* Reset Filters button */}
           {(search || status !== 'ALL' || startDate || endDate) && (
-            <button
-              type="button"
-              className={styles.btnResetFilter}
-              onClick={handleResetFilters}
-              title="Reset all filters"
-            >
-              <FiFilter size={14} />
-              <span>Reset</span>
-            </button>
+            <div className={styles.fieldWithLabel} style={{ alignSelf: 'flex-end' }}>
+              <button
+                type="button"
+                className={styles.btnResetFilter}
+                onClick={handleResetFilters}
+                title="Reset all filters"
+              >
+                <FiFilter size={14} />
+                <span>Reset</span>
+              </button>
+            </div>
           )}
+        </div>
 
-          {/* Column Selector Popover */}
-          <div className={styles.columnSelectorContainer} ref={columnDropdownRef}>
-            <button
-              type="button"
-              className={styles.btnActionItem}
-              onClick={() => setShowColumnDropdown((prev) => !prev)}
-              title="Select columns to export"
-            >
-              <i className="bi bi-sliders text-secondary" />
-              <span>Columns ({selectedExportColumns.length}/{EXPORT_COLUMNS.length})</span>
-            </button>
+        {/* Divider */}
+        <div className={styles.filterDivider} />
 
-            {showColumnDropdown && (
-              <div className={styles.columnDropdownMenu}>
-                <div className={styles.columnDropdownHeader}>
-                  <span className={styles.columnDropdownTitle}>Export Columns</span>
-                  <button
-                    type="button"
-                    className={styles.columnDropdownAction}
-                    onClick={handleSelectAllColumns}
-                  >
-                    Select All
-                  </button>
-                </div>
-
-                <div className={styles.columnCheckboxList}>
-                  {EXPORT_COLUMNS.map((col) => (
-                    <label key={col.key} className={styles.columnCheckboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedExportColumns.includes(col.key)}
-                        onChange={() => handleToggleColumn(col.key)}
-                      />
-                      <span>{col.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* Row 2: Results Info + Action Buttons */}
+        <div className={styles.filterBottomRow}>
+          <div className={styles.filterResultsPill}>
+            <span className={styles.resultsDot} />
+            <span>
+              Showing <strong>{refunds.length}</strong> refund {refunds.length === 1 ? 'record' : 'records'}
+              {(search || status !== 'ALL' || startDate || endDate) && ' (filtered)'}
+            </span>
           </div>
 
-          {/* Export Dropdown Menu (PDF & Excel Only) */}
-          <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
+          <div className={styles.filterActionsBar}>
+            {/* Column Selector Popover */}
+            <div className={styles.columnSelectorContainer} ref={columnDropdownRef}>
+              <button
+                type="button"
+                className={styles.btnActionItem}
+                onClick={() => setShowColumnDropdown((prev) => !prev)}
+                title="Select columns to export"
+              >
+                <i className="bi bi-sliders text-secondary" />
+                <span>Columns ({selectedExportColumns.length}/{EXPORT_COLUMNS.length})</span>
+              </button>
+
+              {showColumnDropdown && (
+                <div className={styles.columnDropdownMenu}>
+                  <div className={styles.columnDropdownHeader}>
+                    <span className={styles.columnDropdownTitle}>Export Columns</span>
+                    <button
+                      type="button"
+                      className={styles.columnDropdownAction}
+                      onClick={handleSelectAllColumns}
+                    >
+                      Select All
+                    </button>
+                  </div>
+
+                  <div className={styles.columnCheckboxList}>
+                    {EXPORT_COLUMNS.map((col) => (
+                      <label key={col.key} className={styles.columnCheckboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={selectedExportColumns.includes(col.key)}
+                          onChange={() => handleToggleColumn(col.key)}
+                        />
+                        <span>{col.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Seed Mock Data Button */}
             <button
               type="button"
-              className={`${styles.btnActionItem} ${exportingFormat ? styles.btnActionExporting : ''}`}
-              onClick={() => setShowExportMenu((prev) => !prev)}
-              disabled={!!exportingFormat}
-              title="Export filtered refunds as PDF or Excel"
+              className={styles.btnActionSeed}
+              onClick={handleSeedMockData}
+              disabled={seedingMock}
+              title="Seed test refund requests and notifications"
             >
-              {exportingFormat ? (
-                <>
-                  <span className={styles.exportSpinner} />
-                  <span>Exporting...</span>
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-download text-primary" />
-                  <span>Export</span>
-                  <i className="bi bi-chevron-down text-muted small" />
-                </>
-              )}
+              <i className={seedingMock ? 'spinner-border spinner-border-sm' : 'bi bi-database-fill-add'} />
+              <span>{seedingMock ? 'Seeding...' : 'Seed Test Data'}</span>
             </button>
 
-            {showExportMenu && !exportingFormat && (
-              <div className={styles.exportDropdownMenu}>
-                <div className={styles.exportDropdownHeader}>Export As</div>
+            {/* Export Dropdown Menu (PDF & Excel Only) */}
+            <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
+              <button
+                type="button"
+                className={`${styles.btnActionExport} ${exportingFormat ? styles.btnActionExporting : ''}`}
+                onClick={() => setShowExportMenu((prev) => !prev)}
+                disabled={!!exportingFormat}
+                title="Export filtered refunds as PDF or Excel"
+              >
+                {exportingFormat ? (
+                  <>
+                    <span className={styles.exportSpinner} />
+                    <span>Exporting...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-download" />
+                    <span>Export</span>
+                    <i className="bi bi-chevron-down" style={{ fontSize: '11px', marginLeft: '2px' }} />
+                  </>
+                )}
+              </button>
 
-                {/* Export Excel */}
-                <button
-                  type="button"
-                  className={styles.exportMenuItem}
-                  onClick={() => {
-                    setShowExportMenu(false);
-                    void handleExport('excel');
-                  }}
-                >
-                  <div className={styles.exportMenuIconExcel}>
-                    <i className="bi bi-file-earmark-excel fs-5" />
-                  </div>
-                  <div className={styles.exportMenuText}>
-                    <span className={styles.exportMenuTitle}>Excel Spreadsheet</span>
-                    <span className={styles.exportMenuSub}>.xlsx format</span>
-                  </div>
-                </button>
+              {showExportMenu && !exportingFormat && (
+                <div className={styles.exportDropdownMenu}>
+                  <div className={styles.exportDropdownHeader}>Export As</div>
 
-                {/* Export PDF */}
-                <button
-                  type="button"
-                  className={styles.exportMenuItem}
-                  onClick={() => {
-                    setShowExportMenu(false);
-                    void handleExport('pdf');
-                  }}
-                >
-                  <div className={styles.exportMenuIconPdf}>
-                    <i className="bi bi-file-earmark-pdf fs-5" />
-                  </div>
-                  <div className={styles.exportMenuText}>
-                    <span className={styles.exportMenuTitle}>PDF Document</span>
-                    <span className={styles.exportMenuSub}>.pdf format</span>
-                  </div>
-                </button>
-              </div>
-            )}
+                  {/* Export Excel */}
+                  <button
+                    type="button"
+                    className={styles.exportMenuItem}
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      void handleExport('excel');
+                    }}
+                  >
+                    <div className={styles.exportMenuIconExcel}>
+                      <i className="bi bi-file-earmark-excel fs-5" />
+                    </div>
+                    <div className={styles.exportMenuText}>
+                      <span className={styles.exportMenuTitle}>Excel Spreadsheet</span>
+                      <span className={styles.exportMenuSub}>.xlsx format</span>
+                    </div>
+                  </button>
+
+                  {/* Export PDF */}
+                  <button
+                    type="button"
+                    className={styles.exportMenuItem}
+                    onClick={() => {
+                      setShowExportMenu(false);
+                      void handleExport('pdf');
+                    }}
+                  >
+                    <div className={styles.exportMenuIconPdf}>
+                      <i className="bi bi-file-earmark-pdf fs-5" />
+                    </div>
+                    <div className={styles.exportMenuText}>
+                      <span className={styles.exportMenuTitle}>PDF Document</span>
+                      <span className={styles.exportMenuSub}>.pdf format</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* DATA TABLE CARD */}
+      {/* DATA TABLE CARD - ORIGINAL 8 COLUMNS WITH MODERN SLIDE BAR & DRAG-TO-SCROLL */}
       <div className={styles.tableCard}>
-        <div className={styles.tableResponsive}>
+        {/* Modern Interactive Slide Toggle Bar */}
+        <div className={styles.scrollNoticeBar}>
+          <div className={styles.scrollNoticeLeft}>
+            <i className="bi bi-arrows-expand text-primary" style={{ transform: 'rotate(45deg)', fontSize: '13px' }} />
+            <span className={styles.scrollNoticeTitle}>Table Slide Bar:</span>
+            <span className={styles.scrollNoticeTag}>
+              {scrollPercent <= 5 ? 'Start (Refund ID)' : scrollPercent >= 95 ? 'End (Actions)' : `${scrollPercent}%`}
+            </span>
+          </div>
+
+          <div className={styles.slideToggleWrapper}>
+            <button
+              type="button"
+              className={styles.sliderEndpointBtn}
+              onClick={() => scrollToEndpoint('start')}
+              title="Jump to Start (Refund ID)"
+            >
+              <i className="bi bi-chevron-left" /> Left (Refund ID)
+            </button>
+            <div className={styles.sliderTrackContainer}>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={scrollPercent}
+                onChange={handleSliderChange}
+                className={styles.modernSlideRange}
+                title="Slide cursor across this bar to scroll table sideways"
+                style={{
+                  background: `linear-gradient(to right, #6366f1 0%, #6366f1 ${scrollPercent}%, #e2e8f0 ${scrollPercent}%, #e2e8f0 100%)`
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              className={styles.sliderEndpointBtn}
+              onClick={() => scrollToEndpoint('end')}
+              title="Jump to Actions"
+            >
+              Right (Actions) <i className="bi bi-chevron-right" />
+            </button>
+          </div>
+        </div>
+
+        <div
+          ref={tableRef}
+          className={`${styles.tableResponsive} ${isDragging ? styles.isDragging : ''}`}
+          onMouseDown={handleMouseDown}
+          onScroll={handleTableScroll}
+        >
           <table className={styles.modernTable}>
             <thead>
               <tr>
-                <th style={{ paddingLeft: '24px' }}>REFUND ID</th>
-                <th>ORDER NO</th>
-                <th>CUSTOMER</th>
-                <th>AMOUNT</th>
-                <th>REASON</th>
-                <th>DATE</th>
-                <th>STATUS</th>
-                <th style={{ textAlign: 'right', paddingRight: '24px' }}>ACTIONS</th>
+                <th style={{ paddingLeft: '24px', width: '100px' }}>REFUND ID</th>
+                <th style={{ width: '160px' }}>ORDER NO</th>
+                <th style={{ minWidth: '180px' }}>CUSTOMER</th>
+                <th style={{ width: '140px' }}>AMOUNT</th>
+                <th style={{ width: '160px' }}>REASON</th>
+                <th style={{ width: '125px' }}>DATE</th>
+                <th style={{ width: '120px' }}>STATUS</th>
+                <th style={{ textAlign: 'right', paddingRight: '24px', width: '170px' }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -610,6 +782,16 @@ export function RefundManagementPage() {
                           ? 'No refund records match your selected filter criteria.'
                           : 'There are no refund requests in the database yet.'}
                       </p>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm mt-3"
+                        onClick={handleSeedMockData}
+                        disabled={seedingMock}
+                        style={{ backgroundColor: '#4f46e5', borderColor: '#4f46e5', borderRadius: '8px', padding: '7px 18px', fontWeight: 600 }}
+                      >
+                        <i className="bi bi-database-add me-2" />
+                        {seedingMock ? 'Generating Test Data...' : 'Generate Mock Refund Data'}
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -621,19 +803,20 @@ export function RefundManagementPage() {
 
                   return (
                     <tr key={item.refundId}>
-                      {/* Refund ID */}
-                      <td style={{ paddingLeft: '24px', fontWeight: 700, color: '#475569' }}>
-                        #{item.refundId}
+                      {/* 1. REFUND ID */}
+                      <td style={{ paddingLeft: '24px' }}>
+                        <span className={styles.refundIdText}>#{item.refundId}</span>
                       </td>
 
-                      {/* Order No */}
+                      {/* 2. ORDER NO */}
                       <td>
                         <span className={styles.orderBadge}>
+                          <i className="bi bi-receipt" style={{ fontSize: '11px', color: '#64748b' }} />
                           {item.orderNo || `Order #${item.orderId || '-'}`}
                         </span>
                       </td>
 
-                      {/* Customer */}
+                      {/* 3. CUSTOMER */}
                       <td>
                         <div className={styles.customerName}>
                           {item.customerName || 'Anonymous Customer'}
@@ -643,33 +826,38 @@ export function RefundManagementPage() {
                         )}
                       </td>
 
-                      {/* Amount */}
+                      {/* 4. AMOUNT (with Product Name & Quantity subtitle) */}
                       <td>
-                        <span className={styles.amountText}>
-                          ${Number(item.refundAmount || 0).toFixed(2)}
-                        </span>
-                        {item.refundQuantity && item.refundQuantity > 1 && (
-                          <span className={styles.quantityText}>
-                            ({item.refundQuantity} pcs)
-                          </span>
+                        <div className={styles.amountText}>
+                          ${Number(item.refundAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        {item.productName && (
+                          <div className={styles.productNameSub} title={item.productName}>
+                            <i className="bi bi-box-seam me-1 text-secondary" style={{ fontSize: '11px' }} />
+                            <span>{item.productName}</span>
+                            {item.refundQuantity && item.refundQuantity > 1 && (
+                              <span className={styles.quantityBadge}>x{item.refundQuantity}</span>
+                            )}
+                          </div>
                         )}
                       </td>
 
-                      {/* Reason */}
+                      {/* 5. REASON */}
                       <td>
-                        <span className={styles.reasonText}>
+                        <span className={styles.reasonBadge}>
                           {REASON_LABELS[item.reason || ''] || item.reason || '-'}
                         </span>
                       </td>
 
-                      {/* Date */}
+                      {/* 6. DATE */}
                       <td>
                         <span className={styles.dateText}>
+                          <i className="bi bi-calendar3 me-1 text-muted" style={{ fontSize: '11px' }} />
                           {formatDate(item.requestedAt)}
                         </span>
                       </td>
 
-                      {/* Status */}
+                      {/* 7. STATUS */}
                       <td>
                         {isPending && (
                           <span className={styles.badgePending}>
@@ -688,7 +876,7 @@ export function RefundManagementPage() {
                         )}
                       </td>
 
-                      {/* Actions */}
+                      {/* 8. ACTIONS */}
                       <td style={{ textAlign: 'right', paddingRight: '24px' }}>
                         {isPending ? (
                           <div className={styles.actionGroup}>
@@ -698,7 +886,7 @@ export function RefundManagementPage() {
                               onClick={() => openApproveModal(item)}
                               title="Approve refund request"
                             >
-                              <FiCheck size={14} />
+                              <FiCheck size={13} />
                               <span>Approve</span>
                             </button>
                             <button
@@ -707,7 +895,7 @@ export function RefundManagementPage() {
                               onClick={() => openRejectModal(item)}
                               title="Reject refund request"
                             >
-                              <FiX size={14} />
+                              <FiX size={13} />
                               <span>Reject</span>
                             </button>
                           </div>
@@ -720,11 +908,12 @@ export function RefundManagementPage() {
                                 onClick={() => setViewNoteItem(item)}
                                 title="View admin note"
                               >
-                                Note
+                                <i className="bi bi-chat-left-text me-1" />
+                                <span>Note</span>
                               </button>
                             )}
-                            <span className={styles.closedText}>
-                              {isApproved ? 'Processed' : 'Closed'}
+                            <span className={isApproved ? styles.closedApproved : styles.closedRejected}>
+                              {isApproved ? 'Approved' : 'Rejected'}
                             </span>
                           </div>
                         )}

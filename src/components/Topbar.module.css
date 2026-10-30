@@ -353,3 +353,233 @@
   background: #fecaca;
   color: #dc2626;
 }
+
+
+/* ==========================================================
+   TOPBAR NOTIFICATIONS DROPDOWN
+   ========================================================== */
+.notificationWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.35);
+  animation: pulseScale 1.8s infinite;
+}
+
+@keyframes pulseScale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.notificationDropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: -50px;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.16), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+  border: 1px solid #edf0f5;
+  z-index: 1000;
+  overflow: hidden;
+  animation: dropIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notifHeader {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+.notifTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notifTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.notifCountPill {
+  font-size: 11px;
+  font-weight: 700;
+  background: #eef2ff;
+  color: #4f46e5;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.notifActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notifBtnAction {
+  background: none;
+  border: none;
+  color: #6366f1;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.notifBtnAction:hover {
+  text-decoration: underline;
+}
+
+.notifBtnTest {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 3px 7px;
+  transition: all 0.15s;
+}
+
+.notifBtnTest:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4f46e5;
+}
+
+.notifList {
+  max-height: 340px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.notifItem {
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-bottom: 1px solid #f8fafc;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.notifItem:hover {
+  background-color: #f8fafc;
+}
+
+.notifItemUnread {
+  background-color: #fbfbfe;
+}
+
+.notifItemUnread:hover {
+  background-color: #f1f5fd;
+}
+
+.notifItemIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.notifItemContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.notifItemTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.notifItemTitle {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.notifItemDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+}
+
+.notifItemDesc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.35;
+  margin: 0 0 4px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.notifItemTime {
+  font-size: 10.5px;
+  color: #94a3b8;
+}
+
+.notifEmpty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.notifFooter {
+  padding: 10px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+}
+
+.notifFooterLink {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6366f1;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.notifFooterLink:hover {
+  text-decoration: underline;
+}

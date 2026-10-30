@@ -1,0 +1,373 @@
+/* ==========================================================================
+   REAL-TIME NOTIFICATION TOAST (Floating Top-Right)
+   ========================================================================== */
+.toastContainer {
+  position: fixed;
+  top: 84px;
+  right: 28px;
+  z-index: 2000;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.16), 0 6px 14px -4px rgba(15, 23, 42, 0.08);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  cursor: pointer;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.toastContainer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px -6px rgba(15, 23, 42, 0.22);
+}
+
+.toastGlowBar {
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  animation: glowPulse 2s infinite alternate;
+}
+
+.toastContent {
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+}
+
+.toastIconWrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+}
+
+.toastTextWrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.toastHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.toastBadge {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #6366f1;
+  background: #f5f3ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.toastTime {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.toastTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}
+
+.toastMessage {
+  font-size: 12.5px;
+  color: #475569;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.toastActionPrompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #6366f1;
+  transition: gap 0.15s ease;
+}
+
+.toastContainer:hover .toastActionPrompt {
+  gap: 8px;
+  text-decoration: underline;
+}
+
+.toastCloseBtn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.toastCloseBtn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes glowPulse {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   LOGIN UNREAD ALERT MODAL
+   ========================================================================== */
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2100;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.modalCard {
+  background: #ffffff;
+  border-radius: 18px;
+  width: 90%;
+  max-width: 520px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modalHeader {
+  padding: 22px 24px 18px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modalHeaderLeft {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.bellIconCircle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.modalTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.modalSubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.modalCloseBtn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.modalCloseBtn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.modalBody {
+  padding: 16px 24px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.unsetItemCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.unsetItemCard:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  transform: translateX(2px);
+}
+
+.unsetItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.unreadIndicatorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+}
+
+.unsetItemTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.unsetItemDesc {
+  font-size: 11.5px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+
+.unsetItemArrow {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.unsetItemCard:hover .unsetItemArrow {
+  color: #4f46e5;
+}
+
+.moreCountText {
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 12px;
+  margin-bottom: 0;
+}
+
+.modalFooter {
+  padding: 14px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btnDismiss {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btnDismiss:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.btnReviewNow {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+  transition: all 0.15s;
+}
+
+.btnReviewNow:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
