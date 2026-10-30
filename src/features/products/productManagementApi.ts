@@ -142,6 +142,16 @@ export const productManagementApi = {
     return res.json();
   },
 
+  deleteProductImage: (imageId: number) =>
+    apiFetch<void>(`/api/backoffice/product-images/${imageId}`, {
+      method: 'DELETE',
+    }),
+
+  setPrimaryProductImage: (imageId: number, userId = 1) =>
+    apiFetch<any>(`/api/backoffice/product-images/${imageId}/primary?userId=${userId}`, {
+      method: 'PATCH',
+    }),
+
   // Variations & Options
   getVariations: () => apiFetch<any[]>('/api/backoffice/variations'),
   createVariation: (name: string) =>
