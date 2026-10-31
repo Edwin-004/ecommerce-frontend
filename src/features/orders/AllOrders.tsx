@@ -87,6 +87,26 @@ export const AllOrders = () => {
   const [updateOrderStatusApi, { isLoading: isUpdatingStatus }] =
     useUpdateOrderStatusMutation();
   const isUpdating = isCreatingShipment || isUpdatingStatus;
+  const VALID_TRANSITIONS: Record<string, string[]> = {
+    PENDING: ['PAID'],
+    PAID: ['PROCESSING'],
+    PROCESSING: ['SHIPPED'],
+    SHIPPED: ['DELIVERED'],
+    DELIVERED: [], // ဘယ်မှ ထပ်သွားခွင့်မရှိပါ
+    CANCELLED: [], // ဘယ်မှ ထပ်သွားခွင့်မရှိပါ
+  };
+
+  const ALL_STATUS_OPTIONS = [
+    'PENDING',
+    'PAID',
+    'PROCESSING',
+    'SHIPPED',
+    'DELIVERED',
+    'CANCELLED',
+  ];
+
+  const currentOrderStatus = orderDetails?.orderStatus || '';
+  const allowedNextStatuses = VALID_TRANSITIONS[currentOrderStatus] || [];
 
   const handleUpdateClick = () => {
     if (selectedStatus === 'SHIPPED') {
@@ -179,7 +199,6 @@ export const AllOrders = () => {
         return '';
     }
   };
-
   // variantAttributes String (eg: "{"Size": "L"}") ကို ပြေပြစ်စွာပြသရန် Helper
   const formatAttributes = (attrString: string) => {
     try {
@@ -511,7 +530,7 @@ export const AllOrders = () => {
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Order Action</h3>
                       <p style={{ marginBottom: '16px' }}>
-                        Status:{' '}
+                        Current Status:{' '}
                         <span
                           className={`${styles.badge} ${getStatusBadgeClass(orderDetails.orderStatus)}`}
                         >
@@ -524,13 +543,21 @@ export const AllOrders = () => {
                           value={selectedStatus}
                           onChange={(e) => setSelectedStatus(e.target.value)}
                           className={styles.statusSelect}
+                          disabled={allowedNextStatuses.length === 0}
                         >
-                          <option value="PENDING">PENDING</option>
-                          <option value="PAID">PAID</option>
-                          <option value="PROCESSING">PROCESSING</option>
-                          <option value="SHIPPED">SHIPPED</option>
-                          <option value="DELIVERED">DELIVERED</option>
-                          <option value="CANCELLED">CANCELLED</option>
+                          {/* လက်ရှိ Status ကို အမြဲတမ်း Default အနေနဲ့ ပြထားပေးမည် */}
+                          <option value={currentOrderStatus}>
+                            {currentOrderStatus}
+                          </option>
+
+                          {/* သွားခွင့်ရှိတဲ့ Status များကိုသာ Option အဖြစ် Filter ထုတ်ပြီး ပြမည် */}
+                          {ALL_STATUS_OPTIONS.filter((status) =>
+                            allowedNextStatuses.includes(status)
+                          ).map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
                         </select>
 
                         <button
@@ -538,7 +565,8 @@ export const AllOrders = () => {
                           className={styles.updateBtn}
                           disabled={
                             isUpdating ||
-                            selectedStatus === orderDetails.orderStatus
+                            selectedStatus === orderDetails.orderStatus ||
+                            allowedNextStatuses.length === 0
                           }
                         >
                           {isUpdating ? 'Updating...' : 'Update Status'}
