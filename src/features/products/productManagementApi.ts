@@ -1,4 +1,5 @@
 import { apiFetch } from '../../utils/api';
+import api from '../../utils/axiosConfig';
 
 export interface ProductItem {
   productId: number;
@@ -232,4 +233,77 @@ export const productManagementApi = {
 
   getVariantImages: (variantId: number) =>
     apiFetch<any[]>(`/api/backoffice/product-variant-images/variant/${variantId}`),
+
+  deleteVariantImage: (imageId: number) =>
+    apiFetch<void>(`/api/backoffice/product-variant-images/${imageId}`, {
+      method: 'DELETE',
+    }),
+
+  // Excel Bulk Import & Template
+  downloadExcelTemplate: async () => {
+    const response = await api.get('/products/excel-template', {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'products_import_template.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
+
+  bulkImportProducts: async (file: File): Promise<{
+    totalRows: number;
+    successCount: number;
+    failedCount: number;
+    errors: Array<{
+      rowNumber: number;
+      productName: string;
+      sku: string;
+      errorReason: string;
+    }>;
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post('/products/bulk-import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  },
+
+  batchCreateProducts: async (rows: Array<{
+    productName: string;
+    description?: string;
+    categoryName: string;
+    brandName?: string;
+    sellingPrice: number;
+    costPrice?: number;
+    stock: number;
+    sku?: string;
+    size?: string;
+    color?: string;
+    status: string;
+  }>): Promise<{
+    totalRows: number;
+    successCount: number;
+    failedCount: number;
+    errors: Array<{
+      rowNumber: number;
+      productName: string;
+      sku: string;
+      errorReason: string;
+    }>;
+  }> => {
+    const response = await api.post('/products/batch-create', rows);
+    return response.data;
+  },
 };

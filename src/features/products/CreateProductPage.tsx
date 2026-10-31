@@ -596,6 +596,19 @@ export const CreateProductPage: React.FC = () => {
     );
   };
 
+  const handleRemoveVariantImage = (id: string, indexToRemove: number) => {
+    setGeneratedVariants((prev) =>
+      prev.map((v) => {
+        if (v.id !== id) return v;
+        return {
+          ...v,
+          images: v.images.filter((_, idx) => idx !== indexToRemove),
+          imagePreviews: v.imagePreviews.filter((_, idx) => idx !== indexToRemove),
+        };
+      })
+    );
+  };
+
   // Form Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1880,18 +1893,60 @@ export const CreateProductPage: React.FC = () => {
                             <div
                               style={{
                                 display: 'flex',
-                                gap: '6px',
-                                marginTop: '8px',
+                                gap: '8px',
+                                marginTop: '10px',
                                 flexWrap: 'wrap',
                               }}
                             >
                               {gv.imagePreviews.map((url, imgIdx) => (
-                                <img
+                                <div
                                   key={imgIdx}
-                                  src={url}
-                                  alt="variant preview"
-                                  className={styles.variantImgThumbSmall}
-                                />
+                                  style={{
+                                    position: 'relative',
+                                    display: 'inline-block',
+                                  }}
+                                >
+                                  <img
+                                    src={url}
+                                    alt="variant preview"
+                                    className={styles.variantImgThumbSmall}
+                                    style={{
+                                      width: '46px',
+                                      height: '46px',
+                                      objectFit: 'cover',
+                                      borderRadius: '6px',
+                                      border: '1px solid #cbd5e1',
+                                      display: 'block',
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveVariantImage(gv.id, imgIdx)}
+                                    title="Delete this image"
+                                    style={{
+                                      position: 'absolute',
+                                      top: '-6px',
+                                      right: '-6px',
+                                      width: '18px',
+                                      height: '18px',
+                                      borderRadius: '50%',
+                                      background: '#ef4444',
+                                      color: '#ffffff',
+                                      border: '2px solid #ffffff',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      fontSize: '10px',
+                                      fontWeight: 'bold',
+                                      padding: 0,
+                                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                      lineHeight: 1,
+                                    }}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
                               ))}
                             </div>
                           )}

@@ -204,7 +204,7 @@ export const InventoryPage: React.FC = () => {
             <FiBox />
           </div>
           <div>
-            <h1 className={styles.mainTitle}>Stock Management</h1>
+            <h1 className={styles.mainTitle}>Inventory Management</h1>
             <p className={styles.mainSubtitle}>
               Monitor real-time physical inventory, process restocks, write-offs, and audit trails
             </p>
