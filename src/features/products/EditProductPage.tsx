@@ -29,6 +29,7 @@ import {
   FiStar,
   FiRefreshCw,
   FiImage,
+  FiPlus,
 } from 'react-icons/fi';
 
 
@@ -153,7 +154,25 @@ export const EditProductPage: React.FC = () => {
       // 5. Fetch Variants & Inventory
       try {
         const vars = await productManagementApi.getVariantsByProductId(productId);
-        setVariants(vars || []);
+        if (Array.isArray(vars)) {
+          try {
+            const withImgs = await Promise.all(
+              vars.map(async (v: any) => {
+                try {
+                  const varImgs = await productManagementApi.getVariantImages(v.variantId);
+                  return { ...v, images: Array.isArray(varImgs) ? varImgs : [] };
+                } catch {
+                  return { ...v, images: [] };
+                }
+              })
+            );
+            setVariants(withImgs);
+          } catch {
+            setVariants(vars);
+          }
+        } else {
+          setVariants([]);
+        }
 
         if (vars && vars.length > 0) {
           // Check inventory of first variant for perishable details
@@ -231,6 +250,48 @@ export const EditProductPage: React.FC = () => {
   const handleOpenReplace = (imageId: number, isPrimary: boolean) => {
     setReplacingTarget({ imageId, isPrimary });
     replaceInputRef.current?.click();
+  };
+
+  // Variant Image Handlers
+  const handleUploadVariantImage = async (variantId: number, file: File) => {
+    try {
+      await productManagementApi.uploadProductVariantImage(variantId, file);
+      const updatedImgs = await productManagementApi.getVariantImages(variantId);
+      setVariants((prev) =>
+        prev.map((v) => (v.variantId === variantId ? { ...v, images: updatedImgs } : v))
+      );
+      setSuccessMessage('Variant image uploaded successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Failed to upload variant image:', err);
+      setErrorMessage(err.message || 'Failed to upload variant image');
+      setTimeout(() => setErrorMessage(''), 4000);
+    }
+  };
+
+  const handleDeleteVariantImage = async (variantId: number, imageId: number) => {
+    if (!window.confirm('Are you sure you want to delete this variant image?')) return;
+    try {
+      await productManagementApi.deleteVariantImage(imageId);
+      setVariants((prev) =>
+        prev.map((v) =>
+          v.variantId === variantId
+            ? {
+                ...v,
+                images: (v.images || []).filter(
+                  (img: any) => img.productVariantImageId !== imageId
+                ),
+              }
+            : v
+        )
+      );
+      setSuccessMessage('Variant image deleted successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Failed to delete variant image:', err);
+      setErrorMessage(err.message || 'Failed to delete variant image');
+      setTimeout(() => setErrorMessage(''), 4000);
+    }
   };
 
   const handleReplaceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -954,21 +1015,23 @@ export const EditProductPage: React.FC = () => {
               {variants.length === 0 ? (
                 <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>No variants registered for this product.</p>
               ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                    <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                        <th style={{ padding: '8px 12px', textAlign: 'left' }}>SKU</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'left' }}>PRICE</th>
-                        <th style={{ padding: '8px 12px', textAlign: 'left' }}>STATUS</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {variants.map((v) => (
-                        <tr key={v.variantId} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '8px 12px', fontWeight: 600 }}>{v.sku}</td>
-                          <td style={{ padding: '8px 12px' }}>{(v.sellingPrice || 0).toLocaleString()} MMK</td>
-                          <td style={{ padding: '8px 12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {variants.map((v) => (
+                    <div
+                      key={v.variantId}
+                      style={{
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '10px',
+                        padding: '14px 16px',
+                        background: '#f8fafc',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#2563eb', fontSize: '13px' }}>
+                              {v.sku}
+                            </span>
                             <span style={{
                               padding: '2px 8px',
                               borderRadius: '12px',
@@ -977,13 +1040,133 @@ export const EditProductPage: React.FC = () => {
                               background: v.status === 'ACTIVE' ? '#ecfdf5' : '#f1f5f9',
                               color: v.status === 'ACTIVE' ? '#059669' : '#64748b'
                             }}>
-                              {v.status}
+                              ● {v.status}
                             </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                          {/* Attribute Badges (Size, Color, etc.) */}
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                            {v.attributeSummary ? (
+                              v.attributeSummary.split('|').map((part: string, idx: number) => (
+                                <span
+                                  key={idx}
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    padding: '2px 8px',
+                                    background: '#e0e7ff',
+                                    color: '#4338ca',
+                                    borderRadius: '6px',
+                                  }}
+                                >
+                                  {part.trim()}
+                                </span>
+                              ))
+                            ) : (
+                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Standard variant</span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '13px' }}>
+                            {Number(v.sellingPrice || 0).toLocaleString()} MMK
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Variant Images and Actions */}
+                      <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '8px', marginTop: '6px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>
+                          Variant Photos ({v.images?.length || 0})
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          {v.images && v.images.length > 0 ? (
+                            v.images.map((img: any) => (
+                              <div
+                                key={img.productVariantImageId}
+                                style={{ position: 'relative', display: 'inline-block' }}
+                              >
+                                <img
+                                  src={getAssetUrl(img.imageUrl)}
+                                  alt="variant"
+                                  style={{
+                                    width: '44px',
+                                    height: '44px',
+                                    objectFit: 'cover',
+                                    borderRadius: '6px',
+                                    border: '1px solid #cbd5e1',
+                                    display: 'block',
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteVariantImage(v.variantId, img.productVariantImageId)}
+                                  title="Delete this variant photo"
+                                  style={{
+                                    position: 'absolute',
+                                    top: '-5px',
+                                    right: '-5px',
+                                    width: '16px',
+                                    height: '16px',
+                                    borderRadius: '50%',
+                                    background: '#ef4444',
+                                    color: '#fff',
+                                    border: '2px solid #fff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '9px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    lineHeight: 1,
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+                              No photos registered for this variant
+                            </span>
+                          )}
+
+                          {/* Upload photo button for this variant */}
+                          <label
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              border: '1px dashed #6366f1',
+                              color: '#6366f1',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              background: '#ffffff',
+                              transition: 'all 0.15s ease',
+                              marginLeft: '4px',
+                            }}
+                          >
+                            <FiPlus size={12} /> Add Photo
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handleUploadVariantImage(v.variantId, e.target.files[0]);
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

@@ -54,13 +54,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     location.pathname.startsWith('/admin/variants') ||
     location.pathname.startsWith('/admin/variations');
 
-  const isInventoryActive = location.pathname.startsWith('/admin/inventory');
-  
   // Staff အတွက် Active ဖြစ်/မဖြစ် စစ်ဆေးခြင်း
   const isStaffActive = location.pathname.startsWith('/admin/staff');
 
   const [catalogOpen, setCatalogOpen] = useState<boolean>(true);
-  const [inventoryOpen, setInventoryOpen] = useState<boolean>(true);
   // Staff Dropdown အဖွင့်/အပိတ် အတွက် State
   const [staffOpen, setStaffOpen] = useState<boolean>(true);
 
@@ -168,43 +165,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               </div>
             )}
 
-            {/* Stock Management (Inventory) */}
+            {/* Inventory */}
             {canAccessInventory && (
-              <div className={styles.dropdownGroup}>
-                <button
-                  type="button"
-                  className={`${styles.dropdownToggle} ${
-                    isInventoryActive ? styles.parentActive : ''
-                  }`}
-                  onClick={() => setInventoryOpen(!inventoryOpen)}
-                >
-                  <div className={styles.dropdownLeft}>
-                    <FiBox className={styles.linkIcon} />
-                    <span>Inventory</span>
-                  </div>
-                  <FiChevronDown
-                    className={`${styles.chevron} ${
-                      inventoryOpen ? styles.chevronRotated : ''
-                    }`}
-                  />
-                </button>
-
-                {inventoryOpen && (
-                  <div className={styles.submenu}>
-                    <NavLink to="/admin/inventory" end className={subNavClass}>
-                      <FiBox size={14} className={styles.subIcon} />
-                      <span>Stock Management</span>
-                    </NavLink>
-                    <NavLink
-                      to="/admin/inventory?tab=low-stock"
-                      className={subNavClass}
-                    >
-                      <span className={styles.warningDot} />
-                      <span>Low Stock Alerts</span>
-                    </NavLink>
-                  </div>
-                )}
-              </div>
+              <NavLink to="/admin/inventory" className={navClass}>
+                <FiBox className={styles.linkIcon} />
+                <span>Inventory</span>
+              </NavLink>
             )}
           </>
         )}
