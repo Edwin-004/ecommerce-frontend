@@ -25,7 +25,8 @@ import { ReportsPage } from './features/reports/ReportsPage';
 import { RefundManagementPage } from './features/refunds/RefundManagementPage';
 import './App.css';
 import { ShippingRates } from './features/shipping/ShippingRates';
-import { ToastContainer } from 'react-toastify';
+import AuditLog from './features/auditLog/AuditLog'; // <--- သင့်ဘက်မှ AuditLog Import
+import { ToastContainer } from 'react-toastify'; // <--- main ဘက်မှ ToastContainer Import
 
 function App() {
   return (
@@ -83,7 +84,7 @@ function App() {
               <Route path="/admin/shipping-rates" element={<ShippingRates />} />
             </Route>
 
-            {/* Admin-only Routes: Staff Management & Reports */}
+            {/* Admin-only Routes: Staff Management, Reports & Audit Logs */}
             <Route
               element={
                 <ProtectedRoute
@@ -94,6 +95,7 @@ function App() {
               <Route path="/admin/staff" element={<StaffList />} />
               <Route path="/admin/staff/new" element={<CreateStaff />} />
               <Route path="/admin/reports" element={<ReportsPage />} />
+              <Route path="/admin/audit-logs" element={<AuditLog />} /> {/* <--- AuditLog ကို Admin အောက်တွင် ထည့်ထားသည် */}
             </Route>
 
             {/* Direct /admin redirects to dashboard */}
