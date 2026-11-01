@@ -17,13 +17,14 @@ import CategoryManagement from './features/categories/CategoryManagement';
 import { BrandsPage } from './features/brand/BrandsPage';
 import TagManagement from './features/tags/TagManagement';
 import { StaffList } from "./features/staff/StaffList"; 
-import { CreateStaff } from './features/staff/CreateStaff'; // <--- အသစ်ထည့်ထားသော Import
+import { CreateStaff } from './features/staff/CreateStaff';
 // ---------------------------------------------
 
 import { Profile } from './components/Profile';
 import { ReportsPage } from './features/reports/ReportsPage';
 import './App.css';
 import { ShippingRates } from './features/shipping/ShippingRates';
+import AuditLog from './features/auditLog/AuditLog'; // <--- AuditLog ကို Import လုပ်ထားသည်
 
 function App() {
   return (
@@ -64,7 +65,7 @@ function App() {
 
             {/* Staff Management */}
             <Route path="/admin/staff" element={<StaffList />} />
-            <Route path="/admin/staff/new" element={<CreateStaff />} /> {/* <--- အသစ်ထည့်ထားသော Route */}
+            <Route path="/admin/staff/new" element={<CreateStaff />} /> 
 
             {/* Reports */}
             <Route path="/admin/reports" element={<ReportsPage />} />
@@ -74,6 +75,9 @@ function App() {
 
             {/* Shipping Rates Management */}
             <Route path="/admin/shipping-rates" element={<ShippingRates />} />
+
+            {/* Audit Logs */}
+            <Route path="/admin/audit-logs" element={<AuditLog />} /> {/* <--- Route အသစ်ထည့်ထားသည် */}
 
             {/* တိုက်ရိုက် /admin ဟု ခေါ်ပါက dashboard သို့ လွှဲပေးမည် */}
             <Route

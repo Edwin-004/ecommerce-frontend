@@ -17,6 +17,7 @@ import {
   FiTruck,
   FiUserPlus,
   FiBarChart2,
+  FiFileText, // <-- Audit Log အတွက် အသစ်ထည့်ထားသော Icon
   FiX,
 } from 'react-icons/fi';
 
@@ -236,10 +237,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           )}
         </div>
 
-        {/* Reports & Analytics (Main Branch မှ အသစ်ပါလာသော အပိုင်း) */}
+        {/* Reports & Analytics */}
         <NavLink to="/admin/reports" className={navClass}>
           <FiBarChart2 className={styles.linkIcon} />
           <span>Reports & Analytics</span>
+        </NavLink>
+
+        {/* ================= 4. SYSTEM (Audit Log ထည့်သွင်းထားသည်) ================= */}
+        <div className={styles.navSectionTitle}>SYSTEM</div>
+        <NavLink to="/admin/audit-logs" className={navClass}>
+          <FiFileText className={styles.linkIcon} />
+          <span>Audit Logs</span>
         </NavLink>
       </nav>
     </aside>
