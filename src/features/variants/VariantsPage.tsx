@@ -81,7 +81,7 @@ export const VariantsPage: React.FC = () => {
 
   // Delete Variant
   const handleDeleteVariant = async (variantId: number) => {
-    if (!window.confirm('Are you sure you want to delete this product variant?')) return;
+    if (!window.confirm('Are you sure you want to deactivate this product variant? (Historical orders and stock audit will be safely preserved)')) return;
     try {
       setLoading(true);
       await variantApi.deleteProductVariant(variantId);
@@ -139,7 +139,8 @@ export const VariantsPage: React.FC = () => {
         const q = searchQuery.toLowerCase();
         return (
           (v.sku && v.sku.toLowerCase().includes(q)) ||
-          (v.product?.productName && v.product.productName.toLowerCase().includes(q))
+          (v.product?.productName && v.product.productName.toLowerCase().includes(q)) ||
+          (v.attributeSummary && v.attributeSummary.toLowerCase().includes(q))
         );
       });
   }, [variants, searchQuery]);
@@ -272,7 +273,7 @@ export const VariantsPage: React.FC = () => {
             <tbody>
               {filteredVariants.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className={styles.emptyState}>
+                  <td colSpan={8} className={styles.emptyState}>
                     <FiPackage />
                     <p>No product variants found.</p>
                   </td>
@@ -298,20 +299,22 @@ export const VariantsPage: React.FC = () => {
                       </span>
                     </td>
                     <td>
-                      <div className={styles.actionGroup}>
+                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                         <button
-                          className={`${styles.btnAction} ${styles.btnEdit}`}
+                          type="button"
+                          className="table-btn-edit"
                           onClick={() => setSelectedVariant(v)}
                           title="Edit pricing / status"
                         >
-                          <FiEdit2 /> Edit
+                          <FiEdit2 size={12} /> Edit
                         </button>
                         <button
-                          className={`${styles.btnAction} ${styles.btnDelete}`}
+                          type="button"
+                          className="table-btn-delete"
                           onClick={() => handleDeleteVariant(v.variantId)}
-                          title="Delete variant"
+                          title="Deactivate variant (Soft Delete)"
                         >
-                          <FiTrash2 /> Delete
+                          <FiTrash2 size={12} /> Deactivate
                         </button>
                       </div>
                     </td>

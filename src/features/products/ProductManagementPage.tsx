@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
+import api from '../../utils/axiosConfig';
 import {
   productManagementApi,
   getAssetUrl,
@@ -17,8 +18,14 @@ import {
   FiX,
   FiCheck,
   FiSliders,
+  FiChevronDown,
+  FiDownload,
+  FiFileText,
+  FiCheckCircle,
+  FiUploadCloud,
 } from 'react-icons/fi';
 import { Pagination } from '../../components/common/Pagination';
+import { ExcelImportModal } from './ExcelImportModal';
 
 
 // Color map for swatch rendering
@@ -54,6 +61,14 @@ interface VariationWithOpts {
   options: { optionId: number; value: string }[];
 }
 
+const EXPORT_COLUMNS = [
+  { key: 'productName', label: 'Product' },
+  { key: 'sku', label: 'SKU' },
+  { key: 'price', label: 'Price' },
+  { key: 'stock', label: 'Stock' },
+  { key: 'status', label: 'Status' },
+];
+
 export const ProductManagementPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -70,19 +85,33 @@ export const ProductManagementPage: React.FC = () => {
   const [selectedBrand, setSelectedBrand] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
 
-  // Table selection
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  // Dynamic Export Column Selector state
+  const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>([
+    'productName',
+    'sku',
+    'price',
+    'stock',
+    'status',
+  ]);
+  const [showColumnDropdown, setShowColumnDropdown] = useState<boolean>(false);
+  const columnDropdownRef = useRef<HTMLDivElement>(null);
+  const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [exportingFormat, setExportingFormat] = useState<'pdf' | 'excel' | null>(null);
+  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
-
 
   // View Modal state
   const [viewProduct, setViewProduct] = useState<ProductItem | null>(null);
   const [viewProductImages, setViewProductImages] = useState<any[]>([]);
   const [activeImageIdx, setActiveImageIdx] = useState<number>(0);
   const [viewVariants, setViewVariants] = useState<any[]>([]);
+
+  // Excel Bulk Import Modal state
+  const [showExcelImportModal, setShowExcelImportModal] = useState<boolean>(false);
 
   // New Attribute Modal state
   const [showAttrModal, setShowAttrModal] = useState<boolean>(false);
@@ -104,7 +133,7 @@ export const ProductManagementPage: React.FC = () => {
       Promise.allSettled([
         productManagementApi.getProductImages(viewProduct.productId),
         productManagementApi.getVariantsByProductId(viewProduct.productId),
-      ]).then(([imgsRes, varsRes]) => {
+      ]).then(async ([imgsRes, varsRes]) => {
         if (imgsRes.status === 'fulfilled' && Array.isArray(imgsRes.value)) {
           setViewProductImages(imgsRes.value);
         } else {
@@ -112,7 +141,22 @@ export const ProductManagementPage: React.FC = () => {
         }
 
         if (varsRes.status === 'fulfilled' && Array.isArray(varsRes.value)) {
-          setViewVariants(varsRes.value);
+          const rawVariants = varsRes.value;
+          try {
+            const withImgs = await Promise.all(
+              rawVariants.map(async (v: any) => {
+                try {
+                  const varImgs = await productManagementApi.getVariantImages(v.variantId);
+                  return { ...v, images: Array.isArray(varImgs) ? varImgs : [] };
+                } catch {
+                  return { ...v, images: [] };
+                }
+              })
+            );
+            setViewVariants(withImgs);
+          } catch {
+            setViewVariants(rawVariants);
+          }
         } else {
           setViewVariants([]);
         }
@@ -123,6 +167,75 @@ export const ProductManagementPage: React.FC = () => {
       setActiveImageIdx(0);
     }
   }, [viewProduct]);
+
+  const handleUploadVariantImageModal = async (variantId: number, file: File) => {
+    try {
+      await productManagementApi.uploadProductVariantImage(variantId, file);
+      const updatedImgs = await productManagementApi.getVariantImages(variantId);
+      setViewVariants((prev) =>
+        prev.map((v) => (v.variantId === variantId ? { ...v, images: updatedImgs } : v))
+      );
+    } catch (err) {
+      console.error('Failed to upload variant image:', err);
+      alert('Failed to upload variant image.');
+    }
+  };
+
+  const handleDeleteVariantImageModal = async (variantId: number, imageId: number) => {
+    if (!window.confirm('Are you sure you want to delete this variant image?')) return;
+    try {
+      await productManagementApi.deleteVariantImage(imageId);
+      setViewVariants((prev) =>
+        prev.map((v) =>
+          v.variantId === variantId
+            ? {
+                ...v,
+                images: (v.images || []).filter(
+                  (img: any) => img.productVariantImageId !== imageId
+                ),
+              }
+            : v
+        )
+      );
+    } catch (err) {
+      console.error('Failed to delete variant image:', err);
+      alert('Failed to delete variant image.');
+    }
+  };
+
+  // Click outside to close column dropdown or export menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        columnDropdownRef.current &&
+        !columnDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowColumnDropdown(false);
+      }
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showColumnDropdown || showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnDropdown, showExportMenu]);
+
+  // Auto-dismiss export success message after 5 seconds
+  useEffect(() => {
+    if (exportSuccessMessage) {
+      const timer = setTimeout(() => {
+        setExportSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [exportSuccessMessage]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -251,62 +364,91 @@ export const ProductManagementPage: React.FC = () => {
     currentPage * itemsPerPage
   );
 
-  // Checkbox handlers
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedIds(paginatedProducts.map((p) => p.productId));
-    } else {
-      setSelectedIds([]);
-    }
+  // Dynamic Column Selector handlers
+  const handleToggleColumn = (colKey: string) => {
+    setSelectedExportColumns((prev) => {
+      if (prev.includes(colKey)) {
+        if (prev.length <= 1) {
+          alert('At least one column must be selected for export.');
+          return prev;
+        }
+        return prev.filter((k) => k !== colKey);
+      } else {
+        return [...prev, colKey];
+      }
+    });
   };
 
-  const handleSelectRow = (id: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+  const handleSelectAllColumns = () => {
+    setSelectedExportColumns(EXPORT_COLUMNS.map((c) => c.key));
   };
 
-  // Export CSV
-  const handleExportCsv = () => {
-    const headers = ['Product ID', 'Product Name', 'SKU', 'Price (MMK)', 'Stock', 'Category', 'Brand', 'Status'];
-    const rows = filteredProducts.map((p) => [
-      p.productId,
-      `"${p.productName.replace(/"/g, '""')}"`,
-      p.sku || 'N/A',
-      p.sellingPrice || 0,
-      p.stock || 0,
-      p.categoryName || 'N/A',
-      p.brandName || 'N/A',
-      p.status,
-    ]);
-
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `products_export_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Export PDF / Print
-  const handleExportPdf = () => {
-    window.print();
-  };
-
-  // Bulk Delete
-  const handleDeleteSelected = () => {
-    if (selectedIds.length === 0) {
-      alert('Please select at least one product to delete.');
+  // Dynamic Export (calls backend Stored Procedure with active filters & selected columns)
+  const handleDynamicExport = async (format: 'pdf' | 'excel') => {
+    if (selectedExportColumns.length === 0) {
+      alert('Please select at least one column to export.');
       return;
     }
-    if (confirm(`Are you sure you want to delete ${selectedIds.length} selected product(s)?`)) {
-      setProducts((prev) => prev.filter((p) => !selectedIds.includes(p.productId)));
-      setSelectedIds([]);
+
+    setExportingFormat(format);
+    setExportSuccessMessage(null);
+
+    try {
+      const catObj = categories.find((c) => c.categoryName === selectedCategory);
+      const catId = catObj ? catObj.categoryId : undefined;
+
+      const brandObj = brands.find((b) => b.brandName === selectedBrand);
+      const bId = brandObj ? brandObj.brandId : undefined;
+
+      const params: Record<string, any> = {
+        columns: selectedExportColumns.join(','),
+      };
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (catId) params.categoryId = catId;
+      if (bId) params.brandId = bId;
+      if (selectedStatus) params.status = selectedStatus;
+
+      const response = await api.get(`/reports/products/export/${format}`, {
+        params,
+        responseType: 'blob',
+      });
+
+      const contentType =
+        format === 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      const blob = new Blob([response.data], { type: contentType });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const ext = format === 'excel' ? 'xlsx' : 'pdf';
+      const filename = `products_export_${todayStr}.${ext}`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      // Show prominent success notification
+      setExportSuccessMessage(`Downloaded: ${filename} (${selectedExportColumns.length} columns)`);
+    } catch (err: any) {
+      console.error(`Export ${format.toUpperCase()} error:`, err);
+      alert(`Failed to export ${format.toUpperCase()}. Please check your connection or login session.`);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
+  // Single Product Delete
+  const handleDeleteSingle = async (productId: number, productName: string) => {
+    if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
+    try {
+      await productManagementApi.deleteProduct(productId);
+      setProducts((prev) => prev.filter((p) => p.productId !== productId));
+    } catch {
+      setProducts((prev) => prev.filter((p) => p.productId !== productId));
     }
   };
 
@@ -426,6 +568,42 @@ export const ProductManagementPage: React.FC = () => {
 
   return (
     <div className={styles.dashboardContainer}>
+      {/* Exporting In-Progress Floating Banner */}
+      {exportingFormat && (
+        <div className={styles.exportProgressBanner}>
+          <div className={styles.exportProgressSpinner} />
+          <div className={styles.exportProgressContent}>
+            <span className={styles.exportProgressTitle}>
+              Generating {exportingFormat === 'pdf' ? 'PDF Report' : 'Excel Document'}...
+            </span>
+            <span className={styles.exportProgressSubtitle}>
+              Building dynamic columns & corporate layout. Your download will start shortly.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Export Success Floating Toast */}
+      {exportSuccessMessage && (
+        <div className={styles.exportSuccessToast}>
+          <div className={styles.exportSuccessIcon}>
+            <FiCheckCircle size={20} />
+          </div>
+          <div className={styles.exportSuccessContent}>
+            <span className={styles.exportSuccessTitle}>Export Successful!</span>
+            <span className={styles.exportSuccessSubtitle}>{exportSuccessMessage}</span>
+          </div>
+          <button
+            type="button"
+            className={styles.exportToastClose}
+            onClick={() => setExportSuccessMessage(null)}
+            title="Dismiss"
+          >
+            <FiX size={15} />
+          </button>
+        </div>
+      )}
+
       {/* 1. Header (Catalogue Tag + Title + Subtitle + Add Product Button) */}
       <div className={styles.managementHeaderRow}>
         <div className={styles.managementHeaderLeft}>
@@ -433,13 +611,38 @@ export const ProductManagementPage: React.FC = () => {
           <h1>Product Management</h1>
           <p>Manage inventory, pricing, and product attributes.</p>
         </div>
-        <button
-          className={styles.btnAddProductPurple}
-          onClick={() => navigate('/admin/products/new')}
-        >
-          <FiPlus size={16} />
-          Add Product
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            type="button"
+            style={{
+              padding: '9px 16px',
+              fontSize: '13px',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              border: '1px solid #c7d2fe',
+              background: '#eef2ff',
+              color: '#4338ca',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onClick={() => setShowExcelImportModal(true)}
+            title="Upload products in bulk from Excel (.xlsx)"
+          >
+            <FiUploadCloud size={16} />
+            Import Excel
+          </button>
+
+          <button
+            className={styles.btnAddProductPurple}
+            onClick={() => navigate('/admin/products/new')}
+          >
+            <FiPlus size={16} />
+            Add Product
+          </button>
+        </div>
       </div>
 
       {/* 2. 3 Metric Summary Cards */}
@@ -453,8 +656,10 @@ export const ProductManagementPage: React.FC = () => {
           <div className={styles.metricSummaryCardValue}>{filteredProducts.length}</div>
         </div>
         <div className={styles.metricSummaryCard}>
-          <div className={styles.metricSummaryCardLabel}>Selected</div>
-          <div className={styles.metricSummaryCardValue}>{selectedIds.length}</div>
+          <div className={styles.metricSummaryCardLabel}>Active Products</div>
+          <div className={styles.metricSummaryCardValue}>
+            {products.filter((p) => p.status?.toUpperCase() === 'ACTIVE').length}
+          </div>
         </div>
       </div>
 
@@ -531,37 +736,108 @@ export const ProductManagementPage: React.FC = () => {
         </div>
 
         <div className={styles.filterActionsBar}>
-          <button
-            className={styles.btnActionItem}
-            disabled={selectedIds.length !== 1}
-            onClick={() => {
-              if (selectedIds.length === 1) {
-                navigate(`/admin/products/edit/${selectedIds[0]}`);
-              }
-            }}
-          >
-            <FiEdit2 size={12} />
-            Edit
-          </button>
+          {/* Column Selector Popover */}
+          <div className={styles.columnSelectorContainer} ref={columnDropdownRef}>
+            <button
+              type="button"
+              className={styles.btnActionItem}
+              onClick={() => setShowColumnDropdown((prev) => !prev)}
+              title="Select columns to export"
+            >
+              <FiSliders size={12} />
+              Columns ({selectedExportColumns.length}/5)
+            </button>
 
+            {showColumnDropdown && (
+              <div className={styles.columnDropdownMenu}>
+                <div className={styles.columnDropdownHeader}>
+                  <span className={styles.columnDropdownTitle}>Export Columns</span>
+                  <button
+                    type="button"
+                    className={styles.columnDropdownAction}
+                    onClick={handleSelectAllColumns}
+                  >
+                    Select All
+                  </button>
+                </div>
+                <div className={styles.columnCheckboxList}>
+                  {EXPORT_COLUMNS.map((col) => (
+                    <label key={col.key} className={styles.columnCheckboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={selectedExportColumns.includes(col.key)}
+                        onChange={() => handleToggleColumn(col.key)}
+                      />
+                      <span>{col.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
-          <button
-            className={styles.btnActionItem}
-            disabled={selectedIds.length === 0}
-            onClick={handleDeleteSelected}
-            style={{ color: selectedIds.length > 0 ? '#ef4444' : undefined }}
-          >
-            <FiTrash2 size={12} />
-            Delete
-          </button>
+          {/* Unified Export Dropdown */}
+          <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
+            <button
+              type="button"
+              className={`${styles.btnActionItem} ${exportingFormat ? styles.btnActionExporting : ''}`}
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              disabled={!!exportingFormat}
+              title="Export filtered products as PDF or Excel"
+            >
+              {exportingFormat ? (
+                <>
+                  <span className={styles.exportSpinner} />
+                  Exporting {exportingFormat.toUpperCase()}...
+                </>
+              ) : (
+                <>
+                  <FiDownload size={12} />
+                  Export
+                  <FiChevronDown size={12} style={{ marginLeft: 2 }} />
+                </>
+              )}
+            </button>
 
-          <button className={styles.btnActionItem} onClick={handleExportCsv}>
-            Export CSV
-          </button>
+            {showExportMenu && !exportingFormat && (
+              <div className={styles.exportDropdownMenu}>
+                <div className={styles.exportDropdownHeader}>Export As</div>
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    handleDynamicExport('excel');
+                  }}
+                >
+                  <div className={styles.exportMenuIconExcel}>
+                    <FiFileText size={16} />
+                  </div>
+                  <div className={styles.exportMenuText}>
+                    <span className={styles.exportMenuTitle}>Excel Document</span>
+                    <span className={styles.exportMenuSub}>Spreadsheet (.xlsx)</span>
+                  </div>
+                </button>
 
-          <button className={styles.btnActionItem} onClick={handleExportPdf}>
-            Export PDF
-          </button>
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    handleDynamicExport('pdf');
+                  }}
+                >
+                  <div className={styles.exportMenuIconPdf}>
+                    <FiFileText size={16} />
+                  </div>
+                  <div className={styles.exportMenuText}>
+                    <span className={styles.exportMenuTitle}>PDF Document</span>
+                    <span className={styles.exportMenuSub}>Corporate Report (.pdf)</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -570,16 +846,6 @@ export const ProductManagementPage: React.FC = () => {
         <table className={styles.productTable}>
           <thead>
             <tr>
-              <th style={{ width: '40px', textAlign: 'center' }}>
-                <input
-                  type="checkbox"
-                  checked={
-                    paginatedProducts.length > 0 &&
-                    paginatedProducts.every((p) => selectedIds.includes(p.productId))
-                  }
-                  onChange={handleSelectAll}
-                />
-              </th>
               <th>PRODUCT</th>
               <th>SKU</th>
               <th>PRICE</th>
@@ -591,13 +857,13 @@ export const ProductManagementPage: React.FC = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '36px' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '36px' }}>
                   Loading catalog products...
                 </td>
               </tr>
             ) : paginatedProducts.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ padding: '0', border: 'none' }}>
+                <td colSpan={6} style={{ padding: '0', border: 'none' }}>
                   <div className={styles.emptyStateBox}>
                     <div className={styles.emptyStateSmallTag}>NOTHING HERE YET</div>
                     <h3 className={styles.emptyStateBigTitle}>No products found</h3>
@@ -607,16 +873,8 @@ export const ProductManagementPage: React.FC = () => {
               </tr>
             ) : (
               paginatedProducts.map((p) => {
-                const isSelected = selectedIds.includes(p.productId);
                 return (
-                  <tr key={p.productId} style={{ background: isSelected ? '#f8fafc' : undefined }}>
-                    <td style={{ textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleSelectRow(p.productId)}
-                      />
-                    </td>
+                  <tr key={p.productId}>
                     <td>
                       <div className={styles.productCell}>
                         {p.imageUrl ? (
@@ -677,6 +935,15 @@ export const ProductManagementPage: React.FC = () => {
                         >
                           <FiEdit2 size={12} />
                           Edit
+                        </button>
+                        <button
+                          className={styles.btnViewAction}
+                          style={{ borderColor: '#fecaca', color: '#dc2626', background: '#fef2f2' }}
+                          onClick={() => handleDeleteSingle(p.productId, p.productName)}
+                          title="Delete Product"
+                        >
+                          <FiTrash2 size={12} />
+                          Delete
                         </button>
                       </div>
                     </td>
@@ -814,7 +1081,7 @@ export const ProductManagementPage: React.FC = () => {
             style={{
               background: 'white',
               borderRadius: '16px',
-              width: '540px',
+              width: '640px',
               maxWidth: '100%',
               maxHeight: '90vh',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -996,35 +1263,161 @@ export const ProductManagementPage: React.FC = () => {
               )}
             </div>
 
-            {/* Associated Variants / SKUs Breakdown */}
+            {/* Associated Variants / Attributes Cards with Image Editing */}
             {viewVariants.length > 0 && (
-              <div style={{ marginTop: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Product Variants & SKUs ({viewVariants.length})
+              <div style={{ marginTop: '18px', borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Product Variants ({viewVariants.length})
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    View &amp; Edit Variant Photos
+                  </span>
                 </div>
-                <div style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                  <table style={{ width: '100%', fontSize: '12px', textAlign: 'left', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ background: '#f8fafc', color: '#64748b', borderBottom: '1px solid #e2e8f0' }}>
-                        <th style={{ padding: '6px 10px' }}>SKU</th>
-                        <th style={{ padding: '6px 10px' }}>Price</th>
-                        <th style={{ padding: '6px 10px' }}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {viewVariants.map((v) => (
-                        <tr key={v.variantId} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '6px 10px', fontFamily: 'monospace', color: '#2563eb' }}>{v.sku}</td>
-                          <td style={{ padding: '6px 10px', fontWeight: 600 }}>
+                <div style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px' }}>
+                  {viewVariants.map((v) => (
+                    <div
+                      key={v.variantId}
+                      style={{
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '10px',
+                        padding: '12px 14px',
+                        background: '#f8fafc',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#2563eb', fontSize: '13px' }}>
+                              {v.sku}
+                            </span>
+                            <span className={styles.statusPillActive} style={{ fontSize: '11px' }}>
+                              ● {v.status}
+                            </span>
+                          </div>
+                          {/* Attribute Badges (Size, Color, etc.) */}
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                            {v.attributeSummary ? (
+                              v.attributeSummary.split('|').map((part: string, idx: number) => (
+                                <span
+                                  key={idx}
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    padding: '2px 8px',
+                                    background: '#e0e7ff',
+                                    color: '#4338ca',
+                                    borderRadius: '6px',
+                                  }}
+                                >
+                                  {part.trim()}
+                                </span>
+                              ))
+                            ) : (
+                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Standard variant</span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '13px' }}>
                             {Number(v.sellingPrice || 0).toLocaleString()} MMK
-                          </td>
-                          <td style={{ padding: '6px 10px' }}>
-                            <span className={styles.statusPillActive}>● {v.status}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Variant Images List & Upload */}
+                      <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '8px', marginTop: '6px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>
+                          Variant Photos ({v.images?.length || 0})
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          {v.images && v.images.length > 0 ? (
+                            v.images.map((img: any) => (
+                              <div
+                                key={img.productVariantImageId}
+                                style={{ position: 'relative', display: 'inline-block' }}
+                              >
+                                <img
+                                  src={getAssetUrl(img.imageUrl)}
+                                  alt="variant"
+                                  style={{
+                                    width: '42px',
+                                    height: '42px',
+                                    objectFit: 'cover',
+                                    borderRadius: '6px',
+                                    border: '1px solid #cbd5e1',
+                                    display: 'block',
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteVariantImageModal(v.variantId, img.productVariantImageId)}
+                                  title="Delete this variant image"
+                                  style={{
+                                    position: 'absolute',
+                                    top: '-5px',
+                                    right: '-5px',
+                                    width: '16px',
+                                    height: '16px',
+                                    borderRadius: '50%',
+                                    background: '#ef4444',
+                                    color: '#fff',
+                                    border: '2px solid #fff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '9px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    lineHeight: 1,
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+                              No photos for this variant
+                            </span>
+                          )}
+
+                          {/* Upload photo button for this variant */}
+                          <label
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              border: '1px dashed #6366f1',
+                              color: '#6366f1',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              background: '#ffffff',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <FiPlus size={12} /> Add Photo
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                  handleUploadVariantImageModal(v.variantId, e.target.files[0]);
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -1275,6 +1668,15 @@ export const ProductManagementPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* MODAL: Bulk Import Products via Excel */}
+      <ExcelImportModal
+        isOpen={showExcelImportModal}
+        onClose={() => setShowExcelImportModal(false)}
+        onImportSuccess={() => {
+          fetchInitialData();
+        }}
+      />
     </div>
   );
 };

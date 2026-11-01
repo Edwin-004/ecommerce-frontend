@@ -11,6 +11,7 @@ import {
   type BrandRequest,
   type BrandStatus,
 } from './brandApi';
+import { FiImage, FiUpload, FiCheck } from 'react-icons/fi';
 
 const API_BASE_URL = 'http://localhost:8080';
 
@@ -262,7 +263,7 @@ export function BrandModal({
                       style={{ objectFit: 'contain' }}
                     />
                   ) : (
-                    <i className="bi bi-image fs-2 text-secondary" />
+                    <FiImage size={32} className="text-secondary" />
                   )}
                 </div>
 
@@ -271,7 +272,7 @@ export function BrandModal({
                     htmlFor="brandLogo"
                     className="btn btn-outline-primary btn-sm"
                   >
-                    <i className="bi bi-upload me-2" />
+                    <FiUpload size={14} className="me-2" />
                     Upload Logo
                   </label>
 
@@ -464,7 +465,7 @@ export function BrandModal({
                   </>
                 ) : (
                   <>
-                    <i className="bi bi-check-lg me-2" />
+                    <FiCheck size={16} className="me-2" />
                     {brand ? 'Save Changes' : 'Create Brand'}
                   </>
                 )}

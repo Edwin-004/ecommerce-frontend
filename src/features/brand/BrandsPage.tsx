@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 import {
   type Brand,
@@ -14,11 +14,34 @@ import {
   BrandModal,
   type Category,
 } from './BrandModels';
+import {
+  FiPlus,
+  FiTag,
+  FiCheckCircle,
+  FiPauseCircle,
+  FiSearch,
+  FiX,
+  FiInbox,
+  FiEdit2,
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronDown,
+  FiChevronUp,
+} from 'react-icons/fi';
+import { apiFetch } from '../../utils/api';
 
 import styles from './Brands.module.css';
+import api from '../../utils/axiosConfig';
 
 const API_BASE_URL = 'http://localhost:8080';
 const PAGE_SIZE = 10;
+
+const EXPORT_COLUMNS = [
+  { key: 'brandName', label: 'Brand' },
+  { key: 'categoryName', label: 'Category' },
+  { key: 'description', label: 'Description' },
+  { key: 'status', label: 'Status' },
+];
 
 // =====================================================
 // LOGO URL
@@ -42,25 +65,19 @@ const getLogoUrl = (
 };
 
 // =====================================================
-// CATEGORY API
+// CATEGORY API (apiFetch ကို အသုံးပြုရန် ပြင်ဆင်ထားသည်)
 // =====================================================
 
 const getCategories = async (): Promise<Category[]> => {
-  const response = await fetch(
-    `${API_BASE_URL}/api/backoffice/categories?page=0&size=1000&sort=categoryName,asc`
+  const response = await apiFetch<any>(
+    '/api/backoffice/categories?page=0&size=1000&sort=categoryName,asc'
   );
 
-  if (!response.ok) {
-    throw new Error('Failed to load categories');
+  if (Array.isArray(response)) {
+    return response;
   }
 
-  const data = await response.json();
-
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  return data.content ?? [];
+  return response.content ?? [];
 };
 
 // =====================================================
@@ -79,7 +96,21 @@ export function BrandsPage() {
   // Search and status
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [status, setStatus] = useState<BrandStatus | ''>('');
+  const [status, setStatus] = useState<BrandStatus | 'ALL'>('ALL');
+
+  // Dynamic Export Column Selector state
+  const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>([
+    'brandName',
+    'categoryName',
+    'description',
+    'status',
+  ]);
+  const [showColumnDropdown, setShowColumnDropdown] = useState<boolean>(false);
+  const columnDropdownRef = useRef<HTMLDivElement>(null);
+  const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [exportingFormat, setExportingFormat] = useState<'pdf' | 'excel' | null>(null);
+  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
 
   // Sorting
   const [sortBy, setSortBy] = useState('brandName');
@@ -162,7 +193,7 @@ export function BrandsPage() {
           page,
           PAGE_SIZE,
           debouncedSearch,
-          status,
+          status === 'ALL' ? '' : status,
           sortBy,
           sortDir
         );
@@ -197,6 +228,122 @@ export function BrandsPage() {
   }, [page, debouncedSearch, status, sortBy, sortDir]);
 
   // =====================================================
+  // CLICK OUTSIDE TO CLOSE DROPDOWNS
+  // =====================================================
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        columnDropdownRef.current &&
+        !columnDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowColumnDropdown(false);
+      }
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showColumnDropdown || showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnDropdown, showExportMenu]);
+
+  // =====================================================
+  // AUTO-DISMISS EXPORT SUCCESS MESSAGE
+  // =====================================================
+
+  useEffect(() => {
+    if (exportSuccessMessage) {
+      const timer = setTimeout(() => {
+        setExportSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [exportSuccessMessage]);
+
+  // =====================================================
+  // DYNAMIC COLUMN SELECTOR HANDLERS
+  // =====================================================
+
+  const handleToggleColumn = (colKey: string) => {
+    setSelectedExportColumns((prev) => {
+      if (prev.includes(colKey)) {
+        if (prev.length <= 1) {
+          alert('At least one column must be selected for export.');
+          return prev;
+        }
+        return prev.filter((k) => k !== colKey);
+      } else {
+        return [...prev, colKey];
+      }
+    });
+  };
+
+  const handleSelectAllColumns = () => {
+    setSelectedExportColumns(EXPORT_COLUMNS.map((c) => c.key));
+  };
+
+  // =====================================================
+  // DYNAMIC EXPORT (PDF & EXCEL)
+  // =====================================================
+
+  const handleDynamicExport = async (format: 'pdf' | 'excel') => {
+    if (selectedExportColumns.length === 0) {
+      alert('Please select at least one column to export.');
+      return;
+    }
+
+    setExportingFormat(format);
+    setExportSuccessMessage(null);
+
+    try {
+      const params: Record<string, any> = {
+        columns: selectedExportColumns.join(','),
+        status: status || 'ALL',
+      };
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      const response = await api.get(`/reports/brands/export/${format}`, {
+        params,
+        responseType: 'blob',
+      });
+
+      const contentType =
+        format === 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      const blob = new Blob([response.data], { type: contentType });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const ext = format === 'excel' ? 'xlsx' : 'pdf';
+      const filename = `brand_management_report_${todayStr}.${ext}`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      setExportSuccessMessage(`Downloaded: ${filename} (${selectedExportColumns.length} columns)`);
+    } catch (err: any) {
+      console.error(`Export ${format.toUpperCase()} error:`, err);
+      alert(`Failed to export ${format.toUpperCase()}. Please check your connection or login session.`);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
+  // =====================================================
   // SORT
   // =====================================================
 
@@ -228,7 +375,7 @@ export function BrandsPage() {
   // =====================================================
 
   const handleStatusChange = (value: string) => {
-    setStatus(value as BrandStatus | '');
+    setStatus(value as BrandStatus | 'ALL');
     setPage(0);
   };
 
@@ -356,14 +503,14 @@ export function BrandsPage() {
   const renderSortIcon = (field: string) => {
     if (sortBy !== field) {
       return (
-        <i className="bi bi-arrow-down-up text-muted ms-1 small" />
+        <FiChevronDown size={14} className="text-muted ms-1" />
       );
     }
 
     return sortDir === 'asc' ? (
-      <i className="bi bi-sort-alpha-down ms-1 text-primary" />
+      <FiChevronDown size={14} className="ms-1 text-primary" />
     ) : (
-      <i className="bi bi-sort-alpha-up-alt ms-1 text-primary" />
+      <FiChevronUp size={14} className="ms-1 text-primary" />
     );
   };
 
@@ -373,6 +520,42 @@ export function BrandsPage() {
 
   return (
     <div className={styles.page}>
+      {/* Floating Export Progress Notification */}
+      {exportingFormat && (
+        <div className={styles.exportProgressBanner}>
+          <div className={styles.exportProgressSpinner} />
+          <div className={styles.exportProgressContent}>
+            <div className={styles.exportProgressTitle}>
+              Exporting Brand Report ({exportingFormat.toUpperCase()})...
+            </div>
+            <div className={styles.exportProgressSub}>
+              Generating report with {selectedExportColumns.length} selected column(s)
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Export Success Notification */}
+      {exportSuccessMessage && (
+        <div className={styles.exportSuccessBanner}>
+          <div className={styles.exportSuccessIcon}>
+            <i className="bi bi-check-lg" />
+          </div>
+          <div className={styles.exportSuccessContent}>
+            <div className={styles.exportSuccessTitle}>Export Successful</div>
+            <div className={styles.exportSuccessSub}>{exportSuccessMessage}</div>
+          </div>
+          <button
+            type="button"
+            className={styles.exportCloseBtn}
+            onClick={() => setExportSuccessMessage(null)}
+            title="Dismiss"
+          >
+            <i className="bi bi-x-lg" />
+          </button>
+        </div>
+      )}
+
       <div className="container-fluid px-4 py-4">
 
         {/* HEADER */}
@@ -393,7 +576,7 @@ export function BrandsPage() {
             onClick={openCreate}
             disabled={loading || categoryLoading || saving}
           >
-            <i className="bi bi-plus-lg me-2" />
+            <FiPlus size={16} className="me-2" />
             Add Brand
           </button>
         </div>
@@ -405,7 +588,7 @@ export function BrandsPage() {
             <div className={`${styles.statCard} card border-0 shadow-sm`}>
               <div className="card-body d-flex align-items-center">
                 <div className={`${styles.statIcon} ${styles.purple}`}>
-                  <i className="bi bi-tags" />
+                  <FiTag size={20} />
                 </div>
 
                 <div>
@@ -425,7 +608,7 @@ export function BrandsPage() {
             <div className={`${styles.statCard} card border-0 shadow-sm`}>
               <div className="card-body d-flex align-items-center">
                 <div className={`${styles.statIcon} ${styles.green}`}>
-                  <i className="bi bi-check-circle" />
+                  <FiCheckCircle size={20} />
                 </div>
 
                 <div>
@@ -445,7 +628,7 @@ export function BrandsPage() {
             <div className={`${styles.statCard} card border-0 shadow-sm`}>
               <div className="card-body d-flex align-items-center">
                 <div className={`${styles.statIcon} ${styles.orange}`}>
-                  <i className="bi bi-pause-circle" />
+                  <FiPauseCircle size={20} />
                 </div>
 
                 <div>
@@ -469,11 +652,11 @@ export function BrandsPage() {
           {/* TOOLBAR */}
 
           <div className="card-header bg-white border-0 p-3">
-            <div className="row g-2">
+            <div className="row g-2 align-items-center">
               <div className="col-md">
                 <div className="input-group">
                   <span className="input-group-text bg-white">
-                    <i className="bi bi-search" />
+                    <FiSearch size={15} />
                   </span>
 
                   <input
@@ -493,7 +676,7 @@ export function BrandsPage() {
                       onClick={handleClearSearch}
                       aria-label="Clear search"
                     >
-                      <i className="bi bi-x-lg" />
+                      <FiX size={14} />
                     </button>
                   )}
                 </div>
@@ -507,11 +690,121 @@ export function BrandsPage() {
                     handleStatusChange(event.target.value)
                   }
                 >
-                  <option value="">All Status</option>
+                  <option value="ALL">All Status</option>
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
                 </select>
               </div>
+
+              {/* Column Selector Popover */}
+              <div className="col-md-auto">
+                <div className={styles.columnSelectorContainer} ref={columnDropdownRef}>
+                  <button
+                    type="button"
+                    className={styles.btnActionItem}
+                    onClick={() => setShowColumnDropdown((prev) => !prev)}
+                    title="Select columns to export"
+                  >
+                    <i className="bi bi-sliders text-secondary" />
+                    <span>Columns ({selectedExportColumns.length}/4)</span>
+                  </button>
+
+                  {showColumnDropdown && (
+                    <div className={styles.columnDropdownMenu}>
+                      <div className={styles.columnDropdownHeader}>
+                        <span className={styles.columnDropdownTitle}>Export Columns</span>
+                        <button
+                          type="button"
+                          className={styles.columnDropdownAction}
+                          onClick={handleSelectAllColumns}
+                        >
+                          Select All
+                        </button>
+                      </div>
+
+                      <div className={styles.columnCheckboxList}>
+                        {EXPORT_COLUMNS.map((col) => (
+                          <label key={col.key} className={styles.columnCheckboxLabel}>
+                            <input
+                              type="checkbox"
+                              checked={selectedExportColumns.includes(col.key)}
+                              onChange={() => handleToggleColumn(col.key)}
+                            />
+                            <span>{col.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Export Dropdown Menu */}
+              <div className="col-md-auto">
+                <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
+                  <button
+                    type="button"
+                    className={`${styles.btnActionItem} ${exportingFormat ? styles.btnActionExporting : ''}`}
+                    onClick={() => setShowExportMenu((prev) => !prev)}
+                    disabled={!!exportingFormat}
+                    title="Export filtered brands as PDF or Excel"
+                  >
+                    {exportingFormat ? (
+                      <>
+                        <span className={styles.exportSpinner} />
+                        <span>Exporting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-download text-primary" />
+                        <span>Export</span>
+                        <i className="bi bi-chevron-down text-muted small" />
+                      </>
+                    )}
+                  </button>
+
+                  {showExportMenu && !exportingFormat && (
+                    <div className={styles.exportDropdownMenu}>
+                      <div className={styles.exportDropdownHeader}>Export As</div>
+
+                      <button
+                        type="button"
+                        className={styles.exportMenuItem}
+                        onClick={() => {
+                          setShowExportMenu(false);
+                          void handleDynamicExport('excel');
+                        }}
+                      >
+                        <div className={styles.exportMenuIconExcel}>
+                          <i className="bi bi-file-earmark-excel fs-5" />
+                        </div>
+                        <div className={styles.exportMenuText}>
+                          <span className={styles.exportMenuTitle}>Excel Spreadsheet</span>
+                          <span className={styles.exportMenuSub}>.xlsx format</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={styles.exportMenuItem}
+                        onClick={() => {
+                          setShowExportMenu(false);
+                          void handleDynamicExport('pdf');
+                        }}
+                      >
+                        <div className={styles.exportMenuIconPdf}>
+                          <i className="bi bi-file-earmark-pdf fs-5" />
+                        </div>
+                        <div className={styles.exportMenuText}>
+                          <span className={styles.exportMenuTitle}>PDF Document</span>
+                          <span className={styles.exportMenuSub}>Standard PDF report</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -565,7 +858,7 @@ export function BrandsPage() {
                 ) : brands.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-5">
-                      <i className="bi bi-inbox fs-1 text-secondary" />
+                      <FiInbox size={36} className="text-secondary" />
 
                       <h6 className="mt-3">
                         No brands found
@@ -657,12 +950,12 @@ export function BrandsPage() {
                         <td>
                           {brand.status === 'ACTIVE' ? (
                             <span className="badge rounded-pill text-bg-success">
-                              <i className="bi bi-check-circle me-1" />
+                              <FiCheckCircle size={12} className="me-1" />
                               Active
                             </span>
                           ) : (
                             <span className="badge rounded-pill text-bg-secondary">
-                              <i className="bi bi-pause-circle me-1" />
+                              <FiPauseCircle size={12} className="me-1" />
                               Inactive
                             </span>
                           )}
@@ -672,13 +965,14 @@ export function BrandsPage() {
 
                         <td className="text-end px-4">
                           <button
-                            className="btn btn-sm btn-light"
+                            type="button"
+                            className="table-btn-edit"
                             onClick={() => openEdit(brand)}
-                            title="Edit"
+                            title="Edit Brand"
                             aria-label={`Edit ${brand.brandName}`}
                             disabled={saving}
                           >
-                            <i className="bi bi-pencil" />
+                            <FiEdit2 size={12} /> Edit
                           </button>
                         </td>
                       </tr>
@@ -706,7 +1000,7 @@ export function BrandsPage() {
                   }
                   aria-label="Previous page"
                 >
-                  <i className="bi bi-chevron-left" />
+                  <FiChevronLeft size={16} />
                 </button>
 
                 <button
@@ -717,7 +1011,7 @@ export function BrandsPage() {
                   }
                   aria-label="Next page"
                 >
-                  <i className="bi bi-chevron-right" />
+                  <FiChevronRight size={16} />
                 </button>
               </div>
             </div>
@@ -738,4 +1032,3 @@ export function BrandsPage() {
     </div>
   );
 }
-

@@ -58,4 +58,50 @@ export const inventoryApi = {
   // Get transactions for a specific variant
   getVariantTransactions: (variantId: number) =>
     apiFetch<InventoryTransaction[]>(`/api/backoffice/inventory/transactions/variant/${variantId}`),
+  // Dynamic Column Export (PDF & Excel)
+  exportInventoryReport: async (
+    format: 'pdf' | 'excel',
+    params: {
+      tabFilter?: string;
+      search?: string;
+      status?: string;
+      columns?: string[];
+    }
+  ): Promise<Blob> => {
+    const token = localStorage.getItem('token');
+    const query = new URLSearchParams();
+    if (params.tabFilter) {
+      query.append('tabFilter', params.tabFilter);
+    }
+    if (params.search && params.search.trim()) {
+      query.append('search', params.search.trim());
+    }
+    if (params.status && params.status !== 'ALL') {
+      query.append('status', params.status);
+    } else {
+      query.append('status', 'ALL');
+    }
+    if (params.columns && params.columns.length > 0) {
+      query.append('columns', params.columns.join(','));
+    }
+
+    const url = `http://localhost:8080/api/v1/reports/inventory/export/${format}?${query.toString()}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!response.ok) {
+      let errorMsg = `Export failed with HTTP ${response.status}`;
+      try {
+        const errorText = await response.text();
+        if (errorText) errorMsg = errorText;
+      } catch {
+        // ignore
+      }
+      throw new Error(errorMsg);
+    }
+
+    return response.blob();
+  },
 };

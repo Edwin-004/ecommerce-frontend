@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-toastify';
 import {
   useGetLocationsQuery,
   useCreateZoneGroupMutation,
+  useGetZoneGroupsQuery,
+  useGetAssignedTownshipsQuery,
 } from './shippingApi';
 import styles from './AddNewZoneModal.module.css';
 
@@ -17,23 +20,35 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
   // ၁။ Master Data ဆွဲထုတ်ရန် Hook
   const { data: locations = [], isLoading: isLocationsLoading } =
     useGetLocationsQuery();
+
   // ၂။ Zone အသစ်ဆောက်ရန် Mutation Hook
   const [createZoneGroup, { isLoading: isSubmitting }] =
     useCreateZoneGroupMutation();
+
+  const { data: existingZones = [] } = useGetZoneGroupsQuery();
 
   // Form State များ
   const [zoneName, setZoneName] = useState('');
   const [zoneCode, setZoneCode] = useState('');
   const [selectedRegionOrState, setSelectedRegionOrState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
-  const [isCityDefault, setIsCityDefault] = useState(false);
   const [selectedTownships, setSelectedTownships] = useState<string[]>([]);
   const [shippingFee, setShippingFee] = useState<number>(0);
   const [estimatedDays, setEstimatedDays] = useState<number>(1);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [enableDefaultRate, setEnableDefaultRate] = useState(false);
+  const [defaultShippingFee, setDefaultShippingFee] = useState<number>(0);
+  const [defaultEstimatedDays, setDefaultEstimatedDays] = useState<number>(1);
+
+  //အသစ်ထပ်ထည့်ရန် - ရွေးချယ်ထားသော မြို့အတွက် Default Zone (isCityDefault = true) ရှိပြီးသားလား စစ်ဆေးမည်
+  const isDefaultAlreadyExists = existingZones.some((zone) => {
+    const isDefault =
+      zone.isCityDefault === true || (zone as any).cityDefault === true;
+
+    return zone.city?.trim() === selectedCity?.trim() && isDefault;
+  });
 
   // Dropdown အပြင်ဘက်ကို နှိပ်လိုက်ပါက ပိတ်သွားစေရန်
   useEffect(() => {
@@ -57,10 +72,18 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
     ? currentRegionData.townships
     : [];
 
+  const { data: assignedTownships = [] } = useGetAssignedTownshipsQuery(
+    selectedCity,
+    {
+      skip: !selectedCity,
+    }
+  );
+
   // Search လုပ်ထားသော မြို့နယ်စာရင်း
   const filteredTownships = availableTownships.filter(
     (t) =>
       !selectedTownships.includes(t) &&
+      !assignedTownships.includes(t) &&
       t.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -90,10 +113,9 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
   // Form Submit လုပ်သည့်အခါ
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
 
     if (!zoneName || !selectedRegionOrState || !shippingFee) {
-      setErrorMessage('ကျေးဇူးပြု၍ လိုအပ်သော အချက်အလက်များကို ဖြည့်စွက်ပါ။');
+      toast.error('Please fill in all required fields.');
       return;
     }
 
@@ -103,23 +125,37 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
         zoneCode: zoneCode,
         regionOrState: selectedRegionOrState,
         city: selectedCity,
-        townships: isCityDefault ? [] : selectedTownships,
+        townships: selectedTownships,
         shippingFee: Number(shippingFee),
         estimatedDays: Number(estimatedDays),
+        hasDefaultRate: !isDefaultAlreadyExists && enableDefaultRate,
+        defaultShippingFee: enableDefaultRate
+          ? Number(defaultShippingFee)
+          : undefined,
+        defaultEstimatedDays: enableDefaultRate
+          ? Number(defaultEstimatedDays)
+          : undefined,
       }).unwrap();
 
       // အောင်မြင်ပါက Modal ပိတ်ပြီး Form ကို ရှင်းလင်းမည်
+      toast.success(' New delivery zone created successfully!');
       onClose();
       setZoneName('');
       setSelectedRegionOrState('');
-      setIsCityDefault(false);
       setSelectedTownships([]);
       setShippingFee(0);
       setEstimatedDays(1);
     } catch (err: any) {
-      setErrorMessage(
-        err?.data?.message || 'Zone အသစ် ဖန်တီးရာတွင် အမှားအယွင်း ရှိ နေပါသည်။'
-      );
+      const backendMessage =
+        err?.data?.message || // မင်းရဲ့ ErrorResponse ထဲက message
+        err?.data?.error || // Spring Boot ရဲ့ Default Error
+        err?.message || // General JS Error
+        'There was an error while creating the zone. Please try again.';
+
+      toast.error(backendMessage, {
+        position: 'top-right', // ညာဘက် အပေါ်ထောင့်တွင် ပေါ်မည်
+        autoClose: 4000, // ၄ စက္ကန့်ကြာလျှင် အလိုလို ပျောက်သွားမည်
+      });
     }
   };
 
@@ -132,10 +168,6 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
             &times;
           </button>
         </div>
-
-        {errorMessage && (
-          <div className={styles.errorBanner}>{errorMessage}</div>
-        )}
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
@@ -192,22 +224,7 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
             </div>
           </div>
 
-          {/* Type Selection: City Default vs Specific Townships */}
-          <div className={styles.formGroup}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={isCityDefault}
-                onChange={(e) => {
-                  setIsCityDefault(e.target.checked);
-                  if (e.target.checked) setSelectedTownships([]);
-                }}
-              />
-              <span>Set as City Default Rate (for all other townships)</span>
-            </label>
-          </div>
-
-          {!isCityDefault && selectedRegionOrState && (
+          {selectedRegionOrState && (
             <div className={styles.formGroup}>
               <label>
                 Select Townships ({selectedTownships.length} selected)
@@ -290,7 +307,7 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label>Shipping Fee (Ks)</label>
+              <label>Shipping Fee For Selected Townships (Ks)</label>
               <input
                 type="number"
                 value={shippingFee}
@@ -311,6 +328,66 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
               />
             </div>
           </div>
+
+          <hr className={styles.divider} />
+
+          {/* ၃။ ကျန်သော မြို့နယ်အားလုံးအတွက် Default Rate (Checkbox + Inputs) */}
+
+          {/* Default Rate သတ်မှတ်ပြီးသား ဖြစ်နေပါက Info Banner ပြမည် */}
+          {isDefaultAlreadyExists && selectedCity && (
+            <div className={styles.infoBanner}>
+              <span className={styles.infoIcon}>💡</span>A default shipping rate
+              is already configured for {selectedCity}.
+            </div>
+          )}
+
+          {/* Default Rate မရှိသေးမှသာ Checkbox နှင့် Input များ ပြမည် */}
+          {!isDefaultAlreadyExists && selectedRegionOrState && (
+            <div className={styles.formGroup}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={enableDefaultRate}
+                  onChange={(e) => setEnableDefaultRate(e.target.checked)}
+                />
+                <span>
+                  Also set a Default Rate for all other unselected townships in
+                  this city
+                </span>
+              </label>
+            </div>
+          )}
+
+          {/* Checkbox ခြစ်ထားပါက ပေါ်လာမည့် Form */}
+          {/* formRow နဲ့ defaultRateWrapper Class (၂) ခုကို ပေါင်းရေးမည် */}
+          {!isDefaultAlreadyExists && enableDefaultRate && (
+            <div className={`${styles.formRow} ${styles.defaultRateWrapper}`}>
+              <div className={styles.formGroup}>
+                <label>Default Shipping Fee (Ks)</label>
+                <input
+                  type="number"
+                  value={defaultShippingFee}
+                  onChange={(e) =>
+                    setDefaultShippingFee(Number(e.target.value))
+                  }
+                  min={0}
+                  required={enableDefaultRate}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Default Estimated Days</label>
+                <input
+                  type="number"
+                  value={defaultEstimatedDays}
+                  onChange={(e) =>
+                    setDefaultEstimatedDays(Number(e.target.value))
+                  }
+                  min={1}
+                  required={enableDefaultRate}
+                />
+              </div>
+            </div>
+          )}
 
           <div className={styles.modalActions}>
             <button

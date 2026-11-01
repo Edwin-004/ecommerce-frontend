@@ -5,9 +5,17 @@ import {
   useGetCouriersQuery,
   useCreateShipmentMutation,
   useUpdateOrderStatusMutation,
+  useGetOrderStatusHistoryQuery,
 } from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
 import styles from './AllOrders.module.css';
 import { useEffect, useState } from 'react';
+import {
+  FiShoppingCart,
+  FiChevronLeft,
+  FiChevronRight,
+  FiX,
+  FiSearch,
+} from 'react-icons/fi';
 
 export const AllOrders = () => {
   const [currentPage, setCurrentPage] = useState(0);
@@ -28,6 +36,28 @@ export const AllOrders = () => {
   const { data: orderDetails, isLoading: loadingDetails } =
     useGetOrderByOrderNoQuery(selectedOrderNo || '', {
       skip: !selectedOrderNo,
+    });
+
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  const filteredOrders = orders.filter((order: any) => {
+    const matchStatus =
+      statusFilter === 'ALL' || order.orderStatus === statusFilter;
+    const matchSearch =
+      order.orderNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchStatus && matchSearch;
+  });
+
+  const getOrderCountByStatus = (status: string) => {
+    if (status === 'ALL') return orders.length;
+    return orders.filter((order: any) => order.orderStatus === status).length;
+  };
+
+  const { data: statusHistory = [], isLoading: isLoadingHistory } =
+    useGetOrderStatusHistoryQuery(selectedOrderNo || '', {
+      skip: !selectedOrderNo, // ရွေးထားတဲ့ OrderNo မရှိရင် API မခေါ်ပါ
     });
 
   const getCourierPrefix = (name: string) => {
@@ -57,6 +87,26 @@ export const AllOrders = () => {
   const [updateOrderStatusApi, { isLoading: isUpdatingStatus }] =
     useUpdateOrderStatusMutation();
   const isUpdating = isCreatingShipment || isUpdatingStatus;
+  const VALID_TRANSITIONS: Record<string, string[]> = {
+    PENDING: ['PAID'],
+    PAID: ['PROCESSING'],
+    PROCESSING: ['SHIPPED'],
+    SHIPPED: ['DELIVERED'],
+    DELIVERED: [], // ဘယ်မှ ထပ်သွားခွင့်မရှိပါ
+    CANCELLED: [], // ဘယ်မှ ထပ်သွားခွင့်မရှိပါ
+  };
+
+  const ALL_STATUS_OPTIONS = [
+    'PENDING',
+    'PAID',
+    'PROCESSING',
+    'SHIPPED',
+    'DELIVERED',
+    'CANCELLED',
+  ];
+
+  const currentOrderStatus = orderDetails?.orderStatus || '';
+  const allowedNextStatuses = VALID_TRANSITIONS[currentOrderStatus] || [];
 
   const handleUpdateClick = () => {
     if (selectedStatus === 'SHIPPED') {
@@ -149,7 +199,6 @@ export const AllOrders = () => {
         return '';
     }
   };
-
   // variantAttributes String (eg: "{"Size": "L"}") ကို ပြေပြစ်စွာပြသရန် Helper
   const formatAttributes = (attrString: string) => {
     try {
@@ -162,7 +211,58 @@ export const AllOrders = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <h2 className={styles.pageTitle}>All Orders</h2>
+      <div className={styles.pageHeader}>
+        <div className={styles.titleArea}>
+          <h1>
+            <FiShoppingCart /> All Orders
+          </h1>
+          <p>
+            Track customer purchases, fulfillment stages, shipments, and payment
+            statuses
+          </p>
+        </div>
+      </div>
+
+      <div className={styles.filterSection}>
+        <div className={styles.tabsContainer}>
+          {[
+            'ALL',
+            'PENDING',
+            'PAID',
+            'PROCESSING',
+            'SHIPPED',
+            'DELIVERED',
+            'CANCELLED',
+          ].map((status) => {
+            const count = getOrderCountByStatus(status);
+            return (
+              <button
+                key={status}
+                className={`${styles.tabButton} ${statusFilter === status ? styles.activeTab : ''}`}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status}
+                <span
+                  className={`${styles.statusCountBadge} ${statusFilter === status ? styles.activeCountBadge : ''}`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className={styles.searchContainer}>
+          <FiSearch className={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="Search Order No or Customer..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
+      </div>
 
       {!selectedOrderNo ? (
         /* ==================== View ၁။ Table View (ဘာမှမရွေးထားချိန်) ==================== */
@@ -181,24 +281,24 @@ export const AllOrders = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className={styles.tableCellCenter}>
+                  <td colSpan={7} className={styles.tableCellCenter}>
                     Loading orders...
                   </td>
                 </tr>
               ) : isError ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: 'red' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'red' }}>
                     Error fetching orders!
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className={styles.tableCellCenter}>
+                  <td colSpan={7} className={styles.tableCellCenter}>
                     No orders found.
                   </td>
                 </tr>
               ) : (
-                orders.map((order: any) => (
+                filteredOrders.map((order: any) => (
                   <tr
                     key={order.orderId}
                     onClick={() => setSelectedOrderNo(order.orderNo)}
@@ -226,7 +326,7 @@ export const AllOrders = () => {
             </tbody>
           </table>
           {/* ================= Pagination Controls (အသစ်ထပ်တိုးရန်) ================= */}
-          {totalPages > 1 && (
+          {totalPages > 0 && (
             <div className={styles.paginationContainer}>
               <span className={styles.pageInfoText}>
                 Page {currentPage + 1} of {totalPages}
@@ -239,7 +339,7 @@ export const AllOrders = () => {
                   disabled={currentPage === 0}
                   className={styles.paginationBtn}
                 >
-                  Previous
+                  <FiChevronLeft size={15} /> Previous
                 </button>
                 <button
                   onClick={() =>
@@ -248,7 +348,7 @@ export const AllOrders = () => {
                   disabled={data?.last || currentPage === totalPages - 1}
                   className={styles.paginationBtn}
                 >
-                  Next
+                  Next <FiChevronRight size={15} />
                 </button>
               </div>
             </div>
@@ -259,7 +359,7 @@ export const AllOrders = () => {
         <div className={styles.splitContainer}>
           {/* ဘယ်ဘက်ခြမ်း: List View */}
           <div className={styles.listContainer}>
-            {orders.map((order: any) => (
+            {filteredOrders.map((order: any) => (
               <div
                 key={order.orderId}
                 className={`${styles.listItem} ${selectedOrderNo === order.orderNo ? styles.activeOrder : ''}`}
@@ -300,8 +400,9 @@ export const AllOrders = () => {
                   <button
                     className={styles.closeBtn}
                     onClick={() => setSelectedOrderNo(null)}
+                    aria-label="Close details"
                   >
-                    ✖
+                    <FiX size={18} />
                   </button>
                 </div>
 
@@ -371,6 +472,57 @@ export const AllOrders = () => {
                         </h4>
                       </div>
                     </div>
+
+                    <div className={styles.card}>
+                      <h3 className={styles.cardTitle}>Status History</h3>
+
+                      {isLoadingHistory ? (
+                        <p className={styles.loadingText}>Loading history...</p>
+                      ) : statusHistory.length > 0 ? (
+                        <div className={styles.historyTableWrapper}>
+                          <table className={styles.historyTable}>
+                            <thead>
+                              <tr>
+                                <th>Status</th>
+                                <th>Date & Time</th>
+                                <th>Updated By</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {statusHistory.map(
+                                (history: any, index: number) => (
+                                  <tr key={history.historyId || index}>
+                                    <td>
+                                      <span
+                                        className={`${styles.badge} ${getStatusBadgeClass(history.newStatus)}`}
+                                        style={{
+                                          fontSize: '11px',
+                                          padding: '4px 8px',
+                                        }}
+                                      >
+                                        {history.newStatus}
+                                      </span>
+                                    </td>
+                                    <td className={styles.historyTimeCell}>
+                                      {history.changedAt?.split('T').join(' ')}
+                                    </td>
+                                    <td className={styles.historyUserCell}>
+                                      {history.changedBy || 'System Admin'}
+                                    </td>
+                                  </tr>
+                                )
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p
+                          style={{ fontSize: '14px', color: '#999', margin: 0 }}
+                        >
+                          No status history available.
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   {/* Action View (Update Status) */}
@@ -378,7 +530,7 @@ export const AllOrders = () => {
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Order Action</h3>
                       <p style={{ marginBottom: '16px' }}>
-                        Status:{' '}
+                        Current Status:{' '}
                         <span
                           className={`${styles.badge} ${getStatusBadgeClass(orderDetails.orderStatus)}`}
                         >
@@ -391,13 +543,21 @@ export const AllOrders = () => {
                           value={selectedStatus}
                           onChange={(e) => setSelectedStatus(e.target.value)}
                           className={styles.statusSelect}
+                          disabled={allowedNextStatuses.length === 0}
                         >
-                          <option value="PENDING">PENDING</option>
-                          <option value="PAID">PAID</option>
-                          <option value="PROCESSING">PROCESSING</option>
-                          <option value="SHIPPED">SHIPPED</option>
-                          <option value="DELIVERED">DELIVERED</option>
-                          <option value="CANCELLED">CANCELLED</option>
+                          {/* လက်ရှိ Status ကို အမြဲတမ်း Default အနေနဲ့ ပြထားပေးမည် */}
+                          <option value={currentOrderStatus}>
+                            {currentOrderStatus}
+                          </option>
+
+                          {/* သွားခွင့်ရှိတဲ့ Status များကိုသာ Option အဖြစ် Filter ထုတ်ပြီး ပြမည် */}
+                          {ALL_STATUS_OPTIONS.filter((status) =>
+                            allowedNextStatuses.includes(status)
+                          ).map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
                         </select>
 
                         <button
@@ -405,7 +565,8 @@ export const AllOrders = () => {
                           className={styles.updateBtn}
                           disabled={
                             isUpdating ||
-                            selectedStatus === orderDetails.orderStatus
+                            selectedStatus === orderDetails.orderStatus ||
+                            allowedNextStatuses.length === 0
                           }
                         >
                           {isUpdating ? 'Updating...' : 'Update Status'}

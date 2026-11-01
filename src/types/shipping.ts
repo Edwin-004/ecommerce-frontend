@@ -21,6 +21,9 @@ export interface CreateZoneGroupRequest {
   townships: string[];
   shippingFee: number;
   estimatedDays: number;
+  hasDefaultRate ?: boolean;
+  defaultShippingFee ?: number;
+  defaultEstimatedDays ?: number;
 }
 
 // ၃။ ဈေးနှုန်းနှင့် Status ပြင်ဆင်ရန် (UpdateZoneRateRequest DTO နှင့် ကိုက်ညီသည်)

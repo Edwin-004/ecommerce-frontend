@@ -1,255 +1,121 @@
-import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import styles from './Sidebar.module.css';
+// src/App.tsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Login } from './features/auth/Login';
+import { AdminDashboard } from './components/AdminDashboard';
+import { AdminLayout } from './components/AdminLayout';
+import { ProductManagementPage } from './features/products/ProductManagementPage';
+import { CreateProductPage } from './features/products/CreateProductPage';
+import { EditProductPage } from './features/products/EditProductPage';
+import { InventoryPage } from './features/inventory/InventoryPage';
 
-import {
-  FiChevronDown,
-  FiHome,
-  FiShoppingCart,
-  FiPackage,
-  FiBox,
-  FiUsers,
-  FiLayers,
-  FiFolder,
-  FiTag,
-  FiGrid,
-  FiShoppingBag,
-  FiTruck,
-  FiUserPlus,
-  FiBarChart2,
-  FiFileText, // <-- Audit Log အတွက် အသစ်ထည့်ထားသော Icon
-  FiX,
-} from 'react-icons/fi';
+import { VariantsPage } from './features/variants/VariantsPage';
+import { ProtectedRoute } from './utils/ProtectedRoute';
+import { AllOrders } from './features/orders/AllOrders';
+import CategoryManagement from './features/categories/CategoryManagement';
 
-interface SidebarProps {
-  onCloseMobile?: () => void;
+// --- Conflict ရှင်းလင်းပြီးသား Imports များ ---
+import { BrandsPage } from './features/brand/BrandsPage';
+import TagManagement from './features/tags/TagManagement';
+import { StaffList } from './features/staff/StaffList';
+import { CreateStaff } from './features/staff/CreateStaff';
+// ---------------------------------------------
+
+import { Profile } from './components/Profile';
+import { ReportsPage } from './features/reports/ReportsPage';
+import { RefundManagementPage } from './features/refunds/RefundManagementPage';
+import './App.css';
+import { ShippingRates } from './features/shipping/ShippingRates';
+import AuditLog from './features/auditLog/AuditLog'; // <--- သင့်ဘက်မှ AuditLog Import
+import { ToastContainer } from 'react-toastify'; // <--- main ဘက်မှ ToastContainer Import
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+
+        {/* Back-office authenticated users check */}
+        <Route
+          element={
+            <ProtectedRoute
+              allowedRoles={['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF']}
+            />
+          }
+        >
+          <Route element={<AdminLayout />}>
+            {/* Common Routes: Dashboard & Profile */}
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/profile" element={<Profile />} />
+
+            {/* Product Catalog & Stock (ADMIN & INVENTORY_STAFF) */}
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={['ADMIN', 'INVENTORY_STAFF']}
+                />
+              }
+            >
+              <Route path="/admin/products" element={<ProductManagementPage />} />
+              <Route path="/productlist" element={<ProductManagementPage />} />
+              <Route path="/admin/products/new" element={<CreateProductPage />} />
+              <Route
+                path="/admin/products/edit/:id"
+                element={<EditProductPage />}
+              />
+              <Route path="/product" element={<CreateProductPage />} />
+              <Route path="/admin/variants" element={<VariantsPage />} />
+              <Route path="/admin/variations" element={<VariantsPage />} />
+              <Route path="/admin/inventory" element={<InventoryPage />} />
+              <Route path="/admin/categories" element={<CategoryManagement />} />
+              <Route path="/admin/brands" element={<BrandsPage />} />
+              <Route path="/admin/tags" element={<TagManagement />} />
+            </Route>
+
+            {/* Operations: Orders, Refunds, Shipping (ADMIN & SALES_STAFF / ORDER_STAFF) */}
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={['ADMIN', 'SALES_STAFF', 'ORDER_STAFF']}
+                />
+              }
+            >
+              <Route path="/admin/orders" element={<AllOrders />} />
+              <Route path="/admin/refunds" element={<RefundManagementPage />} />
+              <Route path="/admin/shipping-rates" element={<ShippingRates />} />
+            </Route>
+
+            {/* Admin-only Routes: Staff Management, Reports & Audit Logs */}
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={['ADMIN']}
+                />
+              }
+            >
+              <Route path="/admin/staff" element={<StaffList />} />
+              <Route path="/admin/staff/new" element={<CreateStaff />} />
+              <Route path="/admin/reports" element={<ReportsPage />} />
+              <Route path="/admin/audit-logs" element={<AuditLog />} /> {/* <--- AuditLog ကို Admin အောက်တွင် ထည့်ထားသည် */}
+            </Route>
+
+            {/* Direct /admin redirects to dashboard */}
+            <Route
+              path="/admin"
+              element={<Navigate to="/admin/dashboard" replace />}
+            />
+          </Route>
+        </Route>
+
+        {/* Fallback to login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+      />
+    </BrowserRouter>
+  );
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
-  const location = useLocation();
-
-  const handleLinkClick = () => {
-    if (onCloseMobile) onCloseMobile();
-  };
-
-  // Active check for Catalog items
-  const isCatalogActive =
-    location.pathname.startsWith('/admin/products') ||
-    location.pathname.startsWith('/admin/categories') ||
-    location.pathname.startsWith('/admin/brands') ||
-    location.pathname.startsWith('/admin/tags') ||
-    location.pathname.startsWith('/admin/variants') ||
-    location.pathname.startsWith('/admin/variations');
-
-  const isInventoryActive = location.pathname.startsWith('/admin/inventory');
-  
-  // Staff အတွက် Active ဖြစ်/မဖြစ် စစ်ဆေးခြင်း
-  const isStaffActive = location.pathname.startsWith('/admin/staff');
-
-  const [catalogOpen, setCatalogOpen] = useState<boolean>(true);
-  const [inventoryOpen, setInventoryOpen] = useState<boolean>(true);
-  // Staff Dropdown အဖွင့်/အပိတ် အတွက် State
-  const [staffOpen, setStaffOpen] = useState<boolean>(true);
-
-  const navClass = ({ isActive }: { isActive: boolean }) =>
-    isActive ? `${styles.link} ${styles.active}` : styles.link;
-
-  const subNavClass = ({ isActive }: { isActive: boolean }) =>
-    isActive ? `${styles.subLink} ${styles.subActive}` : styles.subLink;
-
-  return (
-    <aside className={styles.sidebar}>
-      {/* Brand Header */}
-      <div className={styles.header}>
-        <div className={styles.brandContainer}>
-          <div className={styles.logoBadge}>
-            <FiShoppingBag size={20} />
-          </div>
-          <div className={styles.brandText}>
-            <h2>Ecommerce</h2>
-            <span>Admin Portal</span>
-          </div>
-        </div>
-        {onCloseMobile && (
-          <button
-            type="button"
-            className={styles.mobileCloseBtn}
-            onClick={onCloseMobile}
-            aria-label="Close Sidebar"
-          >
-            <FiX size={20} />
-          </button>
-        )}
-      </div>
-
-      {/* Navigation Sections */}
-      <nav
-        className={styles.navContainer}
-        onClick={(e) => {
-          if ((e.target as HTMLElement).closest('a')) {
-            handleLinkClick();
-          }
-        }}
-      >
-        {/* ================= 1. OVERVIEW ================= */}
-        <div className={styles.navSectionTitle}>OVERVIEW</div>
-        <NavLink to="/admin/dashboard" className={navClass}>
-          <FiHome className={styles.linkIcon} />
-          <span>Dashboard</span>
-        </NavLink>
-
-        {/* ================= 2. CATALOG & STOCK ================= */}
-        <div className={styles.navSectionTitle}>CATALOG & STOCK</div>
-
-        {/* Product Catalog Dropdown */}
-        <div className={styles.dropdownGroup}>
-          <button
-            type="button"
-            className={`${styles.dropdownToggle} ${
-              isCatalogActive ? styles.parentActive : ''
-            }`}
-            onClick={() => setCatalogOpen(!catalogOpen)}
-          >
-            <div className={styles.dropdownLeft}>
-              <FiPackage className={styles.linkIcon} />
-              <span>Product Catalog</span>
-            </div>
-            <FiChevronDown
-              className={`${styles.chevron} ${
-                catalogOpen ? styles.chevronRotated : ""
-              }`}
-            />
-          </button>
-
-          {catalogOpen && (
-            <div className={styles.submenu}>
-              <NavLink to="/admin/products" end className={subNavClass}>
-                <FiPackage size={14} className={styles.subIcon} />
-                <span>Product List</span>
-              </NavLink>
-
-              <NavLink to="/admin/categories" className={subNavClass}>
-                <FiFolder size={14} className={styles.subIcon} />
-                <span>Categories</span>
-              </NavLink>
-
-              <NavLink to="/admin/brands" className={subNavClass}>
-                <FiGrid size={14} className={styles.subIcon} />
-                <span>Brands</span>
-              </NavLink>
-
-              <NavLink to="/admin/tags" className={subNavClass}>
-                <FiTag size={14} className={styles.subIcon} />
-                <span>Tags</span>
-              </NavLink>
-
-              <NavLink to="/admin/variants" className={subNavClass}>
-                <FiLayers size={14} className={styles.subIcon} />
-                <span>Variants & Options</span>
-              </NavLink>
-            </div>
-          )}
-        </div>
-
-        {/* Stock Management (Inventory) */}
-        <div className={styles.dropdownGroup}>
-          <button
-            type="button"
-            className={`${styles.dropdownToggle} ${
-              isInventoryActive ? styles.parentActive : ''
-            }`}
-            onClick={() => setInventoryOpen(!inventoryOpen)}
-          >
-            <div className={styles.dropdownLeft}>
-              <FiBox className={styles.linkIcon} />
-              <span>Inventory</span>
-            </div>
-            <FiChevronDown
-              className={`${styles.chevron} ${
-                inventoryOpen ? styles.chevronRotated : ""
-              }`}
-            />
-          </button>
-
-          {inventoryOpen && (
-            <div className={styles.submenu}>
-              <NavLink to="/admin/inventory" end className={subNavClass}>
-                <FiBox size={14} className={styles.subIcon} />
-                <span>Stock Management</span>
-              </NavLink>
-              <NavLink
-                to="/admin/inventory?tab=low-stock"
-                className={subNavClass}
-              >
-                <span className={styles.warningDot} />
-                <span>Low Stock Alerts</span>
-              </NavLink>
-            </div>
-          )}
-        </div>
-
-        {/* ================= 3. OPERATIONS ================= */}
-        <div className={styles.navSectionTitle}>OPERATIONS</div>
-
-        {/* Orders */}
-        <NavLink to="/admin/orders" className={navClass}>
-          <FiShoppingCart className={styles.linkIcon} />
-          <span>Orders</span>
-        </NavLink>
-
-        {/* Shipping rate */}
-        <NavLink to="/admin/shipping-rates" className={navClass}>
-          <FiTruck className={styles.linkIcon} />
-          <span>Shipping Rates</span>
-        </NavLink>
-
-        {/* Staff Management Dropdown */}
-        <div className={styles.dropdownGroup}>
-          <button
-            type="button"
-            className={`${styles.dropdownToggle} ${
-              isStaffActive ? styles.parentActive : ''
-            }`}
-            onClick={() => setStaffOpen(!staffOpen)}
-          >
-            <div className={styles.dropdownLeft}>
-              <FiUsers className={styles.linkIcon} />
-              <span>Staff Management</span>
-            </div>
-            <FiChevronDown
-              className={`${styles.chevron} ${
-                staffOpen ? styles.chevronRotated : ''
-              }`}
-            />
-          </button>
-
-          {staffOpen && (
-            <div className={styles.submenu}>
-              <NavLink to="/admin/staff" end className={subNavClass}>
-                <FiUsers size={14} className={styles.subIcon} />
-                <span>All Staff</span>
-              </NavLink>
-              <NavLink to="/admin/staff/new" className={subNavClass}>
-                <FiUserPlus size={14} className={styles.subIcon} />
-                <span>Add New Staff</span>
-              </NavLink>
-            </div>
-          )}
-        </div>
-
-        {/* Reports & Analytics */}
-        <NavLink to="/admin/reports" className={navClass}>
-          <FiBarChart2 className={styles.linkIcon} />
-          <span>Reports & Analytics</span>
-        </NavLink>
-
-        {/* ================= 4. SYSTEM (Audit Log ထည့်သွင်းထားသည်) ================= */}
-        <div className={styles.navSectionTitle}>SYSTEM</div>
-        <NavLink to="/admin/audit-logs" className={navClass}>
-          <FiFileText className={styles.linkIcon} />
-          <span>Audit Logs</span>
-        </NavLink>
-      </nav>
-    </aside>
-  );
-};
+export default App;
