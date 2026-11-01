@@ -13,20 +13,20 @@ import { ProtectedRoute } from './utils/ProtectedRoute';
 import { AllOrders } from './features/orders/AllOrders';
 import CategoryManagement from './features/categories/CategoryManagement';
 
-// --- Conflict ရှင်းလင်းပြီးသား Imports များ ---
 import { BrandsPage } from './features/brand/BrandsPage';
 import TagManagement from './features/tags/TagManagement';
 import { StaffList } from './features/staff/StaffList';
 import { CreateStaff } from './features/staff/CreateStaff';
-// ---------------------------------------------
+import { EditStaff } from './features/staff/EditStaff'; 
 
 import { Profile } from './components/Profile';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { RefundManagementPage } from './features/refunds/RefundManagementPage';
 import './App.css';
 import { ShippingRates } from './features/shipping/ShippingRates';
-import AuditLog from './features/auditLog/AuditLog'; // <--- သင့်ဘက်မှ AuditLog Import
-import { ToastContainer } from 'react-toastify'; // <--- main ဘက်မှ ToastContainer Import
+import AuditLog from './features/auditLog/AuditLog'; 
+import { ToastContainer } from 'react-toastify'; 
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
@@ -94,8 +94,9 @@ function App() {
             >
               <Route path="/admin/staff" element={<StaffList />} />
               <Route path="/admin/staff/new" element={<CreateStaff />} />
+              <Route path="/admin/staff/edit/:id" element={<EditStaff />} />
               <Route path="/admin/reports" element={<ReportsPage />} />
-              <Route path="/admin/audit-logs" element={<AuditLog />} /> {/* <--- AuditLog ကို Admin အောက်တွင် ထည့်ထားသည် */}
+              <Route path="/admin/audit-logs" element={<AuditLog />} /> 
             </Route>
 
             {/* Direct /admin redirects to dashboard */}
