@@ -21,7 +21,6 @@ export const StaffList: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Pagination State များကို အသစ်ထည့်ထားပါသည်
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
@@ -41,12 +40,10 @@ export const StaffList: React.FC = () => {
         fetchStaff();
     }, []);
 
-    // Filter သို့မဟုတ် Search ပြောင်းလဲသွားပါက Page 1 သို့ ပြန်သွားရန်
     useEffect(() => {
         setCurrentPage(1);
     }, [activeTab, searchQuery]);
 
-    // Data များကို စစ်ထုတ်ခြင်း
     const filteredStaff = staffList.filter((staff) => {
         const matchesTab = activeTab === 'ALL' || staff.status === activeTab;
         const matchesSearch = staff.userName.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -54,36 +51,32 @@ export const StaffList: React.FC = () => {
         return matchesTab && matchesSearch;
     });
 
-    // Pagination တွက်ချက်မှုများ
     const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentStaffData = filteredStaff.slice(startIndex, startIndex + itemsPerPage);
 
     const handleEdit = (id: number, name: string) => {
-        alert(`${name} (ID: ${id}) ကို ပြင်ဆင်ပါမည်။`);
+        navigate(`/admin/staff/edit/${id}`);
     };
 
-    const handleStatusToggle = async (id: number, name: string, currentStatus: string) => {
+    async function handleStatusToggle(id: number, name: string, currentStatus: string) {
         const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
         const actionText = currentStatus === 'ACTIVE' ? 'Suspend' : 'Activate';
 
-        if(window.confirm(`${name} ၏ အကောင့်ကို ${actionText} လုပ်မှာ သေချာပြီလား?`)) {
+        if (window.confirm(`${name} ၏ အကောင့်ကို ${actionText} လုပ်မှာ သေချာပြီလား?`)) {
             try {
                 await api.put(`/staff/${id}/status`, null, {
                     params: { status: newStatus }
                 });
 
-                setStaffList(prevList => 
-                    prevList.map(staff => 
-                        staff.userId === id ? { ...staff, status: newStatus } : staff
-                    )
-                );
+                setStaffList(prevList => prevList.map(staff => staff.userId === id ? { ...staff, status: newStatus } : staff
+                ));
             } catch (err) {
                 console.error(`Error ${actionText.toLowerCase()}ing staff:`, err);
                 alert(`${actionText} လုပ်ရာတွင် အမှားအယွင်းဖြစ်ပေါ်ခဲ့ပါသည်။`);
             }
         }
-    };
+    }
 
     if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading staff data...</div>;
     if (error) return <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>{error}</div>;
@@ -96,9 +89,6 @@ export const StaffList: React.FC = () => {
                     <h2 className="header-title">Staff Management</h2>
                     <p className="header-subtitle">Manage system users, roles, and account statuses</p>
                 </div>
-                <button className="btn-add" onClick={() => navigate('/admin/staff/new')}>
-                    + Add New Staff
-                </button>
             </div>
 
             {/* Summary Cards */}
@@ -160,7 +150,7 @@ export const StaffList: React.FC = () => {
                     <table className="staff-table">
                         <thead>
                             <tr>
-                                <th>ID</th>
+                                {/* ID Column Header ဖယ်ရှားလိုက်ပါသည် */}
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Role</th>
@@ -170,11 +160,10 @@ export const StaffList: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {/* Pagination ဖြင့် ဖြတ်ထားသော currentStaffData ကို အသုံးပြုပါသည် */}
                             {currentStaffData.length > 0 ? (
                                 currentStaffData.map((staff) => (
                                     <tr key={staff.userId}>
-                                        <td>{staff.userId}</td>
+                                        {/* ID Data Row ဖယ်ရှားလိုက်ပါသည် */}
                                         <td style={{ fontWeight: '500' }}>{staff.userName}</td>
                                         <td>{staff.email}</td>
                                         <td>
@@ -205,7 +194,7 @@ export const StaffList: React.FC = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={7} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
+                                    <td colSpan={6} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
                                         No staff found matching your criteria.
                                     </td>
                                 </tr>
