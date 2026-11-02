@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import { useMemo, useState } from 'react';
 import { useGetZoneGroupsQuery } from './shippingApi';
 import styles from './ShippingRates.module.css';
@@ -52,7 +53,9 @@ export const ShippingRates = () => {
     <div className={styles.container}>
       {/* Header Section */}
       <div className={styles.header}>
-        <div className={styles.titleArea}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <BackButton fallbackUrl="/admin/dashboard" />
+          <div className={styles.titleArea}>
           <h1>
             <FiTruck /> Delivery Zones & Rates
           </h1>
@@ -61,10 +64,11 @@ export const ShippingRates = () => {
             transit times
           </p>
         </div>
+      </div>
 
         <button
           type="button"
-          className="btn-primary"
+          className={styles.primaryAddBtn}
           onClick={() => setIsModalOpen(true)}
         >
           <FiPlus size={16} /> Add New Zone
@@ -138,7 +142,7 @@ export const ShippingRates = () => {
                     )}
                   </td>
                   <td style={{ fontWeight: 600, color: '#0f172a' }}>
-                    {(zone.shippingFee ?? 0).toLocaleString()} Ks
+                    {(zone.shippingFee ?? 0).toLocaleString()} MMK
                   </td>
                   <td>
                     {zone.estimatedDays ? `${zone.estimatedDays} Days` : '-'}

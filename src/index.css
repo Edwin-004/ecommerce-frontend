@@ -1,4 +1,6 @@
-/* src/index.css */
+/* src/index.css - Standardized Typography & Liquid Glass Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 :root {
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
@@ -26,13 +28,30 @@
   --text-light: #94a3b8;
 
   --bg-page: #f8fafc;
-  --bg-card: #ffffff;
-  --border-color: #e2e8f0;
-  --border-subtle: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.82);
+  --border-color: rgba(226, 232, 240, 0.8);
+  --border-subtle: rgba(241, 245, 249, 0.85);
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 8px 24px -4px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 16px 36px -6px rgba(15, 23, 42, 0.08), 0 4px 12px -3px rgba(15, 23, 42, 0.04);
+
+  /* Liquid Glass Theme Tokens */
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-bg-hover: rgba(255, 255, 255, 0.92);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.65);
+  --glass-bg-solid: rgba(255, 255, 255, 0.96);
+  --glass-border: rgba(255, 255, 255, 0.88);
+  --glass-border-subtle: rgba(226, 232, 240, 0.75);
+  --glass-border-focus: rgba(37, 99, 235, 0.4);
+  --glass-shadow: 0 8px 30px 0 rgba(15, 23, 42, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+  --glass-shadow-hover: 0 14px 38px 0 rgba(37, 99, 235, 0.08), 0 4px 12px 0 rgba(15, 23, 42, 0.04);
+  --glass-specular: inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+  --glass-blur: blur(16px) saturate(180%);
+  --glass-blur-heavy: blur(24px) saturate(200%);
+  --glass-radius: 16px;
+  --glass-radius-sm: 12px;
+  --glass-radius-xs: 8px;
 }
 
 * {
@@ -41,12 +60,413 @@
   box-sizing: border-box;
 }
 
+/* ==========================================================
+   1. Base Font Family & Rendering
+   'Inter', system-ui, -apple-system, sans-serif
+   antialiased text-slate-800 bg-[#F8FAFC]
+   ========================================================== */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg-page);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #F8FAFC;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.04) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.04) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.03) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(244, 63, 94, 0.02) 0px, transparent 50%);
+  background-attachment: fixed;
   overflow-x: hidden;
-  color: var(--text-main);
+  color: #1e293b; /* text-slate-800 */
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global Tabular Numbers Formatting */
+.tabular-nums,
+[data-tabular-nums],
+.price,
+.amount,
+.currency,
+.stat-value,
+.statValue,
+.card-value,
+.metricSummaryCardValue,
+.td-numeric,
+.td-price {
+  font-variant-numeric: tabular-nums !important;
+  -webkit-font-feature-settings: "tnum" !important;
+  font-feature-settings: "tnum" !important;
+}
+
+/* ==========================================================
+   2. Standardized Heading & Page Header Scale (20px / 12px / 14px)
+   ========================================================== */
+/* Page Main Title (<h1>): text-xl font-semibold text-slate-900 tracking-tight (20px) */
+.page-title,
+.pageTitle,
+.headerTitle,
+.mainTitle,
+h1.page-title,
+.titleArea h1,
+.headerLeft h1,
+.header-title,
+.managementHeaderLeft h1,
+.tag-page-header h1,
+.staff-container .header-title {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: #0f172a !important; /* text-slate-900 */
+  letter-spacing: -0.025em !important; /* tracking-tight */
+  line-height: 28px !important;
+  margin: 0 !important;
+}
+
+/* Page Subtitle (<p> below <h1>): text-xs font-normal text-slate-500 mt-0.5 (12px) */
+.page-subtitle,
+.pageSubtitle,
+.headerSubtitle,
+.mainSubtitle,
+p.page-subtitle,
+.titleArea p,
+.headerLeft p,
+.header-subtitle,
+.managementHeaderLeft p,
+.tag-page-header p,
+.staff-container .header-subtitle {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: #64748b !important; /* text-slate-500 */
+  margin-top: 2px !important;
+  margin-bottom: 0 !important;
+  line-height: 16px !important;
+}
+
+/* Section / Card / Modal Title (<h2> or <h3>): text-sm font-semibold text-slate-900 (14px) */
+.section-title,
+.sectionTitle,
+.card-title,
+.cardTitle,
+.modal-title,
+.chartTitle,
+.reportCardTitle,
+.tableCardTitle {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #0f172a !important; /* text-slate-900 */
+  letter-spacing: -0.01em !important;
+  line-height: 20px !important;
+  margin: 0 !important;
+}
+
+/* ==========================================================
+   3. KPI Summary Cards Typography
+   ========================================================== */
+/* Card Label (Top): text-xs font-medium text-slate-500 — Title/Sentence Case */
+.statLabel,
+.stat-label,
+.card-label,
+.metricSummaryCardLabel,
+.tag-total-label,
+.statTopRow span:first-child {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #64748b !important; /* text-slate-500 */
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  line-height: 16px !important;
+}
+
+/* Card Metric Value (Middle): text-2xl font-bold text-slate-900 tracking-tight tabular-nums (24px) */
+.statValue,
+.stat-value,
+.card-value,
+.metricSummaryCardValue,
+.tag-total-card strong,
+.statCard h2,
+.statCard h3 {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important; /* text-slate-900 */
+  letter-spacing: -0.025em !important;
+  line-height: 32px !important;
+  font-variant-numeric: tabular-nums !important;
+  -webkit-font-feature-settings: "tnum" !important;
+  font-feature-settings: "tnum" !important;
+  margin: 4px 0 0 0 !important;
+}
+
+/* Card Trend / Subtext (Bottom): text-[11px] font-medium */
+.statTrend,
+.statTrendGreen,
+.statTrendBlue,
+.statTrendPurple,
+.stat-trend,
+.statBottomRow span:first-child {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 14px !important;
+}
+
+/* ==========================================================
+   4. Data Tables Typography
+   ========================================================== */
+/* Table Headers (<th>): text-xs font-semibold text-slate-600 py-3 px-4 text-left */
+.modern-data-table th,
+.table th,
+table th {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #475569 !important; /* High-contrast text-slate-600 for sharp readability */
+  padding: 12px 16px !important;
+  text-align: left !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em !important;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.9) !important;
+}
+
+/* Table Cells (<td>): padding py-3.5 px-4 (14px 16px) */
+.modern-data-table td,
+.table td,
+table td {
+  font-size: 13px !important;
+  padding: 14px 16px !important;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(241, 245, 249, 0.85);
+}
+
+/* Primary identifier columns: text-[13px] font-medium text-slate-900 */
+.table-primary-col,
+.col-primary,
+.td-identifier,
+td.primary-cell,
+td strong {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #0f172a !important; /* text-slate-900 */
+}
+
+/* Secondary text columns: text-[13px] font-normal text-slate-600 */
+.table-secondary-col,
+.col-secondary,
+.td-secondary,
+td.secondary-cell {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: #475569 !important; /* text-slate-600 */
+}
+
+/* Numeric/Price columns: text-[13px] font-semibold text-slate-900 tabular-nums */
+.table-numeric-col,
+.col-numeric,
+.td-numeric,
+.td-price,
+td.numeric-cell,
+td.price-cell {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #0f172a !important; /* text-slate-900 */
+  font-variant-numeric: tabular-nums !important;
+  -webkit-font-feature-settings: "tnum" !important;
+  font-feature-settings: "tnum" !important;
+}
+
+/* ==========================================================
+   5. Navigation, Tabs, Buttons & Badges Typography
+   ========================================================== */
+/* Sidebar Section Headers: text-[11px] font-medium text-slate-400 uppercase tracking-wider */
+.sidebar-section-header,
+.sectionLabel,
+.categoryLabel,
+.catalogueSmallLabel,
+.smallBadge {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #94a3b8 !important; /* text-slate-400 */
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  line-height: 14px !important;
+}
+
+/* Underline Status Tabs: text-xs font-medium */
+.tab-btn,
+.tabButton,
+.status-tab {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #64748b !important; /* text-slate-500 */
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover,
+.tabButton:hover {
+  color: #1e293b !important; /* text-slate-800 */
+}
+
+.tab-btn-active,
+.tab-btn.active,
+.activeTab {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #2563eb !important; /* text-blue-600 */
+  border-bottom: 2px solid #2563eb !important;
+}
+
+/* Solid active tab button variant */
+button.tab-btn.active {
+  color: #ffffff !important;
+  border-bottom: none !important;
+}
+
+/* All Action Buttons, Search Inputs & Select Dropdowns: text-xs font-medium */
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.primaryBtn,
+.primaryAddBtn,
+.btnAddProductPurple,
+.btn-add,
+.table-action-btn,
+.btnActionItem,
+.segmentedBtn,
+.refreshBtn,
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="email"],
+input[type="password"],
+select,
+.form-select,
+.form-input {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Status Badges: text-[11px] font-medium px-2.5 py-0.5 rounded-md */
+.badge-status,
+.statusBadge,
+.status-pill,
+.badge {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  padding: 2px 10px !important;
+  border-radius: 6px !important;
+  line-height: 16px !important;
+}
+
+/* ==========================================================
+   Universal Table Action Buttons System (Standardized Across All Pages)
+   ========================================================== */
+.table-action-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+
+.table-btn-view,
+.table-btn-edit,
+.table-btn-delete,
+.table-btn-activate,
+.table-btn-suspend,
+.table-btn-action,
+.btnViewAction {
+  height: 28px !important;
+  padding: 4px 11px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  text-decoration: none !important;
+  line-height: 1 !important;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+}
+
+/* 1. VIEW Action Button: Clean White with slate border & slate text */
+.table-btn-view,
+.btn-action-view {
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+.table-btn-view:hover:not(:disabled),
+.btn-action-view:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 2. EDIT Action Button: Soft Blue background, blue border, blue text */
+.table-btn-edit,
+.btn-action-edit {
+  border: 1px solid #93c5fd !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.05) !important;
+}
+.table-btn-edit:hover:not(:disabled),
+.btn-action-edit:hover:not(:disabled) {
+  background: #dbeafe !important;
+  border-color: #60a5fa !important;
+  color: #1e40af !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.14) !important;
+}
+
+/* 3. DELETE / SUSPEND Action Button: Soft Red background, red border, red text */
+.table-btn-delete,
+.table-btn-suspend,
+.btn-action-delete,
+.btn-action-suspend {
+  border: 1px solid #fecaca !important;
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.05) !important;
+}
+.table-btn-delete:hover:not(:disabled),
+.table-btn-suspend:hover:not(:disabled),
+.btn-action-delete:hover:not(:disabled),
+.btn-action-suspend:hover:not(:disabled) {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #b91c1c !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 8px rgba(239, 68, 68, 0.14) !important;
+}
+
+/* 4. ACTIVATE Action Button: Soft Green background, green border, green text */
+.table-btn-activate,
+.btn-action-activate {
+  border: 1px solid #a7f3d0 !important;
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.05) !important;
+}
+.table-btn-activate:hover:not(:disabled),
+.btn-action-activate:hover:not(:disabled) {
+  background: #d1fae5 !important;
+  border-color: #6ee7b7 !important;
+  color: #065f46 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.14) !important;
+}
+
+.table-btn-view:disabled,
+.table-btn-edit:disabled,
+.table-btn-delete:disabled,
+.table-btn-activate:disabled,
+.table-btn-suspend:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* ==========================================================
@@ -57,16 +477,16 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background-color: var(--primary);
+  background: #2563eb;
   color: #ffffff !important;
-  border: 1px solid var(--primary);
-  padding: 9px 18px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 600;
+  border: 1px solid #2563eb;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px !important;
+  font-weight: 500 !important;
   cursor: pointer;
-  transition: all 0.18s ease-in-out;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -75,7 +495,7 @@ body {
   background-color: var(--primary-hover);
   border-color: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -95,24 +515,28 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background-color: #ffffff;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   color: #334155 !important;
   border: 1px solid var(--border-color);
-  padding: 9px 16px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px !important;
+  font-weight: 500 !important;
   cursor: pointer;
   transition: all 0.18s ease-in-out;
   text-decoration: none;
   white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), var(--glass-specular);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #f8fafc;
+  background-color: #ffffff;
   border-color: #cbd5e1;
   color: var(--text-main) !important;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), var(--glass-specular);
 }
 
 .btn-danger {
@@ -123,41 +547,38 @@ body {
   background-color: var(--danger);
   color: #ffffff !important;
   border: 1px solid var(--danger);
-  padding: 9px 16px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px !important;
+  font-weight: 500 !important;
   cursor: pointer;
   transition: all 0.18s ease-in-out;
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
 .btn-danger:hover:not(:disabled) {
   background-color: var(--danger-hover);
   border-color: var(--danger-hover);
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
 }
 
-/* ==========================================================
-   Table Action Buttons (Consistent size, gap & hover effects)
-   ========================================================== */
+/* Table Action Buttons */
 .table-action-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 8px;
+  font-size: 12px !important;
+  font-weight: 500 !important;
   cursor: pointer;
   border: 1px solid transparent;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
 
-/* ==========================================================
-   Input & Form Controls (Consistent Focus & Heights)
-   ========================================================== */
+/* Input & Form Controls */
 input[type="text"],
 input[type="number"],
 input[type="date"],
@@ -166,20 +587,23 @@ input[type="password"],
 select,
 textarea {
   font-family: inherit;
-  font-size: 13.5px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  background-color: #ffffff !important;
 }
 
-/* ==========================================================
-   Global Scrollbar Removal (Clean Scroll without Scrollbar UI)
-   ========================================================== */
+/* Global Scrollbar Removal */
 *::-webkit-scrollbar,
 ::-webkit-scrollbar {
   width: 0px !important;
@@ -197,23 +621,7 @@ body,
   -ms-overflow-style: none !important;
 }
 
-/* Spin animation for refresh icons */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.spin {
-  animation: spin 0.8s linear infinite;
-}
-
-/* ==========================================================
-   Universal Page Headers
-   ========================================================== */
+/* Universal Page Headers */
 .page-header-container {
   display: flex;
   justify-content: space-between;
@@ -223,116 +631,65 @@ body,
   gap: 16px;
 }
 
-.page-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: -0.3px;
-  margin: 0;
-}
-
-.page-subtitle {
-  font-size: 13.5px;
-  color: var(--text-muted);
-  margin-top: 4px;
-  margin-bottom: 0;
-}
-
-/* ==========================================================
-   Universal Card Panels & Surfaces
-   ========================================================== */
-.card-panel {
-  background: var(--bg-card);
+/* Universal Liquid Glass Card Panels & Surfaces */
+.card-panel,
+.glass-panel,
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease;
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow), var(--glass-specular);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ==========================================================
-   Universal Form Layout & Field Controls
-   ========================================================== */
-.form-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 24px;
+.card-panel:hover,
+.glass-panel:hover,
+.glass-card:hover {
+  background: var(--glass-bg-hover);
+  border-color: rgba(191, 219, 254, 0.9);
+  box-shadow: var(--glass-shadow-hover), var(--glass-specular);
+  transform: translateY(-2px);
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.form-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.form-input,
-.form-select,
-.form-textarea {
-  width: 100%;
-  padding: 9px 13px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: #ffffff;
-  color: var(--text-main);
-  font-size: 13.5px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  outline: none;
-}
-
-.form-input:focus,
-.form-select:focus,
-.form-textarea:focus {
-  border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
-}
-
-/* ==========================================================
-   Universal Data Table System
-   ========================================================== */
+/* Universal Data Table System (Liquid Glass) */
 .table-responsive-wrapper {
-  background: var(--bg-card);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--glass-radius);
   overflow-x: auto;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--glass-shadow), var(--glass-specular);
 }
 
 .modern-data-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 13.5px;
+  font-size: 13px !important;
 }
 
 .modern-data-table th {
-  background: #f8fafc;
-  color: #475569;
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 12px 16px;
+  background: rgba(248, 250, 252, 0.85);
+  backdrop-filter: blur(8px);
+  color: #475569 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em;
+  padding: 12px 16px !important;
   border-bottom: 1px solid var(--border-color);
   white-space: nowrap;
 }
 
 .modern-data-table td {
-  padding: 13px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 14px 16px !important;
+  border-bottom: 1px solid rgba(241, 245, 249, 0.85);
   color: var(--text-main);
   vertical-align: middle;
+  font-size: 13px !important;
 }
 
 .modern-data-table tr:last-child td {
@@ -344,123 +701,47 @@ body,
 }
 
 .modern-data-table tbody tr:hover {
-  background-color: #f8fafc;
+  background-color: rgba(248, 250, 252, 0.8);
 }
 
-/* ==========================================================
-   Universal Status Badges / Pills
-   ========================================================== */
+/* Universal Status Badges / Pills (Glassmorphic) */
 .badge-status {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 600;
+  padding: 2px 10px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
   white-space: nowrap;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  line-height: 16px;
 }
 
 .badge-status-active,
 .badge-status-success {
-  background: var(--success-light);
-  color: #059669;
-  border: 1px solid var(--success-border);
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #047857 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
 }
 
 .badge-status-inactive,
 .badge-status-danger {
-  background: var(--danger-light);
-  color: #dc2626;
-  border: 1px solid var(--danger-border);
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #b91c1c !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
 }
 
 .badge-status-warning,
 .badge-status-pending {
-  background: var(--warning-light);
-  color: #d97706;
-  border: 1px solid var(--warning-border);
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
 }
 
 .badge-status-neutral {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid var(--border-color);
+  background: rgba(241, 245, 249, 0.8) !important;
+  color: #334155 !important;
+  border: 1px solid var(--border-color) !important;
 }
-
-/* ==========================================================
-   Table Action Buttons (Edit, Delete, View, Status)
-   Exact Match to ProductManagementPage Action Buttons
-   ========================================================== */
-.table-btn-view,
-.btn-action-view {
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #475569;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.15s ease;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.table-btn-view:hover,
-.btn-action-view:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-.table-btn-edit,
-.btn-action-edit {
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: 1px solid #93c5fd;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.15s ease;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.table-btn-edit:hover,
-.btn-action-edit:hover {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.table-btn-delete,
-.btn-action-delete {
-  padding: 5px 12px;
-  border-radius: 6px;
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #dc2626;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.15s ease;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.table-btn-delete:hover:not(:disabled),
-.btn-action-delete:hover:not(:disabled) {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-

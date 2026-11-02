@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
@@ -22,7 +23,6 @@ import {
   FiCheck,
   FiAlertCircle,
   FiClock,
-  FiArrowLeft,
   FiSave,
   FiUploadCloud,
 } from 'react-icons/fi';
@@ -361,21 +361,15 @@ export const EditProductPage: React.FC = () => {
   return (
     <div className={styles.container}>
       {/* Page Header */}
-      <div className={styles.pageTopHeader} style={{ alignItems: 'flex-start', textAlign: 'left', marginBottom: '20px' }}>
-        <button
-          className={styles.btnActionOutline}
-          onClick={() => navigate('/admin/products')}
-          style={{ marginBottom: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          <FiArrowLeft /> Back to Products
-        </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+        <BackButton fallbackUrl="/admin/products" />
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div className={styles.iconBadge} style={{ margin: 0 }}>
             <FiPackage />
           </div>
           <div>
-            <h1 className={styles.mainTitle}>Edit Product #{productId}</h1>
-            <p className={styles.mainSubtitle}>Update product specifications, category, brand, tags, and expiry tracking</p>
+            <h1 className={styles.mainTitle} style={{ textAlign: 'left', margin: 0 }}>Edit Product #{productId}</h1>
+            <p className={styles.mainSubtitle} style={{ textAlign: 'left', margin: 0 }}>Update product specifications, category, brand, tags, and expiry tracking</p>
           </div>
         </div>
       </div>
@@ -411,7 +405,7 @@ export const EditProductPage: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* General Info Card */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
-              <h2 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 16px 0', color: '#0f172a' }}>
+              <h2 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 16px 0', color: '#0f172a' }}>
                 General Information
               </h2>
 
@@ -463,7 +457,7 @@ export const EditProductPage: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FiClock color="#f59e0b" size={18} />
-                  <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
+                  <h2 style={{ fontSize: '14px', fontWeight: 600, margin: 0, color: '#0f172a' }}>
                     Expiration &amp; Batch Details
                   </h2>
                 </div>
@@ -523,7 +517,7 @@ export const EditProductPage: React.FC = () => {
 
             {/* Product Images Card */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px 0', color: '#0f172a' }}>
+              <h2 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 16px 0', color: '#0f172a' }}>
                 Product Media &amp; Images
               </h2>
 
@@ -650,7 +644,7 @@ export const EditProductPage: React.FC = () => {
             {/* Existing Variants Overview Card */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
+                <h2 style={{ fontSize: '14px', fontWeight: 600, margin: 0, color: '#0f172a' }}>
                   Associated Variants ({variants.length})
                 </h2>
                 <button
@@ -941,7 +935,7 @@ export const EditProductPage: React.FC = () => {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBox} style={{ maxWidth: '380px', padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>+ Add New Tag</h3>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>+ Add New Tag</h3>
               <button type="button" onClick={() => setShowTagModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
                 <FiX size={18} />
               </button>

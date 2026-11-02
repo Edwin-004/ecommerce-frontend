@@ -12,28 +12,55 @@
   gap: 16px;
 }
 
+.primaryAddBtn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+.primaryAddBtn:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
 .titleArea h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
   color: #0f172a;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.025em;
   margin: 0;
+  line-height: 28px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .titleArea p {
-  font-size: 13.5px;
+  font-size: 12px;
   color: #64748b;
-  margin: 4px 0 0 0;
+  margin: 2px 0 0 0;
+  font-weight: 400;
+  line-height: 16px;
 }
 
 .tableContainer {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
   overflow-x: auto;
 }
 
@@ -46,21 +73,22 @@
 
 .zoneTable th {
   background-color: #f8fafc;
-  color: #475569;
+  color: #94a3b8;
   font-size: 12px;
-  font-weight: 600;
-  padding: 13px 18px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 500;
+  padding: 12px 16px;
+  text-transform: none;
+  letter-spacing: 0.02em;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
 }
 
 .zoneTable td {
-  padding: 14px 18px;
+  padding: 14px 16px;
   color: #0f172a;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
+  font-size: 13px;
 }
 
 .zoneTable tr:last-child td {

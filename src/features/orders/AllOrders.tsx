@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import {
   useGetOrdersQuery,
   useGetOrderByOrderNoQuery,
@@ -8,7 +9,7 @@ import {
   useGetOrderStatusHistoryQuery,
 } from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
 import styles from './AllOrders.module.css';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   FiShoppingCart,
   FiChevronLeft,
@@ -16,6 +17,15 @@ import {
   FiX,
   FiSearch,
 } from 'react-icons/fi';
+
+const ORDER_EXPORT_COLUMNS = [
+  { key: 'orderNo', label: 'Order No' },
+  { key: 'orderDate', label: 'Date' },
+  { key: 'customerName', label: 'Customer' },
+  { key: 'totalAmount', label: 'Total Amount' },
+  { key: 'orderStatus', label: 'Order Status' },
+  { key: 'paymentStatus', label: 'Payment' },
+];
 
 export const AllOrders = () => {
   const [currentPage, setCurrentPage] = useState(0);
@@ -40,6 +50,113 @@ export const AllOrders = () => {
 
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // Dynamic Export State
+  const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>(
+    ORDER_EXPORT_COLUMNS.map((c) => c.key)
+  );
+  const [showColumnDropdown, setShowColumnDropdown] = useState<boolean>(false);
+  const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
+  const [exportingFormat, setExportingFormat] = useState<'pdf' | 'excel' | null>(null);
+  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
+
+  const columnDropdownRef = useRef<HTMLDivElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        columnDropdownRef.current &&
+        !columnDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowColumnDropdown(false);
+      }
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowExportMenu(false);
+      }
+    };
+    if (showColumnDropdown || showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showColumnDropdown, showExportMenu]);
+
+  const handleToggleColumn = (colKey: string) => {
+    setSelectedExportColumns((prev) => {
+      if (prev.includes(colKey)) {
+        if (prev.length === 1) {
+          alert('At least one column must be selected for export.');
+          return prev;
+        }
+        return prev.filter((k) => k !== colKey);
+      }
+      return [...prev, colKey];
+    });
+  };
+
+  const handleSelectAllColumns = () => {
+    setSelectedExportColumns(ORDER_EXPORT_COLUMNS.map((c) => c.key));
+  };
+
+  const handleDynamicExport = async (format: 'pdf' | 'excel') => {
+    if (selectedExportColumns.length === 0) {
+      alert('Please select at least one column to export.');
+      return;
+    }
+    try {
+      setExportingFormat(format);
+      setShowExportMenu(false);
+
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams();
+      if (statusFilter && statusFilter !== 'ALL') {
+        params.append('status', statusFilter);
+      }
+      if (searchTerm && searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+      params.append('columns', selectedExportColumns.join(','));
+
+      const response = await fetch(
+        `http://localhost:8080/api/v1/reports/orders/export/${format}?${params.toString()}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Export failed');
+        throw new Error(errorText || `Export failed with status ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const ext = format === 'excel' ? 'xlsx' : 'pdf';
+      const filename = `orders-report.${ext}`;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      setExportSuccessMessage(`Successfully downloaded ${filename}`);
+      setTimeout(() => setExportSuccessMessage(null), 4000);
+    } catch (err: any) {
+      console.error('Failed to export orders report:', err);
+      alert('Failed to export orders report: ' + (err.message || 'Unknown error'));
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
 
   const filteredOrders = orders.filter((order: any) => {
     const matchStatus =
@@ -193,16 +310,26 @@ export const AllOrders = () => {
   return (
     <div className={styles.pageContainer}>
       <div className={styles.pageHeader}>
-        <div className={styles.titleArea}>
-          <h1>
-            <FiShoppingCart /> All Orders
-          </h1>
-          <p>
-            Track customer purchases, fulfillment stages, shipments, and payment
-            statuses
-          </p>
+        <div className={styles.headerLeft}>
+          <BackButton fallbackUrl="/admin/dashboard" />
+          <div className={styles.titleArea}>
+            <h1>
+              <FiShoppingCart /> All Orders
+            </h1>
+            <p>
+              Track customer purchases, fulfillment stages, shipments, and payment
+              statuses
+            </p>
+          </div>
         </div>
       </div>
+
+      {exportSuccessMessage && (
+        <div className={styles.exportSuccessBanner}>
+          <i className="bi bi-check-circle-fill text-success me-2" />
+          <span>{exportSuccessMessage}</span>
+        </div>
+      )}
 
       <div className={styles.filterSection}>
         <div className={styles.tabsContainer}>
@@ -233,15 +360,122 @@ export const AllOrders = () => {
           })}
         </div>
 
-        <div className={styles.searchContainer}>
-          <FiSearch className={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder="Search Order No or Customer..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div className={styles.searchContainer}>
+            <FiSearch className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search Order No or Customer..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
+
+          {/* Dynamic Column Selector Popover */}
+          <div className={styles.columnSelectorContainer} ref={columnDropdownRef}>
+            <button
+              type="button"
+              className={styles.btnColumnSelector}
+              onClick={() => setShowColumnDropdown((prev) => !prev)}
+              title="Select columns to export"
+            >
+              <i className="bi bi-sliders text-secondary me-1" />
+              <span>Columns ({selectedExportColumns.length}/6)</span>
+            </button>
+
+            {showColumnDropdown && (
+              <div className={styles.columnDropdownMenu}>
+                <div className={styles.columnDropdownHeader}>
+                  <span className={styles.columnDropdownTitle}>Export Columns</span>
+                  <button
+                    type="button"
+                    className={styles.columnDropdownAction}
+                    onClick={handleSelectAllColumns}
+                  >
+                    Select All
+                  </button>
+                </div>
+
+                <div className={styles.columnCheckboxList}>
+                  {ORDER_EXPORT_COLUMNS.map((col) => (
+                    <label key={col.key} className={styles.columnCheckboxLabel}>
+                      <input
+                        type="checkbox"
+                        checked={selectedExportColumns.includes(col.key)}
+                        onChange={() => handleToggleColumn(col.key)}
+                      />
+                      <span>{col.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Export Dropdown Menu (PDF & Excel Only) */}
+          <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
+            <button
+              type="button"
+              className={`${styles.btnExportDropdown} ${exportingFormat ? styles.btnExporting : ''}`}
+              onClick={() => setShowExportMenu((prev) => !prev)}
+              disabled={!!exportingFormat}
+              title="Export filtered orders as PDF or Excel"
+            >
+              {exportingFormat ? (
+                <>
+                  <span className={styles.exportSpinner} />
+                  <span>Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-download me-1" />
+                  <span>Export</span>
+                  <i className="bi bi-chevron-down ms-1" style={{ fontSize: '11px' }} />
+                </>
+              )}
+            </button>
+
+            {showExportMenu && !exportingFormat && (
+              <div className={styles.exportDropdownMenu}>
+                <div className={styles.exportDropdownHeader}>Export As</div>
+
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    void handleDynamicExport('excel');
+                  }}
+                >
+                  <div className={styles.exportMenuIconExcel}>
+                    <i className="bi bi-file-earmark-excel fs-5" />
+                  </div>
+                  <div className={styles.exportMenuText}>
+                    <span className={styles.exportMenuTitle}>Excel Spreadsheet</span>
+                    <span className={styles.exportMenuSub}>.xlsx format</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.exportMenuItem}
+                  onClick={() => {
+                    setShowExportMenu(false);
+                    void handleDynamicExport('pdf');
+                  }}
+                >
+                  <div className={styles.exportMenuIconPdf}>
+                    <i className="bi bi-file-earmark-pdf fs-5" />
+                  </div>
+                  <div className={styles.exportMenuText}>
+                    <span className={styles.exportMenuTitle}>PDF Document</span>
+                    <span className={styles.exportMenuSub}>Standard PDF report</span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -293,11 +527,17 @@ export const AllOrders = () => {
                       <span
                         className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}
                       >
-                        {order.orderStatus}
+                        {order.orderStatus === 'DELIVERED' && <span className={styles.statusDot}>✔</span>}
+                        {order.orderStatus === 'PENDING' && <span className={styles.statusDot}>⏳</span>}
+                        {order.orderStatus === 'SHIPPED' && <span className={styles.statusDot}>🚚</span>}
+                        {order.orderStatus === 'PROCESSING' && <span className={styles.statusDot}>⚙</span>}
+                        {order.orderStatus === 'CANCELLED' && <span className={styles.statusDot}>✖</span>}
+                        <span>{order.orderStatus}</span>
                       </span>
                     </td>
                     <td>
-                      <span className={styles.paymentSuccess}>
+                      <span className={`${styles.paymentBadge} ${order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID' ? styles.paymentSuccess : (order.paymentStatus === 'REFUNDED' || order.paymentStatus === 'PARTIALLY_REFUNDED' ? styles.paymentRefunded : styles.paymentPending)}`}>
+                        {(order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID') && '✔ '}
                         {order.paymentStatus}
                       </span>
                     </td>
@@ -351,7 +591,7 @@ export const AllOrders = () => {
                     {order.customerName}
                   </strong>
                   <span className={styles.amountText}>
-                    {order.totalAmount?.toLocaleString()} Ks
+                    {order.totalAmount?.toLocaleString()} MMK
                   </span>
                 </div>
                 <div className={styles.listSubtext}>
@@ -439,7 +679,7 @@ export const AllOrders = () => {
                                 )}
                               </td>
                               <td>{item.qty}</td>
-                              <td>{item.subtotal?.toLocaleString()} Ks</td>
+                              <td>{item.subtotal?.toLocaleString()} MMK</td>
                             </tr>
                           ))}
                         </tbody>

@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
@@ -880,15 +881,20 @@ export const CreateProductPage: React.FC = () => {
 
   return (
     <div className={styles.createProductContainer}>
-      {/* Page Header (3D Cube Icon + Title + Subtitle) */}
-      <div className={styles.pageTopHeader}>
-        <div className={styles.iconBadge}>
-          <FiPackage />
+      {/* Page Header with BackButton */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+        <BackButton fallbackUrl="/admin/products" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className={styles.iconBadge} style={{ margin: 0 }}>
+            <FiPackage />
+          </div>
+          <div>
+            <h1 className={styles.mainTitle} style={{ textAlign: 'left', margin: 0 }}>Create New Product</h1>
+            <p className={styles.mainSubtitle} style={{ textAlign: 'left', margin: 0 }}>
+              Add a new product to your inventory
+            </p>
+          </div>
         </div>
-        <h1 className={styles.mainTitle}>Create New Product</h1>
-        <p className={styles.mainSubtitle}>
-          Add a new product to your inventory
-        </p>
       </div>
 
       {errorMessage && (
@@ -953,14 +959,14 @@ export const CreateProductPage: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Price *</label>
+              <label>Price (MMK) *</label>
               <input
                 type="number"
                 required
                 min="0"
                 step="any"
                 className={styles.inputField}
-                placeholder="Enter price"
+                placeholder="Enter price in MMK"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
               />
@@ -1830,7 +1836,7 @@ export const CreateProductPage: React.FC = () => {
                         {/* Price & Stock Inputs */}
                         <div className={styles.variantCardInputsRow}>
                           <div className={styles.variantCardInputCol}>
-                            <label>PRICE</label>
+                            <label>PRICE (MMK)</label>
                             <input
                               type="number"
                               min="0"
@@ -2006,7 +2012,7 @@ export const CreateProductPage: React.FC = () => {
                 alignItems: 'center',
               }}
             >
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>
                 + Add New Tag
               </h3>
               <button

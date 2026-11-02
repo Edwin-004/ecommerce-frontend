@@ -68,11 +68,6 @@ export async function rejectRefund(
   });
 }
 
-export async function seedMockRefundData(): Promise<{ message: string; totalRequests: number }> {
-  return apiFetch<{ message: string; totalRequests: number }>('/api/v1/admin/refunds/seed-mock', {
-    method: 'POST',
-  });
-}
 
 export async function exportRefundReport(
   format: 'pdf' | 'excel',

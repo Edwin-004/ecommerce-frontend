@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
@@ -589,10 +590,13 @@ export const ProductManagementPage: React.FC = () => {
 
       {/* 1. Header (Catalogue Tag + Title + Subtitle + Add Product Button) */}
       <div className={styles.managementHeaderRow}>
-        <div className={styles.managementHeaderLeft}>
-          <div className={styles.catalogueSmallLabel}>CATALOGUE</div>
-          <h1>Product Management</h1>
-          <p>Manage inventory, pricing, and product attributes.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <BackButton fallbackUrl="/admin/dashboard" />
+          <div className={styles.managementHeaderLeft}>
+            <div className={styles.catalogueSmallLabel}>CATALOGUE</div>
+            <h1>Product Management</h1>
+            <p>Manage inventory, pricing, and product attributes.</p>
+          </div>
         </div>
         <button
           className={styles.btnAddProductPurple}
@@ -916,9 +920,10 @@ export const ProductManagementPage: React.FC = () => {
                       </span>
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                      <div className="table-action-group">
                         <button
-                          className={styles.btnViewAction}
+                          type="button"
+                          className="table-btn-view"
                           onClick={() => setViewProduct(p)}
                           title="View Details"
                         >
@@ -926,8 +931,8 @@ export const ProductManagementPage: React.FC = () => {
                           View
                         </button>
                         <button
-                          className={styles.btnViewAction}
-                          style={{ borderColor: '#93c5fd', color: '#1d4ed8', background: '#eff6ff' }}
+                          type="button"
+                          className="table-btn-edit"
                           onClick={() => navigate(`/admin/products/edit/${p.productId}`)}
                           title="Edit Product"
                         >
@@ -935,8 +940,8 @@ export const ProductManagementPage: React.FC = () => {
                           Edit
                         </button>
                         <button
-                          className={styles.btnViewAction}
-                          style={{ borderColor: '#fecaca', color: '#dc2626', background: '#fef2f2' }}
+                          type="button"
+                          className="table-btn-delete"
                           onClick={() => handleDeleteSingle(p.productId, p.productName)}
                           title="Delete Product"
                         >
@@ -1034,16 +1039,18 @@ export const ProductManagementPage: React.FC = () => {
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div className={styles.attrActionGroup} style={{ justifyContent: 'flex-end' }}>
+                      <div className="table-action-group" style={{ justifyContent: 'flex-end' }}>
                         <button
-                          className={styles.btnAttrEdit}
+                          type="button"
+                          className="table-btn-edit"
                           onClick={() => setEditingAttr(v)}
                         >
                           <FiEdit2 size={12} />
                           Edit
                         </button>
                         <button
-                          className={styles.btnAttrDelete}
+                          type="button"
+                          className="table-btn-delete"
                           onClick={() => handleDeleteAttribute(v.variationId)}
                         >
                           <FiTrash2 size={12} />

@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { FiBell, FiMenu, FiRefreshCcw, FiCheck, FiZap } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import {
+  FiBell,
+  FiMenu,
+  FiRefreshCcw,
+  FiCheck,
+  FiZap,
+  
+  FiHome,
+} from "react-icons/fi";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { type RootState } from "../store";
 import styles from "./Topbar.module.css";
@@ -16,6 +24,7 @@ interface TopbarProps {
 
 export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Redux auth state
   const { username, role } = useSelector((state: RootState) => state.auth);
@@ -61,7 +70,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
     return roleStr || "Staff";
   };
 
-  const firstLetter = username ? username.charAt(0).toUpperCase() : 'U';
+  const firstLetter = username ? username.charAt(0).toUpperCase() : 'A';
 
   const handleNotificationItemClick = (item: AdminNotificationItem) => {
     if (!item.isRead) {
@@ -84,6 +93,27 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
     }
   };
 
+  const getBreadcrumbTitle = (path: string): string => {
+    if (path.startsWith('/admin/dashboard')) return 'Overview';
+    if (path.startsWith('/admin/products/new')) return 'Create Product';
+    if (path.startsWith('/admin/products')) return 'Product List';
+    if (path.startsWith('/admin/categories')) return 'Categories';
+    if (path.startsWith('/admin/brands')) return 'Brands';
+    if (path.startsWith('/admin/tags')) return 'Tags';
+    if (path.startsWith('/admin/variants')) return 'Variants & Options';
+    if (path.startsWith('/admin/inventory')) return 'Inventory & Stock';
+    if (path.startsWith('/admin/orders')) return 'All Orders';
+    if (path.startsWith('/admin/refunds')) return 'Refund Management';
+    if (path.startsWith('/admin/shipping-rates')) return 'Shipping Rates';
+    if (path.startsWith('/admin/staff/new')) return 'Add Staff';
+    if (path.startsWith('/admin/staff')) return 'Staff Management';
+    if (path.startsWith('/admin/reports')) return 'Reports & Analytics';
+    if (path.startsWith('/admin/profile')) return 'My Profile';
+    return 'Dashboard';
+  };
+
+  const isDashboard = location.pathname === '/admin/dashboard';
+
   return (
     <>
       {/* 1. Real-time Toast Notification (Pop-up upon new refund event) */}
@@ -105,6 +135,10 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
         />
       )}
 
+      {/* ==========================================================================
+          Vibecoding UI Layout Header Row:
+          Aligned horizontally with Sidebar's top Brand Header row (h-8 pt-0 mb-3)
+          ========================================================================== */}
       <header className={styles.topbar}>
         <div className={styles.left}>
           {onToggleMobileMenu && (
@@ -115,13 +149,38 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
               aria-label="Toggle navigation menu"
               title="Toggle Menu"
             >
-              <FiMenu size={22} />
+              <FiMenu size={16} />
             </button>
           )}
+
+          {/* Breadcrumb / Back Bar ([Icon] Overview + ← Back button) */}
+          <div className={styles.breadcrumbBar}>
+            
+
+            <div
+              className={styles.breadcrumbItem}
+              onClick={() => navigate('/admin/dashboard')}
+              title="Overview"
+            >
+              <FiHome size={13} className={styles.breadcrumbHomeIcon} />
+              <span className={styles.breadcrumbText}>Overview</span>
+            </div>
+
+            {!isDashboard && (
+              <>
+                <span className={styles.breadcrumbDivider}>/</span>
+                <span className={styles.breadcrumbActivePage}>
+                  {getBreadcrumbTitle(location.pathname)}
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Header Right Actions */}
         <div className={styles.right}>
+          <span className={styles.lastUpdatedText}>Last updated: Just now</span>
+
           {/* Notification Bell Dropdown Container */}
           <div className={styles.notificationWrapper} ref={dropdownRef}>
             <button
@@ -131,7 +190,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
               aria-label="Notifications"
               onClick={() => setShowDropdown((prev) => !prev)}
             >
-              <FiBell size={19} />
+              <FiBell size={15} />
               {unreadCount > 0 && (
                 <span className={styles.notificationBadge}>
                   {unreadCount > 9 ? "9+" : unreadCount}
@@ -217,18 +276,14 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
             )}
           </div>
 
-          {/* Profile Card */}
+          {/* Clean Single User Profile Pill */}
           <div 
             className={styles.profileTrigger} 
             onClick={() => navigate('/admin/profile')}
             title="Go to My Profile"
           >
             <div className={styles.avatar}>{firstLetter}</div>
-
-            <div className={styles.profileInfo}>
-              <span className={styles.profileName}>{username || 'Admin'}</span>
-              <span className={styles.profileRole}>{formatRole(role)}</span>
-            </div>
+            <span className={styles.profileName}>{formatRole(role) || username || 'System Admin'}</span>
           </div>
         </div>
       </header>
