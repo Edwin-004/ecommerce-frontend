@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React, { useState, useEffect } from 'react';
 import { useUpdateZoneRateMutation } from './shippingApi';
 import styles from './EditZoneModal.module.css';
@@ -83,9 +84,10 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
     }
   };
 
-  return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
+  return createPortal(
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+      
         <div className={styles.modalHeader}>
           <h3>Edit Zone & Rates</h3>
           <button onClick={onClose} className={styles.closeBtn}>
@@ -223,6 +225,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
