@@ -38,8 +38,10 @@ export const AllOrders = () => {
       skip: !selectedOrderNo,
     });
 
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   const filteredOrders = orders.filter((order: any) => {
     const matchStatus =
@@ -47,7 +49,36 @@ export const AllOrders = () => {
     const matchSearch =
       order.orderNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchStatus && matchSearch;
+    let matchDate = true;
+    if (startDate || endDate) {
+      if (!order.createdAt) {
+        matchDate = false; // Date မရှိရင် ဖျောက်မည်
+      } else {
+        // "2026-10-29 08:07 PM" ကဲ့သို့သော String ကို Date Object ပြောင်းခြင်း
+        // (API က ဘယ်လိုပုံစံနဲ့ပဲ လာလာ Date Object အဖြစ် အရင်ပြောင်းပါမည်)
+        const orderDateObj = new Date(order.createdAt);
+
+        // Invalid Date ဖြစ်နေလျှင် (Parsing Error တက်လျှင်) ဖျောက်မည်
+        if (isNaN(orderDateObj.getTime())) {
+          matchDate = false;
+        } else {
+          // Date Object မှနေ၍ YYYY-MM-DD ပုံစံ String ပြန်ထုတ်ခြင်း (Timezone ပြဿနာကို ဖြေရှင်းပြီး)
+          // ဥပမာ: "2026-10-29"
+          const year = orderDateObj.getFullYear();
+          const month = String(orderDateObj.getMonth() + 1).padStart(2, '0');
+          const day = String(orderDateObj.getDate()).padStart(2, '0');
+          const formattedOrderDate = `${year}-${month}-${day}`;
+
+          if (startDate && formattedOrderDate < startDate) {
+            matchDate = false; // Start Date ထက် စောနေလျှင် ဖျောက်မည်
+          }
+          if (endDate && formattedOrderDate > endDate) {
+            matchDate = false; // End Date ထက် နောက်ကျနေလျှင် ဖျောက်မည်
+          }
+        }
+      }
+    }
+    return matchStatus && matchSearch && matchDate;
   });
 
   const getOrderCountByStatus = (status: string) => {
@@ -252,15 +283,35 @@ export const AllOrders = () => {
           })}
         </div>
 
-        <div className={styles.searchContainer}>
-          <FiSearch className={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder="Search Order No or Customer..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
-          />
+        <div className={styles.rightFilterGroup}>
+          <div className={styles.datePickerContainer}>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className={styles.dateInput}
+              title="Start Date"
+            />
+            <span className={styles.dateSeparator}>-</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className={styles.dateInput}
+              title="End Date"
+            />
+          </div>
+
+          <div className={styles.searchContainer}>
+            <FiSearch className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search Order No or Customer..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.searchInput}
+            />
+          </div>
         </div>
       </div>
 
