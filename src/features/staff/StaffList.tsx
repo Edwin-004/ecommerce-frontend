@@ -67,7 +67,7 @@ export const StaffList: React.FC = () => {
         }
     };
 
-    const handleEdit = (id: number, name: string) => {
+    const handleEdit = (id: number, _name?: string) => {
         navigate(`/admin/staff/edit/${id}`);
     };
 
