@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -14,6 +15,8 @@ import {
   FiPackage,
   FiDownload,
   FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
   FiFileText,
 } from 'react-icons/fi';
 import styles from './Inventory.module.css';
@@ -50,6 +53,91 @@ export const InventoryPage: React.FC = () => {
   const [txnTypeFilter, setTxnTypeFilter] = useState('ALL');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Table Drag-To-Scroll & Modern Slide Bar
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [startX, setStartX] = useState<number>(0);
+  const [scrollLeftState, setScrollLeftState] = useState<number>(0);
+  const [scrollPercent, setScrollPercent] = useState<number>(0);
+
+  const updateScrollProgress = () => {
+    if (!tableRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = tableRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll > 0) {
+      const pct = Math.min(100, Math.max(0, Math.round((scrollLeft / maxScroll) * 100)));
+      setScrollPercent(pct);
+    } else {
+      setScrollPercent(0);
+    }
+  };
+
+  const handleTableScroll = () => {
+    updateScrollProgress();
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea, .btn, [role="button"]')) {
+      return;
+    }
+    if (!tableRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - tableRef.current.offsetLeft);
+    setScrollLeftState(tableRef.current.scrollLeft);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!tableRef.current) return;
+      e.preventDefault();
+      const x = e.pageX - tableRef.current.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      tableRef.current.scrollLeft = scrollLeftState - walk;
+      updateScrollProgress();
+    };
+
+    const onMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isDragging, startX, scrollLeftState]);
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setScrollPercent(val);
+    if (!tableRef.current) return;
+    const { scrollWidth, clientWidth } = tableRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    if (maxScroll > 0) {
+      tableRef.current.scrollLeft = (val / 100) * maxScroll;
+    }
+  };
+
+  const scrollToEndpoint = (endpoint: 'start' | 'end') => {
+    if (!tableRef.current) return;
+    const { scrollWidth, clientWidth } = tableRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    tableRef.current.scrollTo({
+      left: endpoint === 'start' ? 0 : maxScroll,
+      behavior: 'smooth',
+    });
+  };
+
+  useEffect(() => {
+    if (tableRef.current) {
+      tableRef.current.scrollLeft = 0;
+      setScrollPercent(0);
+    }
+  }, [activeTab, searchQuery, statusFilter, txnTypeFilter]);
 
   // Dynamic Export Column Selector state (PDF & Excel ONLY)
   const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>([
@@ -244,37 +332,6 @@ export const InventoryPage: React.FC = () => {
     [items]
   );
 
-  // CSV Export
-  const handleExportCsv = () => {
-    if (items.length === 0) {
-      alert('No inventory data to export');
-      return;
-    }
-    const headers = ['Variant ID', 'SKU', 'Product Name', 'Attributes / Options', 'Price (MMK)', 'Physical Qty', 'Reserved', 'Available', 'Reorder Level', 'Expiry Status', 'Expiry Date', 'Batch', 'Status'];
-    const rows = filteredItems.map((item) => [
-      item.variantId,
-      `"${item.sku || ''}"`,
-      `"${item.productName || ''}"`,
-      `"${item.attributeSummary || ''}"`,
-      item.sellingPrice || 0,
-      item.quantity || 0,
-      item.reservedQuantity || 0,
-      item.availableQuantity || 0,
-      item.reorderLevel || 10,
-      item.expiryStatus || 'NON_PERISHABLE',
-      `"${item.expiryDate || ''}"`,
-      `"${item.batchNumber || ''}"`,
-      item.status || 'NORMAL',
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `inventory_report_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   // Filtered Items based on active tab, status, and search (latest first)
   const filteredItems = useMemo(() => {
@@ -325,6 +382,7 @@ export const InventoryPage: React.FC = () => {
       {/* Page Top Header */}
       <div className={styles.pageTopHeader}>
         <div className={styles.headerLeft}>
+          <BackButton fallbackUrl="/admin/dashboard" />
           <div className={styles.iconBadge}>
             <FiBox />
           </div>
@@ -348,35 +406,35 @@ export const InventoryPage: React.FC = () => {
       {/* Metrics Cards */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.statBlue}`}><FiPackage /></div>
           <div className={styles.statContent}>
-            <h3>{items.length}</h3>
-            <p>Tracked Variants</p>
+            <p className={styles.statLabel}>Tracked Variants</p>
+            <h3 className={styles.statValue}>{items.length}</h3>
           </div>
+          <div className={`${styles.statIcon} ${styles.statBlue}`}><FiPackage /></div>
         </div>
 
         <div className={styles.statCard}>
+          <div className={styles.statContent}>
+            <p className={styles.statLabel}>Total Units in Stock</p>
+            <h3 className={styles.statValue}>{totalStock.toLocaleString()}</h3>
+          </div>
           <div className={`${styles.statIcon} ${styles.statGreen}`}><FiBox /></div>
-          <div className={styles.statContent}>
-            <h3>{totalStock.toLocaleString()}</h3>
-            <p>Total Units in Stock</p>
-          </div>
         </div>
 
         <div className={styles.statCard} style={{ cursor: 'pointer' }} onClick={() => setActiveTab('LOW_STOCK')}>
+          <div className={styles.statContent}>
+            <p className={styles.statLabel}>Low Stock Alerts</p>
+            <h3 className={styles.statValue}>{lowStockCount}</h3>
+          </div>
           <div className={`${styles.statIcon} ${styles.statOrange}`}><FiAlertTriangle /></div>
-          <div className={styles.statContent}>
-            <h3>{lowStockCount}</h3>
-            <p>Low Stock Alerts</p>
-          </div>
         </div>
 
         <div className={styles.statCard} style={{ cursor: 'pointer' }} onClick={() => setActiveTab('LOW_STOCK')}>
-          <div className={`${styles.statIcon} ${styles.statRed}`}><FiAlertCircle /></div>
           <div className={styles.statContent}>
-            <h3>{outOfStockCount}</h3>
-            <p>Out of Stock Items</p>
+            <p className={styles.statLabel}>Out of Stock Items</p>
+            <h3 className={styles.statValue}>{outOfStockCount}</h3>
           </div>
+          <div className={`${styles.statIcon} ${styles.statRed}`}><FiAlertCircle /></div>
         </div>
 
         <div
@@ -387,6 +445,10 @@ export const InventoryPage: React.FC = () => {
           }}
           onClick={() => setActiveTab('EXPIRING_SOON')}
         >
+          <div className={styles.statContent}>
+            <p className={styles.statLabel}>{expiredCount > 0 ? `${expiredCount} Expired!` : 'Expiring Soon'}</p>
+            <h3 className={styles.statValue} style={{ color: expiredCount > 0 ? '#ef4444' : undefined }}>{expiringSoonCount}</h3>
+          </div>
           <div
             className={styles.statIcon}
             style={{
@@ -395,10 +457,6 @@ export const InventoryPage: React.FC = () => {
             }}
           >
             <FiClock />
-          </div>
-          <div className={styles.statContent}>
-            <h3 style={{ color: expiredCount > 0 ? '#ef4444' : undefined }}>{expiringSoonCount}</h3>
-            <p>{expiredCount > 0 ? `${expiredCount} Expired!` : 'Expiring Soon'}</p>
           </div>
         </div>
       </div>
@@ -602,299 +660,350 @@ export const InventoryPage: React.FC = () => {
         </div>
       )}
 
-      {/* Data Views */}
-      <div className={styles.tableContainer}>
-        {activeTab !== 'TRANSACTIONS' ? (
-          <>
+      {/* Data Views - Card with Slide Bar & Drag-to-Scroll */}
+      <div className={styles.tableCard}>
+        {/* Modern Interactive Slide Toggle Bar */}
+        <div className={styles.scrollNoticeBar}>
+          <div className={styles.scrollNoticeLeft}>
+            <FiSliders size={13} style={{ color: '#2563eb' }} />
+            <span className={styles.scrollNoticeTitle}>Table Slide Bar:</span>
+            <span className={styles.scrollNoticeTag}>
+              {scrollPercent <= 5
+                ? (activeTab === 'TRANSACTIONS' ? 'Start (Date & Time)' : 'Start (Variant & SKU)')
+                : scrollPercent >= 95
+                ? (activeTab === 'TRANSACTIONS' ? 'End (Remark)' : 'End (Actions)')
+                : `${scrollPercent}%`}
+            </span>
+          </div>
+
+          <div className={styles.slideToggleWrapper}>
+            <button
+              type="button"
+              className={styles.sliderEndpointBtn}
+              onClick={() => scrollToEndpoint('start')}
+              title={activeTab === 'TRANSACTIONS' ? 'Jump to Date & Time' : 'Jump to Variant & SKU'}
+            >
+              <FiChevronLeft size={13} /> {activeTab === 'TRANSACTIONS' ? 'Left (Date)' : 'Left (SKU)'}
+            </button>
+            <div className={styles.sliderTrackContainer}>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={scrollPercent}
+                onChange={handleSliderChange}
+                className={styles.modernSlideRange}
+                title="Slide cursor across this bar to scroll table sideways"
+                style={{
+                  background: `linear-gradient(to right, #2563eb 0%, #2563eb ${scrollPercent}%, #e2e8f0 ${scrollPercent}%, #e2e8f0 100%)`
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              className={styles.sliderEndpointBtn}
+              onClick={() => scrollToEndpoint('end')}
+              title={activeTab === 'TRANSACTIONS' ? 'Jump to Remark' : 'Jump to Actions'}
+            >
+              {activeTab === 'TRANSACTIONS' ? 'Right (Remark)' : 'Right (Actions)'} <FiChevronRight size={13} />
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable & Draggable Table Area */}
+        <div
+          ref={tableRef}
+          className={`${styles.tableResponsive} ${isDragging ? styles.isDragging : ''}`}
+          onMouseDown={handleMouseDown}
+          onScroll={handleTableScroll}
+        >
+          {activeTab !== 'TRANSACTIONS' ? (
             <table className={styles.table}>
-
-            <thead>
-              <tr>
-                <th>VARIANT & SKU</th>
-                <th>PRODUCT</th>
-                <th>SELLING PRICE</th>
-                <th>PHYSICAL STOCK</th>
-                <th>RESERVED</th>
-                <th>AVAILABLE</th>
-                <th>REORDER LEVEL</th>
-                <th>EXPIRY &amp; BATCH</th>
-                <th>STATUS</th>
-                <th style={{ textAlign: 'center' }}>ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.length === 0 ? (
+              <thead>
                 <tr>
-                  <td colSpan={10} className={styles.emptyState}>
-                    <FiBox />
-                    <p style={{ margin: '8px 0 16px 0', fontWeight: 500 }}>No inventory records found matching your filters.</p>
-                    <button className={styles.btnPrimary} onClick={loadData}>
-                      <FiRefreshCw /> Reload Stock Records
-                    </button>
-                  </td>
+                  <th style={{ minWidth: '150px' }}>VARIANT &amp; SKU</th>
+                  <th style={{ minWidth: '220px' }}>PRODUCT</th>
+                  <th style={{ minWidth: '130px' }}>SELLING PRICE</th>
+                  <th style={{ minWidth: '160px' }}>PHYSICAL STOCK</th>
+                  <th style={{ minWidth: '110px' }}>RESERVED</th>
+                  <th style={{ minWidth: '110px' }}>AVAILABLE</th>
+                  <th style={{ minWidth: '130px' }}>REORDER LEVEL</th>
+                  <th style={{ minWidth: '190px' }}>EXPIRY &amp; BATCH</th>
+                  <th style={{ minWidth: '130px' }}>STATUS</th>
+                  <th style={{ textAlign: 'center', minWidth: '320px' }}>ACTIONS</th>
                 </tr>
-              ) : (
-                paginatedItems.map((item) => (
-                  <tr key={item.inventoryId || item.variantId}>
-
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <span className={styles.skuTag}>{item.sku}</span>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>#{item.variantId}</span>
-                      </div>
+              </thead>
+              <tbody>
+                {filteredItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className={styles.emptyState}>
+                      <FiBox />
+                      <p style={{ margin: '8px 0 16px 0', fontWeight: 500 }}>No inventory records found matching your filters.</p>
+                      <button className={styles.btnPrimary} onClick={loadData}>
+                        <FiRefreshCw /> Reload Stock Records
+                      </button>
                     </td>
-                    <td>
-                      <div className={styles.productCell}>
-                        <div className={styles.productThumb}>
-                          <FiPackage />
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.productName || 'Unnamed'}</div>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>Variant ID #{item.variantId}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 600, color: '#0f172a' }}>
-                        {(item.sellingPrice || 0).toLocaleString()} MMK
-                      </span>
-                    </td>
-                    <td>
-                      <div className={styles.stockBarContainer}>
-                        <span style={{
-                          fontWeight: 700,
-                          fontSize: '14px',
-                          color: (item.quantity || 0) === 0 ? '#ef4444' : (item.quantity || 0) <= (item.reorderLevel || 10) ? '#d97706' : '#0f172a'
-                        }}>
-                          {item.quantity ?? 0} units
-                        </span>
-                        <div className={styles.stockBarBg}>
-                          <div
-                            className={styles.stockBarFill}
-                            style={{
-                              width: `${Math.min(100, ((item.quantity || 0) / 40) * 100)}%`,
-                              background: (item.quantity || 0) === 0 ? '#ef4444' : (item.quantity || 0) <= (item.reorderLevel || 10) ? '#f59e0b' : '#10b981'
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ color: '#64748b' }}>{item.reservedQuantity ?? 0}</td>
-                    <td>
-                      <span style={{ color: '#16a34a', fontWeight: 600 }}>
-                        {item.availableQuantity ?? Math.max(0, (item.quantity || 0) - (item.reservedQuantity || 0))}
-                      </span>
-                    </td>
-                    <td style={{ color: '#64748b' }}>{item.reorderLevel ?? 10} units</td>
-                    <td>
-                      {!item.isPerishable ? (
-                        <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
-                      ) : (
+                  </tr>
+                ) : (
+                  paginatedItems.map((item) => (
+                    <tr key={item.inventoryId || item.variantId}>
+                      <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          {item.expiryStatus === 'EXPIRED' && (
-                            <span
-                              style={{
-                                background: '#fef2f2',
-                                color: '#dc2626',
-                                border: '1px solid #fecaca',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                width: 'fit-content',
-                              }}
-                            >
-                              <FiAlertCircle size={11} /> Expired ({Math.abs(item.daysUntilExpiry || 0)}d ago)
-                            </span>
-                          )}
-                          {item.expiryStatus === 'EXPIRING_SOON' && (
-                            <span
-                              style={{
-                                background: '#fffbeb',
-                                color: '#d97706',
-                                border: '1px solid #fde68a',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                width: 'fit-content',
-                              }}
-                            >
-                              <FiClock size={11} /> Expires in {item.daysUntilExpiry}d
-                            </span>
-                          )}
-                          {item.expiryStatus === 'GOOD' && (
-                            <span
-                              style={{
-                                background: '#ecfdf5',
-                                color: '#059669',
-                                border: '1px solid #a7f3d0',
-                                padding: '2px 8px',
-                                borderRadius: '12px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                width: 'fit-content',
-                              }}
-                            >
-                              <FiCheckCircle size={11} /> Safe ({item.expiryDate})
-                            </span>
-                          )}
-                          {item.batchNumber && (
-                            <span style={{ fontSize: '11px', color: '#64748b' }}>
-                              Batch: {item.batchNumber}
-                            </span>
-                          )}
+                          <span className={styles.skuTag}>{item.sku}</span>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>#{item.variantId}</span>
                         </div>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`${styles.badge} ${
-                        item.status === 'NORMAL' ? styles.badgeNormal :
-                        item.status === 'LOW_STOCK' ? styles.badgeLowStock : styles.badgeOutOfStock
-                      }`}>
-                        {item.status === 'NORMAL' && <FiCheckCircle size={12} />}
-                        {item.status === 'LOW_STOCK' && <FiAlertTriangle size={12} />}
-                        {item.status === 'OUT_OF_STOCK' && <FiAlertCircle size={12} />}
-                        {item.status === 'NORMAL' ? 'In Stock' : item.status === 'LOW_STOCK' ? 'Low Stock' : 'Out of Stock'}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <div className={styles.actionGroup}>
-                        <button
-                          className={`${styles.btnAction} ${styles.btnRestock}`}
-                          title="Restock units"
-                          onClick={() => { setSelectedItem(item); setActiveModal('RESTOCK'); }}
-                        >
-                          <FiPlusCircle size={13} /> Restock
-                        </button>
+                      </td>
+                      <td>
+                        <div className={styles.productCell}>
+                          <div className={styles.productThumb}>
+                            <FiPackage />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.productName || 'Unnamed'}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>Variant ID #{item.variantId}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{ fontWeight: 600, color: '#0f172a' }}>
+                          {(item.sellingPrice || 0).toLocaleString()} MMK
+                        </span>
+                      </td>
+                      <td>
+                        <div className={styles.stockBarContainer}>
+                          <span style={{
+                            fontWeight: 700,
+                            fontSize: '14px',
+                            color: (item.quantity || 0) === 0 ? '#ef4444' : (item.quantity || 0) <= (item.reorderLevel || 10) ? '#d97706' : '#0f172a'
+                          }}>
+                            {item.quantity ?? 0} units
+                          </span>
+                          <div className={styles.stockBarBg}>
+                            <div
+                              className={styles.stockBarFill}
+                              style={{
+                                width: `${Math.min(100, ((item.quantity || 0) / 40) * 100)}%`,
+                                background: (item.quantity || 0) === 0 ? '#ef4444' : (item.quantity || 0) <= (item.reorderLevel || 10) ? '#f59e0b' : '#10b981'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ color: '#64748b' }}>{item.reservedQuantity ?? 0}</td>
+                      <td>
+                        <span style={{ color: '#16a34a', fontWeight: 600 }}>
+                          {item.availableQuantity ?? Math.max(0, (item.quantity || 0) - (item.reservedQuantity || 0))}
+                        </span>
+                      </td>
+                      <td style={{ color: '#64748b' }}>{item.reorderLevel ?? 10} units</td>
+                      <td>
+                        {!item.isPerishable ? (
+                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            {item.expiryStatus === 'EXPIRED' && (
+                              <span
+                                style={{
+                                  background: '#fef2f2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fecaca',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  width: 'fit-content',
+                                }}
+                              >
+                                <FiAlertCircle size={11} /> Expired ({Math.abs(item.daysUntilExpiry || 0)}d ago)
+                              </span>
+                            )}
+                            {item.expiryStatus === 'EXPIRING_SOON' && (
+                              <span
+                                style={{
+                                  background: '#fffbeb',
+                                  color: '#d97706',
+                                  border: '1px solid #fde68a',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  width: 'fit-content',
+                                }}
+                              >
+                                <FiClock size={11} /> Expires in {item.daysUntilExpiry}d
+                              </span>
+                            )}
+                            {item.expiryStatus === 'GOOD' && (
+                              <span
+                                style={{
+                                  background: '#ecfdf5',
+                                  color: '#059669',
+                                  border: '1px solid #a7f3d0',
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  width: 'fit-content',
+                                }}
+                              >
+                                <FiCheckCircle size={11} /> Safe ({item.expiryDate})
+                              </span>
+                            )}
+                            {item.batchNumber && (
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                Batch: {item.batchNumber}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`${styles.badge} ${
+                          item.status === 'NORMAL' ? styles.badgeNormal :
+                          item.status === 'LOW_STOCK' ? styles.badgeLowStock : styles.badgeOutOfStock
+                        }`}>
+                          {item.status === 'NORMAL' && <FiCheckCircle size={12} />}
+                          {item.status === 'LOW_STOCK' && <FiAlertTriangle size={12} />}
+                          {item.status === 'OUT_OF_STOCK' && <FiAlertCircle size={12} />}
+                          {item.status === 'NORMAL' ? 'In Stock' : item.status === 'LOW_STOCK' ? 'Low Stock' : 'Out of Stock'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div className={styles.actionGroup}>
+                          <button
+                            className={`${styles.btnAction} ${styles.btnRestock}`}
+                            title="Restock units"
+                            onClick={() => { setSelectedItem(item); setActiveModal('RESTOCK'); }}
+                          >
+                            <FiPlusCircle size={13} /> Restock
+                          </button>
 
-                        <button
-                          className={`${styles.btnAction} ${styles.btnWriteOff}`}
-                          title="Write-off damaged units"
-                          onClick={() => { setSelectedItem(item); setActiveModal('WRITE_OFF'); }}
-                        >
-                          <FiMinusCircle size={13} /> Write-off
-                        </button>
+                          <button
+                            className={`${styles.btnAction} ${styles.btnWriteOff}`}
+                            title="Write-off damaged units"
+                            onClick={() => { setSelectedItem(item); setActiveModal('WRITE_OFF'); }}
+                          >
+                            <FiMinusCircle size={13} /> Write-off
+                          </button>
 
-                        <button
-                          className={`${styles.btnAction} ${styles.btnAdjust}`}
-                          title="Adjust count after physical audit"
-                          onClick={() => { setSelectedItem(item); setActiveModal('ADJUST'); }}
-                        >
-                          <FiSliders size={13} /> Adjust
-                        </button>
+                          <button
+                            className={`${styles.btnAction} ${styles.btnAdjust}`}
+                            title="Adjust count after physical audit"
+                            onClick={() => { setSelectedItem(item); setActiveModal('ADJUST'); }}
+                          >
+                            <FiSliders size={13} /> Adjust
+                          </button>
 
-                        <button
-                          className={`${styles.btnAction} ${styles.btnHistory}`}
-                          title="Audit History"
-                          onClick={() => { setSelectedItem(item); setActiveModal('HISTORY'); }}
-                        >
-                          <FiClock size={13} /> History
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          {filteredItems.length > 0 && (
-            <div style={{ padding: '0 16px 16px 16px' }}>
-              <Pagination
-                currentPage={itemsPage}
-                totalPages={Math.ceil(filteredItems.length / itemsPerPage)}
-                totalResults={filteredItems.length}
-                pageSize={itemsPerPage}
-                onPageChange={setItemsPage}
-                onPageSizeChange={(size) => {
-                  setItemsPerPage(size);
-                  setItemsPage(1);
-                }}
-              />
-            </div>
-          )}
-        </>
-        ) : (
-          /* Audit History Tab */
-          <>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Date & Time</th>
-                <th>SKU</th>
-                <th>Product</th>
-                <th>Type</th>
-                <th>Change</th>
-                <th>Before &rarr; After</th>
-                <th>Initiated By</th>
-                <th>Reference</th>
-                <th>Remark</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.length === 0 ? (
+                          <button
+                            className={`${styles.btnAction} ${styles.btnHistory}`}
+                            title="Audit History"
+                            onClick={() => { setSelectedItem(item); setActiveModal('HISTORY'); }}
+                          >
+                            <FiClock size={13} /> History
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          ) : (
+            <table className={styles.table}>
+              <thead>
                 <tr>
-                  <td colSpan={9} className={styles.emptyState}>
-                    <FiClock />
-                    <p>No inventory transactions recorded yet.</p>
-                  </td>
+                  <th style={{ minWidth: '170px' }}>Date &amp; Time</th>
+                  <th style={{ minWidth: '130px' }}>SKU</th>
+                  <th style={{ minWidth: '200px' }}>Product</th>
+                  <th style={{ minWidth: '120px' }}>Type</th>
+                  <th style={{ minWidth: '100px' }}>Change</th>
+                  <th style={{ minWidth: '140px' }}>Before &rarr; After</th>
+                  <th style={{ minWidth: '140px' }}>Initiated By</th>
+                  <th style={{ minWidth: '140px' }}>Reference</th>
+                  <th style={{ minWidth: '200px' }}>Remark</th>
                 </tr>
-              ) : (
-                paginatedTxns.map((t) => (
-                  <tr key={t.txnId}>
-                    <td style={{ fontSize: '13px', color: '#64748b' }}>
-                      {new Date(t.createdAt).toLocaleString()}
+              </thead>
+              <tbody>
+                {transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className={styles.emptyState}>
+                      <FiClock />
+                      <p>No inventory transactions recorded yet.</p>
                     </td>
-                    <td><span className={styles.skuTag}>{t.sku}</span></td>
-                    <td style={{ fontWeight: 600 }}>{t.productName}</td>
-                    <td>
-                      <span className={`${styles.badge} ${
-                        t.txnType === 'RESTOCK' ? styles.badgeNormal :
-                        (t.txnType === 'WRITE_OFF' || t.txnType === 'SALE') ? styles.badgeOutOfStock : styles.badgeLowStock
-                      }`}>
-                        {t.txnType}
-                      </span>
-
-                    </td>
-                    <td style={{ fontWeight: 700, color: t.qty > 0 ? '#16a34a' : '#dc2626' }}>
-                      {t.qty > 0 ? `+${t.qty}` : t.qty}
-                    </td>
-                    <td>{t.beforeQty} &rarr; {t.afterQty}</td>
-                    <td>{t.createdByName || 'System'}</td>
-                    <td style={{ fontSize: '12px', color: '#64748b' }}>
-                      {t.referenceType ? `${t.referenceType} ${t.referenceId ? `#${t.referenceId}` : ''}` : '-'}
-                    </td>
-                    <td style={{ fontSize: '13px' }}>{t.remark || '-'}</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          {transactions.length > 0 && (
-            <div style={{ padding: '0 16px 16px 16px' }}>
-              <Pagination
-                currentPage={txnsPage}
-                totalPages={Math.ceil(transactions.length / txnsPerPage)}
-                totalResults={transactions.length}
-                pageSize={txnsPerPage}
-                onPageChange={setTxnsPage}
-                onPageSizeChange={(size) => {
-                  setTxnsPerPage(size);
-                  setTxnsPage(1);
-                }}
-              />
-            </div>
+                ) : (
+                  paginatedTxns.map((t) => (
+                    <tr key={t.txnId}>
+                      <td style={{ fontSize: '13px', color: '#64748b' }}>
+                        {new Date(t.createdAt).toLocaleString()}
+                      </td>
+                      <td><span className={styles.skuTag}>{t.sku}</span></td>
+                      <td style={{ fontWeight: 600 }}>{t.productName}</td>
+                      <td>
+                        <span className={`${styles.badge} ${
+                          t.txnType === 'RESTOCK' ? styles.badgeNormal :
+                          (t.txnType === 'WRITE_OFF' || t.txnType === 'SALE') ? styles.badgeOutOfStock : styles.badgeLowStock
+                        }`}>
+                          {t.txnType}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: 700, color: t.qty > 0 ? '#16a34a' : '#dc2626' }}>
+                        {t.qty > 0 ? `+${t.qty}` : t.qty}
+                      </td>
+                      <td>{t.beforeQty} &rarr; {t.afterQty}</td>
+                      <td>{t.createdByName || 'System'}</td>
+                      <td style={{ fontSize: '12px', color: '#64748b' }}>
+                        {t.referenceType ? `${t.referenceType} ${t.referenceId ? `#${t.referenceId}` : ''}` : '-'}
+                      </td>
+                      <td style={{ fontSize: '13px' }}>{t.remark || '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           )}
-        </>
+        </div>
+
+        {/* Pagination Controls fixed below the table */}
+        {activeTab !== 'TRANSACTIONS' && filteredItems.length > 0 && (
+          <div style={{ padding: '12px 16px', borderTop: '1px solid #f1f5f9' }}>
+            <Pagination
+              currentPage={itemsPage}
+              totalPages={Math.ceil(filteredItems.length / itemsPerPage)}
+              totalResults={filteredItems.length}
+              pageSize={itemsPerPage}
+              onPageChange={setItemsPage}
+              onPageSizeChange={(size) => {
+                setItemsPerPage(size);
+                setItemsPage(1);
+              }}
+            />
+          </div>
+        )}
+
+        {activeTab === 'TRANSACTIONS' && transactions.length > 0 && (
+          <div style={{ padding: '12px 16px', borderTop: '1px solid #f1f5f9' }}>
+            <Pagination
+              currentPage={txnsPage}
+              totalPages={Math.ceil(transactions.length / txnsPerPage)}
+              totalResults={transactions.length}
+              pageSize={txnsPerPage}
+              onPageChange={setTxnsPage}
+              onPageSizeChange={(size) => {
+                setTxnsPerPage(size);
+                setTxnsPage(1);
+              }}
+            />
+          </div>
         )}
       </div>
 

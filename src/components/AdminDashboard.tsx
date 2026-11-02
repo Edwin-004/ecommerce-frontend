@@ -1,11 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { type RootState } from "../store";
 import styles from "./AdminDashboard.module.css";
 import {
   FiShoppingCart,
-  FiDollarSign,
   FiPackage,
   FiUsers,
   FiTrendingUp,
@@ -16,6 +13,9 @@ import {
   FiCheckCircle,
   FiClock,
   FiEye,
+  FiCalendar,
+  FiPlus,
+  FiChevronRight,
 } from "react-icons/fi";
 import { inventoryApi } from "../features/inventory/inventoryApi";
 import { useGetOrdersQuery } from "../features/orders/orderApi";
@@ -41,8 +41,7 @@ export const AdminDashboard = () => {
   const [timeRange, setTimeRange] = useState<"7d" | "14d" | "30d">("7d");
   const [activeMetric, setActiveMetric] = useState<"revenue" | "orders">("revenue");
   const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(null);
-
-  const { username, role } = useSelector((state: RootState) => state.auth);
+  const [chartType, setChartType] = useState<"bar" | "area">("bar");
 
   // Real-time Orders & Revenue from Backend
   const { data: orderData } = useGetOrdersQuery({ page: 0, size: 200 });
@@ -54,14 +53,6 @@ export const AdminDashboard = () => {
       return acc + (Number(order.totalAmount) || 0);
     }, 0);
   }, [orders]);
-
-  const formatRole = (roleStr: string | null) => {
-    if (roleStr === "BUSINESS_OWNER" || roleStr === "OWNER") return "Business Owner";
-    if (roleStr === "ADMIN") return "System Admin";
-    if (roleStr === "INVENTORY_STAFF") return "Inventory Staff";
-    if (roleStr === "SALES_STAFF") return "Sales Staff";
-    return roleStr || "Staff";
-  };
 
   useEffect(() => {
     // 1. Fetch Low Stock Alerts
@@ -124,33 +115,42 @@ export const AdminDashboard = () => {
     return list;
   }, [orders, daysCount]);
 
-  // SVG Area Chart Geometry Calculations
-  const chartWidth = 700;
-  const chartHeight = 220;
-  const paddingX = 40;
-  const paddingY = 25;
-  const plotWidth = chartWidth - paddingX * 2;
-  const plotHeight = chartHeight - paddingY * 2;
+  // SVG Area & Bar Chart Geometry (Pixel-Perfect Alignment & Generous Left Y-Axis Spacing)
+  const chartWidth = 760;
+  const chartHeight = 260;
+  const marginLeft = 72; // Space ensures Y-axis labels like "100k MMK" never clip or overlap
+  const marginRight = 24;
+  const marginTop = 20;
+  const marginBottom = 34;
+  const plotWidth = chartWidth - marginLeft - marginRight;
+  const plotHeight = chartHeight - marginTop - marginBottom;
+
+  const slotWidth = chartData.length > 0 ? plotWidth / chartData.length : plotWidth;
+  const barWidth = Math.min(36, Math.max(14, slotWidth * 0.52));
 
   const maxVal = useMemo(() => {
     const vals = chartData.map((d) => (activeMetric === "revenue" ? d.revenue : d.orders));
     const max = Math.max(...vals, 0);
-    return max === 0 ? (activeMetric === "revenue" ? 1000 : 10) : max * 1.15;
+    if (max === 0) {
+      return activeMetric === "revenue" ? 1000 : 10;
+    }
+    return Math.ceil(max * 1.2);
   }, [chartData, activeMetric]);
 
   const points = useMemo(() => {
     if (chartData.length === 0) return [];
     return chartData.map((d, index) => {
       const val = activeMetric === "revenue" ? d.revenue : d.orders;
-      const x = paddingX + (index / (chartData.length - 1 || 1)) * plotWidth;
-      const y = paddingY + plotHeight - (val / maxVal) * plotHeight;
-      return { x, y, data: d, val };
+      const x = marginLeft + (index + 0.5) * slotWidth;
+      const y = marginTop + plotHeight - (val / (maxVal || 1)) * plotHeight;
+      return { x, y, data: d, val, index };
     });
-  }, [chartData, activeMetric, maxVal, plotWidth, plotHeight, paddingX, paddingY]);
+  }, [chartData, activeMetric, maxVal, slotWidth, marginLeft, marginTop, plotHeight]);
 
-  // Build SVG path string with smooth line
+  // Build SVG path string with smooth spline curve
   const svgLinePath = useMemo(() => {
     if (points.length === 0) return "";
+    if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
     return points.reduce((acc, pt, i) => {
       if (i === 0) return `M ${pt.x} ${pt.y}`;
       const prev = points[i - 1];
@@ -164,11 +164,11 @@ export const AdminDashboard = () => {
 
   const svgAreaPath = useMemo(() => {
     if (points.length === 0) return "";
-    const bottomY = paddingY + plotHeight;
+    const bottomY = marginTop + plotHeight;
     const firstX = points[0].x;
     const lastX = points[points.length - 1].x;
     return `${svgLinePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
-  }, [svgLinePath, points, paddingY, plotHeight]);
+  }, [svgLinePath, points, marginTop, plotHeight]);
 
   // Trend statistics summary
   const periodTotalRevenue = useMemo(() => {
@@ -224,9 +224,8 @@ export const AdminDashboard = () => {
     return { segments, totalOrders: orders.length };
   }, [orders]);
 
-  // Donut SVG circumference calculations
-  const donutRadius = 55;
-  const donutCircumference = 2 * Math.PI * donutRadius; // ~345.57
+  const donutRadius = 56;
+  const donutCircumference = 2 * Math.PI * donutRadius; // ~351.86
 
   // =========================================================
   // 3. TOP CATEGORIES DISTRIBUTION (BAR GRAPH)
@@ -277,31 +276,19 @@ export const AdminDashboard = () => {
     <div className={styles.dashboardContainer}>
       {/* Header Bar */}
       <div className={styles.headerSection}>
-        <div>
+        <div className={styles.headerLeft}>
           <h1 className={styles.headerTitle}>Admin Analytics Dashboard</h1>
-          <p className={styles.subtitle}>
-            Welcome back, <strong>{username || "Admin"}</strong>! Here is what's happening with
-            your ecommerce store today.
+          <p className={styles.headerSubtitle}>
+            Real-time overview of revenue performance, orders lifecycle, and inventory health
           </p>
         </div>
         <div className={styles.headerActions}>
-          <span className={styles.badgeRole}>
-            <FiCheckCircle color="#10b981" /> {formatRole(role)}
-          </span>
           <button
             type="button"
-            className={styles.pillBtn}
-            style={{
-              background: "#2563eb",
-              color: "#ffffff",
-              padding: "8px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
+            className={styles.primaryBtn}
             onClick={() => navigate("/admin/orders")}
           >
-            <FiShoppingCart size={15} /> View Orders &rarr;
+            <FiShoppingCart size={14} /> View Orders &rarr;
           </button>
         </div>
       </div>
@@ -310,117 +297,142 @@ export const AdminDashboard = () => {
       <div className={styles.statsGrid}>
         {/* 1. Total Revenue */}
         <div
-          className={styles.statCard}
-          style={{ cursor: "pointer" }}
-          onClick={() => {
-            setActiveMetric("revenue");
-          }}
-          title="Filter chart by Revenue"
+          className={`${styles.statCard} ${activeMetric === "revenue" ? styles.statCardActive : ""}`}
+          onClick={() => setActiveMetric("revenue")}
+          title="Click to view Revenue trend"
         >
-          <div className={styles.statInfo}>
-            <p className={styles.statLabel}>Total Revenue</p>
-            <h2 className={styles.statValue}>
-              ${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h2>
-            <p className={styles.statSubtext}>
-              <FiTrendingUp color="#10b981" /> Gross sales across all orders
-            </p>
+          <div className={styles.statTopRow}>
+            <span className={styles.statLabel}>Total revenue</span>
+            <span className={styles.statDotBlue} />
           </div>
-          <div className={`${styles.statIconBox} ${styles.iconGreen}`}>
-            <FiDollarSign />
+          <div className={styles.statValue}>
+            {totalRevenue.toLocaleString()} MMK
+          </div>
+          <div className={styles.statBottomRow}>
+            <span className={styles.statTrendGreen}>
+              <FiTrendingUp size={13} /> Gross sales across all orders
+            </span>
+            <div className={`${styles.statIconBox} ${styles.iconGreen}`}>
+              <span style={{ fontWeight: 700, fontSize: "13px", letterSpacing: "-0.02em" }}>Ks</span>
+            </div>
           </div>
         </div>
 
         {/* 2. Total Orders */}
         <div
-          className={styles.statCard}
-          style={{ cursor: "pointer" }}
-          onClick={() => {
-            setActiveMetric("orders");
-          }}
-          title="Filter chart by Orders count"
+          className={`${styles.statCard} ${activeMetric === "orders" ? styles.statCardActive : ""}`}
+          onClick={() => setActiveMetric("orders")}
+          title="Click to view Orders trend"
         >
-          <div className={styles.statInfo}>
-            <p className={styles.statLabel}>Total Orders</p>
-            <h2 className={styles.statValue}>{totalOrders.toLocaleString()}</h2>
-            <p className={styles.statSubtext}>
-              <FiShoppingCart color="#2563eb" /> Lifetime processed orders
-            </p>
+          <div className={styles.statTopRow}>
+            <span className={styles.statLabel}>Total orders</span>
+            <span className={styles.statDotBlue} />
           </div>
-          <div className={`${styles.statIconBox} ${styles.iconBlue}`}>
-            <FiShoppingCart />
+          <div className={styles.statValue}>{totalOrders.toLocaleString()}</div>
+          <div className={styles.statBottomRow}>
+            <span className={styles.statTrendBlue}>
+              <FiShoppingCart size={13} /> Lifetime processed orders
+            </span>
+            <div className={`${styles.statIconBox} ${styles.iconBlue}`}>
+              <FiShoppingCart size={15} />
+            </div>
           </div>
         </div>
 
         {/* 3. Low Stock Alerts */}
         <div
           className={styles.statCard}
-          style={{ cursor: "pointer" }}
           onClick={() => navigate("/admin/inventory")}
           title="Click to manage stock & inventory"
         >
-          <div className={styles.statInfo}>
-            <p className={styles.statLabel}>Low Stock Alerts</p>
-            <h2 className={styles.statValue}>{lowStockCount}</h2>
-            <p className={styles.statSubtext} style={{ color: lowStockCount > 0 ? "#ea580c" : "#10b981" }}>
-              <FiAlertTriangle /> {lowStockCount > 0 ? "Requires restocking" : "All stocks healthy"}
-            </p>
+          <div className={styles.statTopRow}>
+            <span className={styles.statLabel}>Low stock alerts</span>
+            {lowStockCount > 0 && <span className={styles.statDotOrange} />}
           </div>
-          <div className={`${styles.statIconBox} ${styles.iconOrange}`}>
-            <FiPackage />
+          <div className={styles.statValue}>{lowStockCount}</div>
+          <div className={styles.statBottomRow}>
+            <span
+              className={styles.statTrend}
+              style={{ color: lowStockCount > 0 ? "#ea580c" : "#059669" }}
+            >
+              <FiAlertTriangle size={13} /> {lowStockCount > 0 ? "Requires restocking" : "All stocks healthy"}
+            </span>
+            <div className={`${styles.statIconBox} ${styles.iconOrange}`}>
+              <FiPackage size={15} />
+            </div>
           </div>
         </div>
 
-        {/* 4. Staff Team */}
+        {/* 4. Active Staff */}
         <div
           className={styles.statCard}
-          style={{ cursor: "pointer" }}
           onClick={() => navigate("/admin/staff")}
           title="Click to view staff roster"
         >
-          <div className={styles.statInfo}>
-            <p className={styles.statLabel}>Active Staff</p>
-            <h2 className={styles.statValue}>{staffCount}</h2>
-            <p className={styles.statSubtext}>
-              <FiUsers color="#9333ea" /> Store managers &amp; staff
-            </p>
+          <div className={styles.statTopRow}>
+            <span className={styles.statLabel}>Active staff</span>
+            <span className={styles.statDotPurple} />
           </div>
-          <div className={`${styles.statIconBox} ${styles.iconPurple}`}>
-            <FiUsers />
+          <div className={styles.statValue}>{staffCount}</div>
+          <div className={styles.statBottomRow}>
+            <span className={styles.statTrendPurple}>
+              <FiCheckCircle size={13} /> Store managers &amp; staff
+            </span>
+            <div className={`${styles.statIconBox} ${styles.iconPurple}`}>
+              <FiUsers size={15} />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Primary Charts Section */}
+      {/* Primary Charts Section: Balanced Heights & Visual Hierarchy */}
       <div className={styles.chartsGrid}>
-        {/* 1. REVENUE & ORDER TREND AREA GRAPH */}
+        {/* 1. REVENUE & ORDER TREND GRAPH CARD */}
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
               <div className={`${styles.chartTitleIcon} ${styles.iconBlue}`}>
-                <FiActivity />
+                <FiActivity size={17} />
               </div>
               <div>
-                <h3 className={styles.chartTitle}>Sales &amp; Revenue Trends</h3>
-                <p className={styles.chartSubtitle}>
-                  Dynamic timeline graph displaying revenue &amp; orders over time
-                </p>
+                <h3 className={styles.chartTitle}>Sales &amp; revenue overview</h3>
+                <p className={styles.chartSubtitle}>Daily breakdown of orders &amp; income</p>
               </div>
             </div>
 
             <div className={styles.chartControls}>
-              {/* Metric Toggle */}
-              <div className={styles.metricToggle}>
+              {/* Chart Mode Toggle */}
+              <div className={styles.segmentedGroup}>
                 <button
                   type="button"
-                  className={`${styles.metricBtn} ${activeMetric === "revenue" ? styles.metricBtnActive : ""}`}
-                  onClick={() => setActiveMetric("revenue")}
+                  className={`${styles.segmentedBtn} ${chartType === "bar" ? styles.segmentedBtnActive : ""}`}
+                  onClick={() => setChartType("bar")}
+                  title="Bar View"
                 >
-                  $ Revenue
+                  <FiBarChart2 size={13} /> Bar
                 </button>
                 <button
                   type="button"
-                  className={`${styles.metricBtn} ${activeMetric === "orders" ? styles.metricBtnActive : ""}`}
+                  className={`${styles.segmentedBtn} ${chartType === "area" ? styles.segmentedBtnActive : ""}`}
+                  onClick={() => setChartType("area")}
+                  title="Area Spline View"
+                >
+                  <FiActivity size={13} /> Area
+                </button>
+              </div>
+
+              {/* Metric Toggle */}
+              <div className={styles.segmentedGroup}>
+                <button
+                  type="button"
+                  className={`${styles.segmentedBtn} ${activeMetric === "revenue" ? styles.segmentedBtnActive : ""}`}
+                  onClick={() => setActiveMetric("revenue")}
+                >
+                  Revenue (MMK)
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.segmentedBtn} ${activeMetric === "orders" ? styles.segmentedBtnActive : ""}`}
                   onClick={() => setActiveMetric("orders")}
                 >
                   # Orders
@@ -428,169 +440,260 @@ export const AdminDashboard = () => {
               </div>
 
               {/* Time Range Pills */}
-              <div className={styles.pillGroup}>
+              <div className={styles.segmentedGroup}>
                 <button
                   type="button"
-                  className={`${styles.pillBtn} ${timeRange === "7d" ? styles.pillBtnActive : ""}`}
+                  className={`${styles.segmentedBtn} ${timeRange === "7d" ? styles.segmentedBtnActive : ""}`}
                   onClick={() => setTimeRange("7d")}
                 >
-                  7 Days
+                  7D
                 </button>
                 <button
                   type="button"
-                  className={`${styles.pillBtn} ${timeRange === "14d" ? styles.pillBtnActive : ""}`}
+                  className={`${styles.segmentedBtn} ${timeRange === "14d" ? styles.segmentedBtnActive : ""}`}
                   onClick={() => setTimeRange("14d")}
                 >
-                  14 Days
+                  14D
                 </button>
                 <button
                   type="button"
-                  className={`${styles.pillBtn} ${timeRange === "30d" ? styles.pillBtnActive : ""}`}
+                  className={`${styles.segmentedBtn} ${timeRange === "30d" ? styles.segmentedBtnActive : ""}`}
                   onClick={() => setTimeRange("30d")}
                 >
-                  30 Days
+                  30D
                 </button>
               </div>
             </div>
           </div>
 
-          {/* SVG Area & Spline Line Graph */}
+          {/* SVG Area & Bar Graph with Precise Margin Geometry */}
           <div className={styles.svgContainer}>
             <svg
               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-              style={{ width: "100%", height: "auto", overflow: "visible" }}
+              style={{ width: "100%", height: "260px", overflow: "visible" }}
             >
               <defs>
                 <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.22" />
+                  <stop offset="100%" stopColor="#2563eb" stopOpacity="0.01" />
+                </linearGradient>
+                <linearGradient id="royalBarGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#1d4ed8" />
                 </linearGradient>
               </defs>
 
-              {/* Horizontal Grid lines */}
+              {/* Horizontal Grid lines with non-overlapping Y-axis ticks */}
               {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-                const yPos = paddingY + plotHeight * (1 - ratio);
+                const yPos = marginTop + plotHeight * (1 - ratio);
                 const displayVal = Math.round(maxVal * ratio);
                 return (
                   <g key={i}>
                     <line
-                      x1={paddingX}
+                      x1={marginLeft}
                       y1={yPos}
-                      x2={chartWidth - paddingX}
+                      x2={chartWidth - marginRight}
                       y2={yPos}
                       stroke="#f1f5f9"
+                      strokeWidth="1"
                       strokeDasharray="4 4"
                     />
                     <text
-                      x={paddingX - 8}
+                      x={marginLeft - 14}
                       y={yPos + 4}
                       fill="#94a3b8"
-                      fontSize="10"
+                      fontSize="11"
                       textAnchor="end"
                       fontWeight="500"
                     >
-                      {activeMetric === "revenue" ? `$${displayVal.toLocaleString()}` : displayVal}
+                      {activeMetric === "revenue"
+                        ? `${displayVal >= 1000000 ? `${(displayVal / 1000000).toFixed(displayVal % 1000000 === 0 ? 0 : 1)}M` : displayVal >= 1000 ? `${(displayVal / 1000).toFixed(displayVal % 1000 === 0 ? 0 : 1)}k` : displayVal.toLocaleString()} MMK`
+                        : displayVal}
                     </text>
                   </g>
                 );
               })}
 
-              {/* Gradient Area Fill */}
-              {svgAreaPath && <path d={svgAreaPath} fill="url(#areaGradient)" />}
+              {/* Bar Chart Mode */}
+              {chartType === "bar" && (
+                <g>
+                  {points.map((pt, idx) => {
+                    const val = pt.val;
+                    const barH = maxVal > 0 ? (val / maxVal) * (plotHeight - 6) : 0;
+                    const x = pt.x - barWidth / 2;
+                    const y = marginTop + plotHeight - barH;
+                    const isHovered = hoveredPointIndex === idx;
 
-              {/* Spline Line */}
-              {svgLinePath && (
-                <path
-                  d={svgLinePath}
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              )}
-
-              {/* Hover Guide Line */}
-              {hoveredPointIndex !== null && points[hoveredPointIndex] && (
-                <line
-                  x1={points[hoveredPointIndex].x}
-                  y1={paddingY}
-                  x2={points[hoveredPointIndex].x}
-                  y2={paddingY + plotHeight}
-                  stroke="#94a3b8"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 4"
-                />
-              )}
-
-              {/* Interactive Points on Line */}
-              {points.map((pt, idx) => {
-                const isHovered = hoveredPointIndex === idx;
-                return (
-                  <g
-                    key={idx}
-                    onMouseEnter={() => setHoveredPointIndex(idx)}
-                    onMouseLeave={() => setHoveredPointIndex(null)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    {/* Big transparent target for effortless hovering on touch/mouse */}
-                    <circle cx={pt.x} cy={pt.y} r={14} fill="transparent" />
-                    {/* Outer ring */}
-                    <circle
-                      cx={pt.x}
-                      cy={pt.y}
-                      r={isHovered ? 6.5 : 4}
-                      fill="#ffffff"
-                      stroke="#2563eb"
-                      strokeWidth={isHovered ? 3.5 : 2.5}
-                      style={{ transition: "all 0.15s ease" }}
-                    />
-
-                    {/* Bottom Date Label (show subset if 30 days) */}
-                    {(timeRange !== "30d" || idx % 3 === 0 || idx === points.length - 1) && (
-                      <text
-                        x={pt.x}
-                        y={chartHeight - 4}
-                        fill="#64748b"
-                        fontSize="11"
-                        textAnchor="middle"
-                        fontWeight={isHovered ? "700" : "500"}
+                    return (
+                      <g
+                        key={idx}
+                        onMouseEnter={() => setHoveredPointIndex(idx)}
+                        onMouseLeave={() => setHoveredPointIndex(null)}
+                        style={{ cursor: "pointer" }}
                       >
-                        {pt.data.label}
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
+                        {/* Frosted rounded track column */}
+                        <rect
+                          x={x}
+                          y={marginTop}
+                          width={barWidth}
+                          height={plotHeight}
+                          fill={isHovered ? "rgba(239, 246, 255, 0.7)" : "rgba(248, 250, 252, 0.75)"}
+                          rx="6"
+                          ry="6"
+                          style={{ transition: "fill 0.15s ease" }}
+                        />
+
+                        {/* Active bar with gradient & rounded top */}
+                        {val > 0 ? (
+                          <rect
+                            x={x}
+                            y={y}
+                            width={barWidth}
+                            height={Math.max(6, barH)}
+                            fill="url(#royalBarGradient)"
+                            rx="6"
+                            ry="6"
+                            style={{
+                              transition: "all 0.2s ease",
+                              filter: isHovered
+                                ? "drop-shadow(0 4px 10px rgba(37, 99, 235, 0.35)) brightness(1.08)"
+                                : "none",
+                            }}
+                          />
+                        ) : (
+                          <rect
+                            x={x + barWidth / 4}
+                            y={marginTop + plotHeight - 3}
+                            width={barWidth / 2}
+                            height={3}
+                            fill="#cbd5e1"
+                            rx="1.5"
+                          />
+                        )}
+
+                        {/* Bottom Date Label */}
+                        <text
+                          x={pt.x}
+                          y={chartHeight - 10}
+                          fill={isHovered ? "#0f172a" : "#64748b"}
+                          fontSize="11"
+                          textAnchor="middle"
+                          fontWeight={isHovered ? "700" : "500"}
+                          style={{ transition: "all 0.15s ease" }}
+                        >
+                          {pt.data.label}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              )}
+
+              {/* Area Spline Line Mode */}
+              {chartType === "area" && (
+                <g>
+                  {/* Gradient Area Fill */}
+                  {svgAreaPath && (
+                    <path
+                      d={svgAreaPath}
+                      fill="url(#areaGradient)"
+                      style={{ transition: "all 0.3s ease" }}
+                    />
+                  )}
+
+                  {/* Spline Line */}
+                  {svgLinePath && (
+                    <path
+                      d={svgLinePath}
+                      fill="none"
+                      stroke="#2563eb"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+
+                  {/* Hover Vertical Guide Line */}
+                  {hoveredPointIndex !== null && points[hoveredPointIndex] && (
+                    <line
+                      x1={points[hoveredPointIndex].x}
+                      y1={marginTop}
+                      x2={points[hoveredPointIndex].x}
+                      y2={marginTop + plotHeight}
+                      stroke="#3b82f6"
+                      strokeWidth="1.5"
+                      strokeDasharray="3 3"
+                    />
+                  )}
+
+                  {/* Interactive Points on Line */}
+                  {points.map((pt, idx) => {
+                    const isHovered = hoveredPointIndex === idx;
+                    return (
+                      <g
+                        key={idx}
+                        onMouseEnter={() => setHoveredPointIndex(idx)}
+                        onMouseLeave={() => setHoveredPointIndex(null)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <circle cx={pt.x} cy={pt.y} r={16} fill="transparent" />
+                        <circle
+                          cx={pt.x}
+                          cy={pt.y}
+                          r={isHovered ? 6 : 4}
+                          fill="#ffffff"
+                          stroke="#2563eb"
+                          strokeWidth={isHovered ? 3 : 2}
+                          style={{
+                            transition: "all 0.15s ease",
+                            filter: isHovered
+                              ? "drop-shadow(0 2px 6px rgba(37, 99, 235, 0.4))"
+                              : "none",
+                          }}
+                        />
+
+                        {/* Bottom Date Label */}
+                        <text
+                          x={pt.x}
+                          y={chartHeight - 10}
+                          fill={isHovered ? "#0f172a" : "#64748b"}
+                          fontSize="11"
+                          textAnchor="middle"
+                          fontWeight={isHovered ? "700" : "500"}
+                          style={{ transition: "all 0.15s ease" }}
+                        >
+                          {pt.data.label}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              )}
             </svg>
 
-            {/* Floating Tooltip Box */}
+            {/* Modern Clean White Floating Tooltip (matching reference video) */}
             {hoveredPointIndex !== null && points[hoveredPointIndex] && (
               <div
+                className={styles.chartTooltip}
                 style={{
-                  position: "absolute",
                   left: `${(points[hoveredPointIndex].x / chartWidth) * 100}%`,
-                  top: `${Math.max(10, (points[hoveredPointIndex].y / chartHeight) * 100 - 40)}%`,
-                  transform: "translate(-50%, -100%)",
-                  background: "#0f172a",
-                  color: "#ffffff",
-                  padding: "8px 12px",
-                  borderRadius: "8px",
-                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.2)",
-                  pointerEvents: "none",
-                  zIndex: 20,
-                  fontSize: "12px",
-                  whiteSpace: "nowrap",
+                  top: `${Math.max(8, (points[hoveredPointIndex].y / chartHeight) * 100 - 22)}%`,
                 }}
               >
-                <div style={{ fontWeight: 700, marginBottom: "4px", color: "#93c5fd" }}>
-                  {points[hoveredPointIndex].data.label}
+                <div className={styles.tooltipDate}>
+                  <FiCalendar size={11} /> {chartData[hoveredPointIndex].label}
                 </div>
-                <div>
-                  Revenue: <strong>${points[hoveredPointIndex].data.revenue.toLocaleString()}</strong>
+                <div className={styles.tooltipRow}>
+                  <span className={styles.tooltipLabel}>Revenue:</span>
+                  <span className={styles.tooltipValRevenue}>
+                    {chartData[hoveredPointIndex].revenue.toLocaleString()} MMK
+                  </span>
                 </div>
-                <div>
-                  Orders: <strong>{points[hoveredPointIndex].data.orders}</strong>
+                <div className={styles.tooltipRow}>
+                  <span className={styles.tooltipLabel}>Orders:</span>
+                  <span className={styles.tooltipValOrders}>
+                    {chartData[hoveredPointIndex].orders} Orders
+                  </span>
                 </div>
               </div>
             )}
@@ -599,44 +702,62 @@ export const AdminDashboard = () => {
           {/* Bottom Summary Metrics Row */}
           <div className={styles.summaryRow}>
             <div className={styles.summaryItem}>
-              <p className={styles.summaryLabel}>Period Revenue ({timeRange})</p>
+              <div className={styles.summaryHeader}>
+                <span className={styles.summaryLabel}>Period Revenue ({timeRange.toUpperCase()})</span>
+                <span className={styles.summaryIconBlue} style={{ fontWeight: 700, fontSize: "12px" }}>Ks</span>
+              </div>
               <h4 className={styles.summaryValue}>
-                ${periodTotalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {periodTotalRevenue.toLocaleString()} MMK
               </h4>
+              <span className={styles.summarySubtext}>Total gross for selected range</span>
             </div>
+
             <div className={styles.summaryItem}>
-              <p className={styles.summaryLabel}>Period Orders</p>
+              <div className={styles.summaryHeader}>
+                <span className={styles.summaryLabel}>Period Orders</span>
+                <FiShoppingCart className={styles.summaryIconBlue} size={14} />
+              </div>
               <h4 className={styles.summaryValue}>{periodTotalOrders.toLocaleString()} Orders</h4>
+              <span className={styles.summarySubtext}>Completed transactions</span>
             </div>
+
             <div className={styles.summaryItem}>
-              <p className={styles.summaryLabel}>Avg Order Value (AOV)</p>
+              <div className={styles.summaryHeader}>
+                <span className={styles.summaryLabel}>Avg Order Value (AOV)</span>
+                <FiTrendingUp className={styles.summaryIconGreen} size={14} />
+              </div>
               <h4 className={styles.summaryValue}>
-                ${avgOrderVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {avgOrderVal.toLocaleString()} MMK
               </h4>
+              <span className={styles.summarySubtext}>Average basket per order</span>
             </div>
           </div>
         </div>
 
-        {/* 2. ORDER STATUS DONUT CHART */}
+        {/* 2. ORDER STATUS DISTRIBUTION (DONUT CARD) */}
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
               <div className={`${styles.chartTitleIcon} ${styles.iconPurple}`}>
-                <FiPieChart />
+                <FiPieChart size={17} />
               </div>
               <div>
                 <h3 className={styles.chartTitle}>Order Statuses</h3>
                 <p className={styles.chartSubtitle}>Distribution of order lifecycle</p>
               </div>
             </div>
+            <span className={styles.headerCountPill}>
+              {statusStats.totalOrders} Total
+            </span>
           </div>
 
           <div className={styles.donutWrapper}>
             <div className={styles.donutSvgBox}>
-              <svg width="150" height="150" viewBox="0 0 150 150">
+              <svg width="156" height="156" viewBox="0 0 156 156">
+                {/* Background Ring */}
                 <circle
-                  cx="75"
-                  cy="75"
+                  cx="78"
+                  cy="78"
                   r={donutRadius}
                   fill="transparent"
                   stroke="#f1f5f9"
@@ -655,15 +776,16 @@ export const AdminDashboard = () => {
                     return (
                       <circle
                         key={i}
-                        cx="75"
-                        cy="75"
+                        cx="78"
+                        cy="78"
                         r={donutRadius}
                         fill="transparent"
                         stroke={seg.color}
                         strokeWidth="18"
                         strokeDasharray={`${strokeDash} ${strokeSpace}`}
                         strokeDashoffset={offset}
-                        transform="rotate(-90 75 75)"
+                        transform="rotate(-90 78 78)"
+                        strokeLinecap="round"
                         style={{ transition: "stroke-dasharray 0.5s ease" }}
                       />
                     );
@@ -673,7 +795,7 @@ export const AdminDashboard = () => {
 
               <div className={styles.donutCenterText}>
                 <p className={styles.donutCenterNum}>{statusStats.totalOrders}</p>
-                <p className={styles.donutCenterLabel}>Orders</p>
+                <p className={styles.donutCenterLabel}>ORDERS</p>
               </div>
             </div>
 
@@ -683,13 +805,30 @@ export const AdminDashboard = () => {
                 <div key={i} className={styles.legendItem}>
                   <div className={styles.legendColorLabel}>
                     <span className={styles.legendDot} style={{ background: seg.color }} />
-                    <span>{seg.name}</span>
+                    <span className={styles.legendName}>{seg.name}</span>
                   </div>
-                  <span className={styles.legendCount}>
-                    {seg.count} ({Math.round(seg.percent)}%)
-                  </span>
+                  <div className={styles.legendRightGroup}>
+                    <span className={styles.legendCount}>{seg.count}</span>
+                    <span className={styles.legendPercentBadge}>{Math.round(seg.percent)}%</span>
+                  </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Symmetrical Bottom Summary aligned with left card */}
+          <div className={styles.donutFooter}>
+            <div className={styles.fulfillmentPill}>
+              <FiCheckCircle size={14} className={styles.fulfillmentIcon} />
+              <span>
+                Fulfillment Health:{" "}
+                <strong>
+                  {statusStats.totalOrders > 0
+                    ? `${Math.round(((statusStats.segments.find((s) => s.name === "DELIVERED")?.count || 0) / statusStats.totalOrders) * 100)}%`
+                    : "100%"}
+                </strong>{" "}
+                delivery rate
+              </span>
             </div>
           </div>
         </div>
@@ -702,7 +841,7 @@ export const AdminDashboard = () => {
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
               <div className={`${styles.chartTitleIcon} ${styles.iconGreen}`}>
-                <FiBarChart2 />
+                <FiBarChart2 size={17} />
               </div>
               <div>
                 <h3 className={styles.chartTitle}>Catalog by Category</h3>
@@ -711,19 +850,31 @@ export const AdminDashboard = () => {
             </div>
             <button
               type="button"
-              className={styles.pillBtn}
+              className={styles.headerLinkBtn}
               onClick={() => navigate("/admin/categories")}
-              style={{ color: "#2563eb", fontWeight: 700 }}
             >
-              Categories &rarr;
+              Categories <FiChevronRight size={13} />
             </button>
           </div>
 
           <div className={styles.barList}>
             {categoryStats.length === 0 ? (
-              <p style={{ color: "#94a3b8", textAlign: "center", margin: "20px 0" }}>
-                No category data available yet.
-              </p>
+              <div className={styles.emptyContainer}>
+                <div className={styles.emptyIconCircle}>
+                  <FiPackage size={22} />
+                </div>
+                <h4 className={styles.emptyTitle}>No category data available yet</h4>
+                <p className={styles.emptySubtitle}>
+                  Create categories and assign products to analyze catalog distribution.
+                </p>
+                <button
+                  type="button"
+                  className={styles.emptyActionBtn}
+                  onClick={() => navigate("/admin/categories")}
+                >
+                  <FiPlus size={13} /> Manage Categories
+                </button>
+              </div>
             ) : (
               categoryStats.map((cat, idx) => (
                 <div key={idx} className={styles.barItem}>
@@ -753,7 +904,7 @@ export const AdminDashboard = () => {
           <div className={styles.chartHeader}>
             <div className={styles.chartTitleGroup}>
               <div className={`${styles.chartTitleIcon} ${styles.iconOrange}`}>
-                <FiClock />
+                <FiClock size={17} />
               </div>
               <div>
                 <h3 className={styles.chartTitle}>Recent Orders</h3>
@@ -762,41 +913,51 @@ export const AdminDashboard = () => {
             </div>
             <button
               type="button"
-              className={styles.pillBtn}
+              className={styles.headerLinkBtn}
               onClick={() => navigate("/admin/orders")}
-              style={{ color: "#2563eb", fontWeight: 700 }}
             >
-              All Orders &rarr;
+              All Orders <FiChevronRight size={13} />
             </button>
           </div>
 
           <div className={styles.tableWrapper}>
-            <table className={styles.ordersTable}>
-              <thead>
-                <tr>
-                  <th>Order No</th>
-                  <th>Customer</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentOrders.length === 0 ? (
+            {recentOrders.length === 0 ? (
+              <div className={styles.emptyContainer}>
+                <div className={styles.emptyIconCircle}>
+                  <FiShoppingCart size={22} />
+                </div>
+                <h4 className={styles.emptyTitle}>No recent orders found</h4>
+                <p className={styles.emptySubtitle}>
+                  Customer purchases and order updates will show up here automatically.
+                </p>
+                <button
+                  type="button"
+                  className={styles.emptyActionBtn}
+                  onClick={() => navigate("/admin/orders")}
+                >
+                  <FiShoppingCart size={13} /> Go to Orders
+                </button>
+              </div>
+            ) : (
+              <table className={styles.ordersTable}>
+                <thead>
                   <tr>
-                    <td colSpan={5} style={{ textAlign: "center", color: "#94a3b8", padding: "24px" }}>
-                      No recent orders found.
-                    </td>
+                    <th>Order No</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
                   </tr>
-                ) : (
-                  recentOrders.map((ord) => (
+                </thead>
+                <tbody>
+                  {recentOrders.map((ord) => (
                     <tr key={ord.orderId}>
                       <td style={{ fontWeight: 600, color: "#2563eb" }}>
                         #{ord.orderNo || ord.orderId}
                       </td>
                       <td>{ord.customerName || "Customer"}</td>
                       <td style={{ fontWeight: 700, color: "#0f172a" }}>
-                        ${Number(ord.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {Number(ord.totalAmount || 0).toLocaleString()} MMK
                       </td>
                       <td>
                         <span className={`${styles.statusBadge} ${getStatusBadgeClass(ord.orderStatus)}`}>
@@ -806,25 +967,17 @@ export const AdminDashboard = () => {
                       <td>
                         <button
                           type="button"
-                          className={styles.pillBtn}
+                          className="table-btn-view"
                           onClick={() => navigate(`/admin/orders/${ord.orderNo}`)}
-                          style={{
-                            background: "#eff6ff",
-                            color: "#2563eb",
-                            padding: "4px 8px",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
                         >
                           <FiEye size={12} /> View
                         </button>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>

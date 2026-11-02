@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import { useCallback, useEffect, useState } from "react";
 import { isAxiosError } from "axios";
 
@@ -243,7 +244,9 @@ export default function TagManagement() {
     <div className="tag-page">
       {/* 1. Header (Catalogue Eyebrow + Title + Subtitle + Add Tag Button) */}
       <div className="tag-page-header">
-        <div className="tag-header-left">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <BackButton fallbackUrl="/admin/dashboard" />
+          <div className="tag-header-left">
           <div className="tag-eyebrow">
             CATALOGUE
           </div>
@@ -256,8 +259,9 @@ export default function TagManagement() {
             Create and manage product tags across your inventory.
           </p>
         </div>
+      </div>
 
-        <button
+      <button
           type="button"
           className="tag-btn-add-primary"
           onClick={openCreateModal}

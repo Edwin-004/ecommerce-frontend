@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 
 import React, { useEffect, useState } from "react";
 import {
@@ -338,15 +339,18 @@ export const CategoryManagement: React.FC = () => {
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.pageHeader}>
-        <div>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <BackButton fallbackUrl="/admin/dashboard" />
+          <div>
           <h1>Category Management</h1>
           <p>Organize and manage your product categories</p>
         </div>
+      </div>
 
-        <div className="d-flex gap-2">
+      <div className="d-flex gap-2">
           <button
             type="button"
-            className="btn btn-primary d-flex align-items-center gap-2 px-3"
+            className={styles.primaryAddBtn}
             onClick={openCreateModal}
             disabled={saving}
           >

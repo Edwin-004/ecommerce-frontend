@@ -1,105 +1,268 @@
-.page {
-  min-height: 100vh;
-  background: #f6f7fb;
+/* ==========================================================================
+   Brand Management Page Styles
+   Liquid Glass Theme & Full-Width Layout Geometry
+   ========================================================================== */
+
+.container {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 32px;
+}
+
+/* ================= Header Row ================= */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pageTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.025em;
+  line-height: 28px;
+}
+
+.pageSubtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.primaryAddBtn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+
+.primaryAddBtn:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.primaryAddBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ================= 3 Stat Cards Grid ================= */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
 }
 
 .statCard {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
   border-radius: 16px !important;
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  padding: 20px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
 .statCard:hover {
+  background: rgba(255, 255, 255, 0.92) !important;
   transform: translateY(-2px);
+  box-shadow: 0 12px 28px -4px rgba(37, 99, 235, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+  border-color: rgba(191, 219, 254, 0.9) !important;
 }
 
-.statIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 13px;
+.statInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
+.statLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: none;
+  letter-spacing: 0;
+  margin: 0;
+  line-height: 16px;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 32px;
+  margin: 4px 0 0 0;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum";
+  font-feature-settings: "tnum";
+}
+
+.statIconBox {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  font-size: 21px;
-
-  margin-right: 14px;
+  font-size: 20px;
+  flex-shrink: 0;
 }
 
 .purple {
-  color: #6f42c1;
-  background: #eee5ff;
+  color: #8b5cf6;
+  background: #faf5ff;
 }
 
 .green {
-  color: #198754;
-  background: #dff5e9;
+  color: #10b981;
+  background: #ecfdf5;
 }
 
 .orange {
-  color: #fd7e14;
-  background: #fff0dc;
+  color: #f97316;
+  background: #fff7ed;
 }
 
-.logo {
-  width: 48px;
-  height: 48px;
-
-  object-fit: contain;
-
-  padding: 5px;
-
-  background: white;
-
-  border: 1px solid #e5e7eb;
-
-  border-radius: 12px;
+/* ================= Search & Filter Toolbar ================= */
+.filterCard {
+  position: relative;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.logoPlaceholder {
-  width: 48px;
-  height: 48px;
+.searchWrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  border-radius: 10px;
+  padding: 8px 12px;
+  width: 360px;
+  max-width: 100%;
+  transition: all 0.15s ease;
+}
 
+.searchWrapper:focus-within {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.searchIcon {
+  color: #94a3b8;
   flex-shrink: 0;
+}
 
-  border-radius: 12px;
+.searchInput {
+  border: none;
+  background: transparent;
+  outline: none;
+  margin-left: 8px;
+  width: 100%;
+  font-size: 13px;
+  color: #1e293b;
+  box-shadow: none !important;
+  padding: 0;
+}
 
+.searchInput::placeholder {
+  color: #94a3b8;
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  background: #eee5ff;
-  color: #6f42c1;
-
-  font-size: 18px;
-  font-weight: 700;
+  transition: color 0.15s ease;
 }
 
-table th {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #64748b;
+.clearBtn:hover {
+  color: #0f172a;
 }
 
-table td {
-  font-size: 14px;
+.filterActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-table tbody tr {
-  transition: background 0.15s ease;
+.statusSelect {
+  padding: 8px 14px;
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-/* ==========================================================================
-   DYNAMIC COLUMN SELECTOR & EXPORT DROPDOWN STYLES
-   ========================================================================== */
+.statusSelect:focus {
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
 
+/* Action item button (Columns / Export) */
 .btnActionItem {
   height: 38px;
   padding: 0 14px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid rgba(203, 213, 225, 0.7);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
   color: #334155;
   font-size: 13px;
   font-weight: 600;
@@ -109,30 +272,33 @@ table tbody tr {
   gap: 6px;
   transition: all 0.15s ease;
   user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .btnActionItem:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: #ffffff;
+  border-color: #94a3b8;
   color: #0f172a;
+  transform: translateY(-1px);
 }
 
 .columnSelectorContainer {
   position: relative;
   display: inline-block;
+  z-index: 55;
 }
 
 .columnDropdownMenu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
   z-index: 1050;
-  width: 210px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
-  padding: 12px 14px;
+  width: 230px;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 20px 40px -8px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 14px;
+  padding: 14px 16px;
   animation: fadeInDown 0.18s ease-out;
 }
 
@@ -156,7 +322,7 @@ table tbody tr {
 .columnDropdownAction {
   font-size: 11px;
   font-weight: 600;
-  color: #6366f1;
+  color: #2563eb;
   background: none;
   border: none;
   cursor: pointer;
@@ -188,29 +354,26 @@ table tbody tr {
   cursor: pointer;
   width: 15px;
   height: 15px;
-  accent-color: #6366f1;
-}
-
-.columnCheckboxLabel:hover {
-  color: #0f172a;
+  accent-color: #2563eb;
 }
 
 .exportDropdownContainer {
   position: relative;
   display: inline-block;
+  z-index: 55;
 }
 
 .btnActionExporting {
-  background: #eef2ff !important;
-  color: #4f46e5 !important;
-  border-color: #c7d2fe !important;
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  border-color: #bfdbfe !important;
 }
 
 .exportSpinner {
   width: 13px;
   height: 13px;
-  border: 2px solid #c7d2fe;
-  border-top-color: #4f46e5;
+  border: 2px solid #bfdbfe;
+  border-top-color: #2563eb;
   border-radius: 50%;
   display: inline-block;
   animation: spinExport 0.8s linear infinite;
@@ -224,13 +387,13 @@ table tbody tr {
 
 .exportDropdownMenu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
-  width: 220px;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 20px 40px -8px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 14px;
+  width: 230px;
   padding: 8px;
   z-index: 1050;
   animation: fadeInDown 0.18s ease-out;
@@ -295,17 +458,272 @@ table tbody tr {
 }
 
 .exportMenuTitle {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #1e293b;
 }
 
 .exportMenuSub {
-  font-size: 11px;
+  font-size: 10px;
   color: #64748b;
 }
 
-/* Floating Export Progress Notification */
+/* ================= Full Width Table Card ================= */
+.tableCard {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.brandsTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13.5px;
+}
+
+.brandsTable th {
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+}
+
+.brandsTable td {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #0f172a;
+  border-bottom: 1px solid #f8fafc;
+  vertical-align: middle;
+}
+
+.brandsTable tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.brandsTable tbody tr:hover {
+  background-color: rgba(248, 250, 252, 0.8);
+}
+
+.logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  padding: 4px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.logoPlaceholder {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.categoryBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.statusActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  white-space: nowrap;
+}
+
+.statusInactive {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  white-space: nowrap;
+}
+
+.btnEdit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.btnEdit:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.12);
+}
+
+.btnEdit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ================= Empty State ================= */
+.emptyContainer {
+  padding: 56px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.emptyIconCircle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.emptySubtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  max-width: 340px;
+}
+
+.emptyActionBtn {
+  margin-top: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.emptyActionBtn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* ================= Table Footer Pagination ================= */
+.tableFooter {
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(241, 245, 249, 0.85);
+  background: transparent;
+  font-size: 13px;
+  color: #64748b;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageBtn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.85);
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ================= Floating Export Notifications ================= */
 .exportProgressBanner {
   position: fixed;
   top: 24px;
@@ -313,22 +731,21 @@ table tbody tr {
   z-index: 9999;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   background: #ffffff;
   border: 1px solid #c7d2fe;
   border-left: 5px solid #4f46e5;
-  padding: 14px 18px;
+  padding: 12px 18px;
   border-radius: 12px;
   box-shadow: 0 12px 30px rgba(79, 70, 229, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
   animation: slideInRight 0.25s ease-out;
-  min-width: 320px;
-  max-width: 440px;
+  min-width: 280px;
 }
 
 .exportProgressSpinner {
-  width: 22px;
-  height: 22px;
-  border: 3px solid #e0e7ff;
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid #e0e7ff;
   border-top-color: #4f46e5;
   border-radius: 50%;
   animation: spinExport 0.8s linear infinite;
@@ -352,7 +769,6 @@ table tbody tr {
   margin-top: 2px;
 }
 
-/* Export Success Notification */
 .exportSuccessBanner {
   position: fixed;
   top: 24px;
@@ -437,6 +853,20 @@ table tbody tr {
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
+  }
+}
+
+/* ================= Responsive Adjustments ================= */
+@media (max-width: 900px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+  .searchWrapper {
+    width: 100%;
+  }
+  .filterActions {
+    width: 100%;
+    justify-content: space-between;
   }
 }

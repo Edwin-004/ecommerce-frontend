@@ -1,5 +1,7 @@
+import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiEdit2, FiSlash, FiCheck } from 'react-icons/fi';
 import api from '../../utils/axiosConfig'; 
 import './StaffList.css';
 
@@ -55,6 +57,16 @@ export const StaffList: React.FC = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentStaffData = filteredStaff.slice(startIndex, startIndex + itemsPerPage);
 
+    const getRoleBadgeClass = (role: string) => {
+        switch (role) {
+            case 'ADMIN': return 'badge-role-admin';
+            case 'INVENTORY_STAFF': return 'badge-role-inventory';
+            case 'SALES_STAFF': return 'badge-role-sales';
+            case 'ORDER_STAFF': return 'badge-role-order';
+            default: return 'badge-role-default';
+        }
+    };
+
     const handleEdit = (id: number, name: string) => {
         navigate(`/admin/staff/edit/${id}`);
     };
@@ -85,10 +97,16 @@ export const StaffList: React.FC = () => {
         <div className="staff-container">
             {/* Header Section */}
             <div className="header-section">
-                <div>
-                    <h2 className="header-title">Staff Management</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <BackButton fallbackUrl="/admin/dashboard" />
+                    <div>
+                        <h2 className="header-title">Staff Management</h2>
                     <p className="header-subtitle">Manage system users, roles, and account statuses</p>
                 </div>
+              </div>
+                <button className="btn-add" onClick={() => navigate('/admin/staff/new')}>
+                    + Add New Staff
+                </button>
             </div>
 
             {/* Summary Cards */}
@@ -136,13 +154,37 @@ export const StaffList: React.FC = () => {
             <div className="table-section">
                 <div className="table-controls">
                     <div className="tabs">
-                        <button className={`tab-btn ${activeTab === 'ALL' ? 'active' : ''}`} onClick={() => setActiveTab('ALL')}>All Staff</button>
-                        <button className={`tab-btn ${activeTab === 'ACTIVE' ? 'active' : ''}`} onClick={() => setActiveTab('ACTIVE')}>Active</button>
-                        <button className={`tab-btn ${activeTab === 'INACTIVE' ? 'active' : ''}`} onClick={() => setActiveTab('INACTIVE')}>Inactive</button>
+                        <button
+                            type="button"
+                            className={`tab-btn ${activeTab === 'ALL' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('ALL')}
+                        >
+                            All Staff
+                        </button>
+                        <button
+                            type="button"
+                            className={`tab-btn ${activeTab === 'ACTIVE' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('ACTIVE')}
+                        >
+                            Active
+                        </button>
+                        <button
+                            type="button"
+                            className={`tab-btn ${activeTab === 'INACTIVE' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('INACTIVE')}
+                        >
+                            Inactive
+                        </button>
                     </div>
                     
                     <div>
-                        <input type="text" placeholder="🔍 Search staff..." className="search-input" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        <input
+                            type="text"
+                            placeholder="🔍 Search staff..."
+                            className="search-input"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
                 </div>
 
@@ -167,28 +209,47 @@ export const StaffList: React.FC = () => {
                                         <td style={{ fontWeight: '500' }}>{staff.userName}</td>
                                         <td>{staff.email}</td>
                                         <td>
-                                            <span className={`badge ${staff.roleName === 'ADMIN' ? 'badge-admin' : 'badge-staff'}`}>
+                                            <span className={`staff-badge ${getRoleBadgeClass(staff.roleName)}`}>
                                                 {staff.roleName.replace('_', ' ')}
                                             </span>
                                         </td>
                                         <td>
-                                            <span className={`badge ${staff.status === 'ACTIVE' ? 'badge-active' : 'badge-inactive'}`}>
+                                            <span className={`staff-badge ${staff.status === 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'}`}>
                                                 {staff.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
                                         <td>{staff.createdAt ? new Date(staff.createdAt).toLocaleDateString() : '-'}</td>
                                         <td>
-                                            <button className="action-btn btn-edit" onClick={() => handleEdit(staff.userId, staff.userName)}>Edit</button>
-                                            
-                                            {staff.status === 'ACTIVE' ? (
-                                                <button className="action-btn btn-suspend" onClick={() => handleStatusToggle(staff.userId, staff.userName, staff.status)}>
-                                                    Suspend
+                                            <div className="table-action-group">
+                                                <button
+                                                    type="button"
+                                                    className="table-btn-edit"
+                                                    onClick={() => handleEdit(staff.userId, staff.userName)}
+                                                    title="Edit staff account"
+                                                >
+                                                    <FiEdit2 size={12} /> Edit
                                                 </button>
-                                            ) : (
-                                                <button className="action-btn" style={{ backgroundColor: '#dcfce7', color: '#166534', fontWeight: 'bold' }} onClick={() => handleStatusToggle(staff.userId, staff.userName, staff.status)}>
-                                                    Activate
-                                                </button>
-                                            )}
+                                                
+                                                {staff.status === 'ACTIVE' ? (
+                                                    <button
+                                                        type="button"
+                                                        className="table-btn-delete"
+                                                        onClick={() => handleStatusToggle(staff.userId, staff.userName, staff.status)}
+                                                        title="Suspend staff account"
+                                                    >
+                                                        <FiSlash size={12} /> Suspend
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        className="table-btn-activate"
+                                                        onClick={() => handleStatusToggle(staff.userId, staff.userName, staff.status)}
+                                                        title="Activate staff account"
+                                                    >
+                                                        <FiCheck size={12} /> Activate
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -203,41 +264,42 @@ export const StaffList: React.FC = () => {
                     </table>
                 </div>
 
-                {/* Pagination Controls */}
-                {totalPages > 0 && (
-                    <div className="pagination-container">
-                        <span className="pagination-info">
-                            Showing {filteredStaff.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredStaff.length)} of {filteredStaff.length} Entries
-                        </span>
-                        <div className="pagination-controls">
+                {/* Table Footer with Adjusted Compact Pagination */}
+                <div className="pagination-container">
+                    <span className="pagination-info">
+                        Showing {filteredStaff.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredStaff.length)} of {filteredStaff.length} Entries
+                    </span>
+                    <div className="pagination-controls">
+                        <button 
+                            type="button"
+                            className="page-btn page-btn-nav" 
+                            disabled={currentPage === 1} 
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        >
+                            Previous
+                        </button>
+                        
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                             <button 
-                                className="page-btn" 
-                                disabled={currentPage === 1} 
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                type="button"
+                                key={page} 
+                                className={`page-btn page-btn-num ${currentPage === page ? 'active' : ''}`}
+                                onClick={() => setCurrentPage(page)}
                             >
-                                Previous
+                                {page}
                             </button>
-                            
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                <button 
-                                    key={page} 
-                                    className={`page-btn ${currentPage === page ? 'active' : ''}`}
-                                    onClick={() => setCurrentPage(page)}
-                                >
-                                    {page}
-                                </button>
-                            ))}
+                        ))}
 
-                            <button 
-                                className="page-btn" 
-                                disabled={currentPage === totalPages} 
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            >
-                                Next
-                            </button>
-                        </div>
+                        <button 
+                            type="button"
+                            className="page-btn page-btn-nav" 
+                            disabled={currentPage === totalPages} 
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        >
+                            Next
+                        </button>
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );

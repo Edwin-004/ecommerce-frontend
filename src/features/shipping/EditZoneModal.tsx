@@ -139,7 +139,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label>Shipping Fee (Ks)</label>
+              <label>Shipping Fee (MMK)</label>
               <input
                 type="number"
                 value={shippingFee}
@@ -177,7 +177,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
               {isEditingDefault && (
                 <div className={styles.formRow}>
                   <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                    <label>Default Fee (Ks)</label>
+                    <label>Default Fee (MMK)</label>
                     <input
                       type="number"
                       value={defaultShippingFee}

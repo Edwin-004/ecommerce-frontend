@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/axiosConfig';
@@ -35,12 +36,12 @@ export const CreateStaff: React.FC = () => {
     };
 
     return (
-        <div className="create-staff-container" style={{ display: 'flex', justifyContent: 'center', padding: '50px 20px' }}>
+        <div className="create-staff-container">
             
             <div style={{ width: '100%', maxWidth: '600px' }}>
                 
-                <div className="create-staff-header">
-                    {/* ဤနေရာတွင်ရှိသော ဖြတ်ရန်မလိုသည့် Back ခလုတ်ကို ဖယ်ရှားလိုက်ပါပြီ */}
+                <div className="create-staff-header" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+                    <BackButton fallbackUrl="/admin/staff" />
                     <div>
                         <h2 className="header-title">Create New Staff</h2>
                         <p className="header-subtitle">Add a new staff member to the system</p>

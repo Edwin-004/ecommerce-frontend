@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import { useState } from 'react';
 import { 
   FiDownload, 
@@ -181,9 +182,12 @@ export const ReportsPage = () => {
   return (
     <div className={styles.pageContainer}>
       <header className={styles.headerSection}>
-        <div className={styles.titleArea}>
-          <h1>Reports & Analytics</h1>
-          <p>Generate and export comprehensive insights for your e-commerce operations.</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <BackButton fallbackUrl="/admin/dashboard" />
+          <div className={styles.titleArea}>
+            <h1>Reports & Analytics</h1>
+            <p>Generate and export comprehensive insights for your e-commerce operations.</p>
+          </div>
         </div>
       </header>
 
