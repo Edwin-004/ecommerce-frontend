@@ -19,14 +19,23 @@ export const orderApi = createApi({
     // အော်ဒါအားလုံး (သို့) Status အလိုက် ဆွဲထုတ်မည့် API
     getOrders: builder.query<
       PaginatedResponse<OrderResponseDto>,
-      { status?: string; page?: number; size?: number } | void
+      { status?: string; search?: string; startDate?: string; endDate?: string; page?: number; size?: number } | void
     >({
       query: (args) => {
         const page = args?.page ?? 0;
         const size = args?.size ?? 10;
         let url = `/orders?page=${page}&size=${size}`;
-        if (args?.status) {
+        if (args?.status && args.status !== 'ALL') {
           url += `&status=${args.status}`;
+        }
+        if (args?.search) {
+          url += `&search=${args.search}`;
+        }
+        if (args?.startDate) {
+          url += `&startDate=${args.startDate}`;
+        }
+        if (args?.endDate) {
+          url += `&endDate=${args.endDate}`;
         }
         return url;
       },

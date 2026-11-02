@@ -26,7 +26,8 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
   const [createZoneGroup, { isLoading: isSubmitting }] =
     useCreateZoneGroupMutation();
 
-  const { data: existingZones = [] } = useGetZoneGroupsQuery();
+  const { data: zoneGroupsResponse } = useGetZoneGroupsQuery();
+  const existingZones = zoneGroupsResponse?.content || [];
 
   // Form State များ
   const [zoneName, setZoneName] = useState('');
