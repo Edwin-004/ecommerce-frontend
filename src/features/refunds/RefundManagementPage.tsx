@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import { useEffect, useState, useRef } from 'react';
 import {
   FiInbox,
@@ -17,7 +18,6 @@ import {
   approveRefund,
   rejectRefund,
   exportRefundReport,
-  seedMockRefundData,
   type RefundRequestItem,
   type RefundStats,
   type RefundStatusFilter,
@@ -169,22 +169,6 @@ export function RefundManagementPage() {
     });
   };
 
-  const [seedingMock, setSeedingMock] = useState<boolean>(false);
-
-  const handleSeedMockData = async () => {
-    try {
-      setSeedingMock(true);
-      const res = await seedMockRefundData();
-      await loadData();
-      setExportSuccessMessage(`Mock Data Ready: ${res.message} (Total: ${res.totalRequests})`);
-      setTimeout(() => setExportSuccessMessage(null), 4000);
-    } catch (err: any) {
-      console.error('Failed to seed mock data:', err);
-      alert('Failed to seed mock data: ' + (err.message || 'Unknown error'));
-    } finally {
-      setSeedingMock(false);
-    }
-  };
 
   // =====================================================
   // FETCH DATA
@@ -418,11 +402,14 @@ export function RefundManagementPage() {
       {/* HEADER */}
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
-          <div className={styles.smallBadge}>OPERATIONS</div>
-          <h1 className={styles.title}>Refund Management</h1>
-          <p className={styles.subtitle}>
-            Directly review customer refund requests, process approvals or rejections, and export reports.
-          </p>
+          <BackButton fallbackUrl="/admin/dashboard" />
+          <div>
+            <div className={styles.smallBadge}>OPERATIONS</div>
+            <h1 className={styles.title}>Refund Management</h1>
+            <p className={styles.subtitle}>
+              Directly review customer refund requests, process approvals or rejections, and export reports.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -430,45 +417,45 @@ export function RefundManagementPage() {
       <div className={styles.statsGrid}>
         {/* Total Requests */}
         <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.purple}`}>
-            <FiInbox />
-          </div>
           <div className={styles.statContent}>
             <span className={styles.statLabel}>Total Requests</span>
             <span className={styles.statValue}>{stats.totalRequests}</span>
+          </div>
+          <div className={`${styles.statIcon} ${styles.purple}`}>
+            <FiInbox />
           </div>
         </div>
 
         {/* Pending Review */}
         <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.amber}`}>
-            <FiClock />
-          </div>
           <div className={styles.statContent}>
             <span className={styles.statLabel}>Pending Review</span>
             <span className={`${styles.statValue} text-warning`}>{stats.pendingCount}</span>
+          </div>
+          <div className={`${styles.statIcon} ${styles.amber}`}>
+            <FiClock />
           </div>
         </div>
 
         {/* Approved */}
         <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.green}`}>
-            <FiCheckCircle />
-          </div>
           <div className={styles.statContent}>
             <span className={styles.statLabel}>Approved</span>
             <span className={`${styles.statValue} text-success`}>{stats.approvedCount}</span>
+          </div>
+          <div className={`${styles.statIcon} ${styles.green}`}>
+            <FiCheckCircle />
           </div>
         </div>
 
         {/* Rejected */}
         <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.red}`}>
-            <FiXCircle />
-          </div>
           <div className={styles.statContent}>
             <span className={styles.statLabel}>Rejected</span>
             <span className={`${styles.statValue} text-danger`}>{stats.rejectedCount}</span>
+          </div>
+          <div className={`${styles.statIcon} ${styles.red}`}>
+            <FiXCircle />
           </div>
         </div>
       </div>
@@ -612,17 +599,6 @@ export function RefundManagementPage() {
               )}
             </div>
 
-            {/* Seed Mock Data Button */}
-            <button
-              type="button"
-              className={styles.btnActionSeed}
-              onClick={handleSeedMockData}
-              disabled={seedingMock}
-              title="Seed test refund requests and notifications"
-            >
-              <i className={seedingMock ? 'spinner-border spinner-border-sm' : 'bi bi-database-fill-add'} />
-              <span>{seedingMock ? 'Seeding...' : 'Seed Test Data'}</span>
-            </button>
 
             {/* Export Dropdown Menu (PDF & Excel Only) */}
             <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
@@ -782,16 +758,6 @@ export function RefundManagementPage() {
                           ? 'No refund records match your selected filter criteria.'
                           : 'There are no refund requests in the database yet.'}
                       </p>
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-sm mt-3"
-                        onClick={handleSeedMockData}
-                        disabled={seedingMock}
-                        style={{ backgroundColor: '#4f46e5', borderColor: '#4f46e5', borderRadius: '8px', padding: '7px 18px', fontWeight: 600 }}
-                      >
-                        <i className="bi bi-database-add me-2" />
-                        {seedingMock ? 'Generating Test Data...' : 'Generate Mock Refund Data'}
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -829,7 +795,7 @@ export function RefundManagementPage() {
                       {/* 4. AMOUNT (with Product Name & Quantity subtitle) */}
                       <td>
                         <div className={styles.amountText}>
-                          ${Number(item.refundAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {Number(item.refundAmount || 0).toLocaleString()} MMK
                         </div>
                         {item.productName && (
                           <div className={styles.productNameSub} title={item.productName}>
@@ -992,7 +958,7 @@ export function RefundManagementPage() {
                   <div className={styles.detailItem}>
                     <span className={styles.detailLabel}>Refund Amount</span>
                     <span className={`${styles.detailValue} text-primary`}>
-                      ${Number(activeModal.item.refundAmount || 0).toFixed(2)}
+                      {Number(activeModal.item.refundAmount || 0).toLocaleString()} MMK
                     </span>
                   </div>
                   <div className={styles.detailItem}>

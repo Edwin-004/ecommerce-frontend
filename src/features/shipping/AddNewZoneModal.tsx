@@ -307,7 +307,7 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label>Shipping Fee For Selected Townships (Ks)</label>
+              <label>Shipping Fee For Selected Townships (MMK)</label>
               <input
                 type="number"
                 value={shippingFee}
@@ -363,7 +363,7 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
           {!isDefaultAlreadyExists && enableDefaultRate && (
             <div className={`${styles.formRow} ${styles.defaultRateWrapper}`}>
               <div className={styles.formGroup}>
-                <label>Default Shipping Fee (Ks)</label>
+                <label>Default Shipping Fee (MMK)</label>
                 <input
                   type="number"
                   value={defaultShippingFee}

@@ -2,25 +2,34 @@
   width: 100%;
 }
 
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .pageHeader {
   margin-bottom: 24px;
 }
 
 .titleArea h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
   color: #0f172a;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.025em;
   margin: 0;
+  line-height: 28px;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .titleArea p {
-  font-size: 13.5px;
+  font-size: 12px;
   color: #64748b;
-  margin: 4px 0 0 0;
+  margin: 2px 0 0 0;
+  font-weight: 400;
+  line-height: 16px;
 }
 
 .pageTitle {
@@ -30,34 +39,48 @@
 }
 
 .tableContainer {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   overflow-x: auto;
 }
 
 .orderTable {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: left;
 }
 
-.orderTable th,
-.orderTable td {
-  padding: 15px 20px;
-  border-bottom: 1px solid #eee;
+.orderTable th {
+  background-color: #f8fafc;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.orderTable th {
-  background-color: #f9fafb;
-  color: #666;
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-transform: uppercase;
+.orderTable td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.orderTable tbody tr {
+  transition: background-color 0.15s ease-out;
 }
 
 .orderTable tbody tr:hover {
-  background-color: #fcfcfc;
+  background-color: #f8fafc;
 }
 
 /* --- Split View (Order ရွေးလိုက်သောအခါ) --- */
@@ -315,7 +338,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -323,7 +348,12 @@
 }
 
 .modalContent {
-  background-color: #fff;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.2), inset 0 1px 0 rgba(255, 255, 255, 1);
+  border-radius: 20px;
   padding: 24px;
   border-radius: 8px;
   width: 400px;
@@ -445,6 +475,8 @@
 
 /* ==================== Filter Section & Tabs ==================== */
 .filterSection {
+  position: relative;
+  z-index: 50;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -455,35 +487,39 @@
 
 .tabsContainer {
   display: flex;
-  gap: 12px;
+  gap: 20px;
   border-bottom: 2px solid #e2e8f0;
   flex-grow: 1;
-  overflow-x: auto; /* ဖုန်းနဲ့ကြည့်ရင် ဘေးတိုက်ပွတ်ဆွဲလို့ရအောင် */
-  padding-bottom: 2px;
+  overflow-x: auto;
+  padding-bottom: 0;
 }
 
 .tabButton {
-  padding: 10px 16px;
+  padding: 8px 4px 10px 4px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  margin-bottom: -4px; /* Border အချင်းချင်း ထပ်နေစေရန် */
+  margin-bottom: -2px;
   color: #64748b;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
 
 .tabButton:hover {
-  color: #334155;
+  color: #2563eb;
 }
 
 .activeTab {
-  color: #4f46e5; /* Primary လှပသော အပြာရောင် */
-  border-bottom-color: #4f46e5;
-  font-weight: 600;
+  color: #2563eb !important;
+  border-bottom: 2px solid #2563eb !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
 }
 
 /* ==================== Search Bar ==================== */
@@ -628,7 +664,12 @@
   right: 0;
   z-index: 100;
   width: 220px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
@@ -736,7 +777,12 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
@@ -855,7 +901,6 @@
     transform: translateY(0);
   }
 }
-
 /* AllOrders.module.css */
 
 /* ညာဘက်ခြမ်း Date Picker နှင့် Search ကို တစ်တန်းတည်း (သို့မဟုတ် သပ်သပ်ရပ်ရပ်) နေစေရန် */
@@ -912,4 +957,80 @@
   gap: 16px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+}
+
+/* Status Pill Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.statusDot {
+  font-size: 11px;
+}
+
+.statusDelivered {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.statusShipped {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.statusProcessing {
+  background: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
+.statusPending {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.statusCancelled {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.paymentBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.paymentSuccess {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.paymentPending {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.paymentRefunded {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }

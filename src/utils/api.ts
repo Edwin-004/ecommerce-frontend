@@ -13,7 +13,6 @@ export async function apiFetch<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  
   if (!isFormData && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
@@ -32,6 +31,17 @@ export async function apiFetch<T>(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      localStorage.removeItem('email');
+      localStorage.removeItem('role');
+      localStorage.removeItem('permissions');
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+
     let errorMsg = `HTTP Error ${response.status}`;
 
     try {

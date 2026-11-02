@@ -1,6 +1,7 @@
 // src/utils/axiosConfig.ts
 import axios from 'axios';
 import { store } from '../store';
+import { logout } from '../features/auth/authSlice';
 
 const api = axios.create({
     baseURL: 'http://localhost:8080/api/backoffice',
@@ -15,9 +16,6 @@ api.interceptors.request.use(
         const state: any = store.getState();
         const token = state.auth?.token || localStorage.getItem('token'); 
 
-        // Console တွင် Token ပါ/မပါ စမ်းသပ်ကြည့်နိုင်ရန် (နောက်မှ ပြန်ဖျက်နိုင်ပါသည်)
-        console.log("Axios Interceptor - Token is:", token ? "Attached ✅" : "Missing ❌");
-
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
@@ -27,5 +25,24 @@ api.interceptors.request.use(
         return Promise.reject(error);
     }
 );
+
+const handleAuthError = (error: any) => {
+    if (error.response && error.response.status === 401) {
+        store.dispatch(logout());
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        localStorage.removeItem('email');
+        localStorage.removeItem('role');
+        localStorage.removeItem('permissions');
+
+        if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+        }
+    }
+    return Promise.reject(error);
+};
+
+api.interceptors.response.use((response) => response, handleAuthError);
+axios.interceptors.response.use((response) => response, handleAuthError);
 
 export default api;

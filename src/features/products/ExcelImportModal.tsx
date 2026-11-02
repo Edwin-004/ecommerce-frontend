@@ -12,6 +12,8 @@ import {
   FiTrash2,
   FiGrid,
   FiClipboard,
+  FiExternalLink,
+  FiCheckCircle,
 } from 'react-icons/fi';
 import { productManagementApi, type CategoryItem, type BrandItem } from './productManagementApi';
 
@@ -55,7 +57,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
   onClose,
   onImportSuccess,
 }) => {
-  const [activeTab, setActiveTab] = useState<'GRID' | 'FILE'>('GRID');
+  const [activeTab, setActiveTab] = useState<'EXCEL' | 'GRID'>('EXCEL');
 
   // Categories & Brands list for Dropdowns
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -69,6 +71,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState<boolean>(false);
+  const [excelOpeningNotice, setExcelOpeningNotice] = useState<boolean>(false);
   const [uploading, setUploading] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -236,7 +239,32 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     }
   };
 
-  // File Upload Handlers
+  // Open directly in Microsoft Excel App
+  const handleOpenInExcelApp = async () => {
+    try {
+      setDownloadingTemplate(true);
+      setExcelOpeningNotice(true);
+      setErrorMsg(null);
+
+      // 1. Download file to browser so user always has local .xlsx
+      await productManagementApi.downloadExcelTemplate();
+
+      // 2. Launch Microsoft Excel desktop app via Windows Office URI Protocol
+      const templateUrl = 'http://localhost:8080/api/backoffice/products/excel-template.xlsx';
+      window.location.href = `ms-excel:ofe|u|${templateUrl}`;
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
+        setErrorMsg('Backend Server (Port 8080) ရပ်တန့်နေပါသည် သို့မဟုတ် ချိတ်ဆက်မရသေးပါ။ Backend ကို Run ပေးပါရန်။');
+      } else {
+        setErrorMsg(err.response?.data?.message || err.message || 'Failed to open Excel template.');
+      }
+    } finally {
+      setDownloadingTemplate(false);
+    }
+  };
+
+  // File Download Handler
   const handleDownloadTemplate = async () => {
     try {
       setDownloadingTemplate(true);
@@ -304,7 +332,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
         style={{
           background: '#ffffff',
           borderRadius: '16px',
-          width: activeTab === 'GRID' && !result ? '1060px' : '640px',
+          width: activeTab === 'GRID' && !result ? '1060px' : '680px',
           maxWidth: '98vw',
           maxHeight: '94vh',
           display: 'flex',
@@ -332,22 +360,22 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                 width: '40px',
                 height: '40px',
                 borderRadius: '10px',
-                background: '#e0e7ff',
-                color: '#4f46e5',
+                background: '#dcfce7',
+                color: '#15803d',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '20px',
               }}
             >
-              <FiGrid />
+              <FiFileText />
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
-                Batch Product Entry &amp; Excel Import
+                Excel Bulk Import (ကုန်ပစ္စည်း အမြောက်အမြား သွင်းယူခြင်း)
               </h2>
               <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                Type directly into the Excel-like table, paste from clipboard, or upload a .xlsx file.
+                Open in Microsoft Excel App to enter 1,000 to 5,000 products easily.
               </p>
             </div>
           </div>
@@ -385,6 +413,27 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
           >
             <button
               type="button"
+              onClick={() => setActiveTab('EXCEL')}
+              style={{
+                padding: '12px 0',
+                border: 'none',
+                background: 'none',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: activeTab === 'EXCEL' ? '#107c41' : '#64748b',
+                borderBottom: `2px solid ${activeTab === 'EXCEL' ? '#107c41' : 'transparent'}`,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <FiFileText size={16} />
+              Microsoft Excel App (Excel တွင် တိုက်ရိုက်ဖွင့်သွင်းမည်)
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab('GRID')}
               style={{
                 padding: '12px 0',
@@ -401,28 +450,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
               }}
             >
               <FiGrid size={15} />
-              Interactive Web Grid (တိုက်ရိုက်ဇယားတွင်ရိုက်သွင်းမည်)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('FILE')}
-              style={{
-                padding: '12px 0',
-                border: 'none',
-                background: 'none',
-                fontSize: '13px',
-                fontWeight: 600,
-                color: activeTab === 'FILE' ? '#4f46e5' : '#64748b',
-                borderBottom: `2px solid ${activeTab === 'FILE' ? '#4f46e5' : 'transparent'}`,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <FiUploadCloud size={15} />
-              Upload .xlsx File (.xlsx ဖိုင်တင်သွင်းမည်)
+              Interactive Web Grid (Browser တွင် ရိုက်သွင်းမည်)
             </button>
           </div>
         )}
@@ -915,57 +943,137 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
               </div>
             </div>
           ) : (
-            /* TAB 2: UPLOAD .XLSX FILE */
+            /* TAB 1: MICROSOFT EXCEL APP WORKFLOW */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Step 1: Open Directly in Excel */}
+              <div
+                style={{
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '14px',
+                  padding: '20px',
+                  background: '#f0fdf4',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                  <div
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '10px',
+                      background: '#107c41',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '22px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <FiFileText />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: '15px', color: '#14532d', marginBottom: '4px' }}>
+                      အဆင့် ၁: Microsoft Excel Software ဖြင့် တိုက်ရိုက်ဖွင့်ပါ
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#166534', lineHeight: 1.5 }}>
+                      အောက်ပါခလုတ်ကို နှိပ်လိုက်ပါက သင့်ကွန်ပျူတာရှိ Microsoft Excel App တန်းပွင့်လာပါမည်။ Category နှင့် Brand Dropdown များ အသင့်ပါဝင်ပြီး Product ၁,၀၀၀ မှ ၅,၀၀၀ ထိ စိတ်ကြိုက် လျင်မြန်စွာ ရိုက်ထည့်နိုင်ပါသည်။
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={handleOpenInExcelApp}
+                    disabled={downloadingTemplate}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      background: '#107c41',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: downloadingTemplate ? 'wait' : 'pointer',
+                      boxShadow: '0 2px 6px rgba(16, 124, 65, 0.3)',
+                    }}
+                  >
+                    <FiExternalLink size={16} />
+                    {downloadingTemplate ? 'Excel ဖွင့်နေပါသည်...' : 'Open in Microsoft Excel App'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadTemplate}
+                    disabled={downloadingTemplate}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '10px 16px',
+                      background: '#ffffff',
+                      border: '1px solid #86efac',
+                      borderRadius: '8px',
+                      color: '#15803d',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <FiDownload size={15} />
+                    Download .xlsx File
+                  </button>
+                </div>
+
+                {excelOpeningNotice && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      background: '#dcfce7',
+                      border: '1px solid #bbf7d0',
+                      color: '#166534',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <FiCheckCircle size={16} color="#16a34a" />
+                    <span>
+                      Microsoft Excel App ကို ဖွင့်လှစ်နေပါသည်... Browser က <strong>&quot;Open Microsoft Excel?&quot;</strong> ဟု မေးပါက <strong>Open</strong> ကို နှိပ်ပေးပါ။ သို့မဟုတ် ဒေါင်းလုဒ်ဆွဲထားသော ဖိုင်ကို နှိပ်၍လည်း Excel တွင် တိုက်ရိုက် ဖွင့်နိုင်ပါသည်။
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Upload Filled Excel */}
               <div
                 style={{
                   border: '1px solid #e2e8f0',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  background: '#f8fafc',
+                  borderRadius: '14px',
+                  padding: '20px',
+                  background: '#ffffff',
                   display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '16px',
+                  flexDirection: 'column',
+                  gap: '12px',
                 }}
               >
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>
-                    Download Pre-Filled Smart Template
+                  <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b' }}>
+                    အဆင့် ၂: Excel တွင် Save ပြီးပါက ဤနေရာသို့ ပြန်တင်သွင်းပါ
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>
-                    Pre-filled with your store’s active Categories & Brands with Excel Dropdowns.
+                  <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
+                    Excel ထဲတွင် Data ဖြည့်ပြီး Save (Ctrl + S) လုပ်ထားသော .xlsx ဖိုင်ကို အောက်တွင် ထည့်သွင်းပေးပါ။
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleDownloadTemplate}
-                  disabled={downloadingTemplate}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
-                    background: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '8px',
-                    color: '#4f46e5',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                  }}
-                >
-                  <FiDownload size={14} />
-                  {downloadingTemplate ? 'Generating...' : 'Download .xlsx'}
-                </button>
-              </div>
 
-              <div>
-                <div style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b', marginBottom: '8px' }}>
-                  Upload Filled Excel (.xlsx)
-                </div>
                 <div
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -979,12 +1087,13 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                   }}
                   onClick={() => fileInputRef.current?.click()}
                   style={{
-                    border: `2px dashed ${isDragging ? '#4f46e5' : '#cbd5e1'}`,
+                    border: `2px dashed ${selectedFile ? '#107c41' : isDragging ? '#4f46e5' : '#cbd5e1'}`,
                     borderRadius: '12px',
-                    padding: '32px 20px',
+                    padding: '28px 20px',
                     textAlign: 'center',
-                    background: isDragging ? '#eef2ff' : '#fcfcfd',
+                    background: selectedFile ? '#f0fdf4' : isDragging ? '#eef2ff' : '#fcfcfd',
                     cursor: 'pointer',
+                    transition: 'all 0.2s ease',
                   }}
                 >
                   <input
@@ -994,13 +1103,27 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                     style={{ display: 'none' }}
                     onChange={(e) => e.target.files?.[0] && setSelectedFile(e.target.files[0])}
                   />
-                  <FiFileText size={36} color="#6366f1" style={{ marginBottom: '8px' }} />
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
-                    {selectedFile ? selectedFile.name : 'Click to select or drag and drop your Excel file here'}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
-                    {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Accepts .xlsx files up to 10MB (1,000 – 5,000 rows)'}
-                  </div>
+                  {selectedFile ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                      <FiCheckCircle size={38} color="#107c41" />
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#14532d' }}>
+                        {selectedFile.name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#16a34a' }}>
+                        {(selectedFile.size / 1024).toFixed(1)} KB — ရွေးချယ်ပြီးပါပြီ
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <FiUploadCloud size={38} color="#6366f1" style={{ marginBottom: '8px' }} />
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+                        Click to select or drag and drop your saved Excel file here
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+                        Accepts .xlsx files up to 10MB (1,000 – 5,000 rows)
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1077,25 +1200,25 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '9px 20px',
+                  padding: '10px 24px',
                   borderRadius: '8px',
                   border: 'none',
-                  background: !selectedFile || uploading ? '#a5b4fc' : '#4f46e5',
+                  background: !selectedFile || uploading ? '#cbd5e1' : '#107c41',
                   color: '#ffffff',
                   fontSize: '13px',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: !selectedFile || uploading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 2px 6px rgba(79, 70, 229, 0.3)',
+                  boxShadow: !selectedFile || uploading ? 'none' : '0 2px 8px rgba(16, 124, 65, 0.3)',
                 }}
               >
                 {uploading ? (
                   <>
                     <FiRefreshCw className="spin" size={14} />
-                    Importing...
+                    စနစ်ထဲသို့ သွင်းနေပါသည်...
                   </>
                 ) : (
                   <>
-                    <span>Start File Import</span>
+                    <span>စနစ်ထဲသို့ စတင်သွင်းမည် (Import Products)</span>
                     <FiArrowRight size={14} />
                   </>
                 )}

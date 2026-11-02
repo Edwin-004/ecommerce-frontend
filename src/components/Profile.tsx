@@ -1,3 +1,4 @@
+import { BackButton } from './common/BackButton';
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../store';
@@ -79,11 +80,14 @@ export const Profile = () => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div className={styles.titleArea}>
-          <h1>
-            <FiUser /> My Profile
-          </h1>
-          <p>View your personal profile details and security settings</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <BackButton fallbackUrl="/admin/dashboard" />
+          <div className={styles.titleArea}>
+            <h1>
+              <FiUser /> My Profile
+            </h1>
+            <p>View your personal profile details and security settings</p>
+          </div>
         </div>
       </div>
 

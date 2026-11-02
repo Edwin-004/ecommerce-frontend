@@ -1,3 +1,4 @@
+import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   FiPackage,
@@ -164,14 +165,17 @@ export const VariantsPage: React.FC = () => {
     <div className={styles.container}>
       {/* Page Header */}
       <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Product Variants & Variations</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <BackButton fallbackUrl="/admin/dashboard" />
+          <div>
+            <h1 className={styles.title}>Product Variants & Variations</h1>
           <p className={styles.subtitle}>
             Manage sellable SKU combinations, variation attributes (Color, Size), and automated SKU generation
           </p>
         </div>
+      </div>
 
-        <div className={styles.headerActions}>
+      <div className={styles.headerActions}>
           <button className={styles.btnSecondary} onClick={loadData} disabled={loading}>
             <FiRefreshCw className={loading ? 'spin' : ''} /> Refresh
           </button>
@@ -285,10 +289,10 @@ export const VariantsPage: React.FC = () => {
                     <td><span className={styles.skuTag}>{v.sku}</span></td>
                     <td style={{ fontWeight: 600 }}>{v.product?.productName || '-'}</td>
                     <td style={{ fontWeight: 700, color: '#0f172a' }}>
-                      ${v.sellingPrice ? v.sellingPrice.toFixed(2) : '0.00'}
+                      {v.sellingPrice ? `${v.sellingPrice.toLocaleString()} MMK` : '0 MMK'}
                     </td>
                     <td style={{ color: '#64748b' }}>
-                      {v.costPrice ? `$${v.costPrice.toFixed(2)}` : '-'}
+                      {v.costPrice ? `${v.costPrice.toLocaleString()} MMK` : '-'}
                     </td>
                     <td>
                       <span className={`${styles.badge} ${
