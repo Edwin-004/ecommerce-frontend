@@ -901,7 +901,63 @@
     transform: translateY(0);
   }
 }
+/* AllOrders.module.css */
 
+/* ညာဘက်ခြမ်း Date Picker နှင့် Search ကို တစ်တန်းတည်း (သို့မဟုတ် သပ်သပ်ရပ်ရပ်) နေစေရန် */
+.rightFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap; /* မျက်နှာပြင် ကျဉ်းသွားပါက အောက်ဆင်းသွားစေရန် */
+}
+
+/* Date Range Picker ပုံး */
+.datePickerContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 4px 12px;
+}
+
+/* Date Input Field များ */
+.dateInput {
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: #333333;
+  background-color: transparent;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.dateInput::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.dateInput::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* - သင်္ကေတ */
+.dateSeparator {
+  color: #888888;
+  font-weight: 500;
+  margin: 0 4px;
+}
+
+/* (လိုအပ်ပါက) Filter Section ကို Flex ပုံစံဖြင့် နေရာချရန် (မင်းဆီမှာ ရေးပြီးသား ရှိနိုင်ပါတယ်) */
+.filterSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Tabs က ဘယ်၊ Date & Search က ညာ */
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
 
 /* Status Pill Badges */
 .badge {

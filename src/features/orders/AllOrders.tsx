@@ -48,8 +48,10 @@ export const AllOrders = () => {
       skip: !selectedOrderNo,
     });
 
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   // Dynamic Export State
   const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>(
@@ -57,8 +59,12 @@ export const AllOrders = () => {
   );
   const [showColumnDropdown, setShowColumnDropdown] = useState<boolean>(false);
   const [showExportMenu, setShowExportMenu] = useState<boolean>(false);
-  const [exportingFormat, setExportingFormat] = useState<'pdf' | 'excel' | null>(null);
-  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
+  const [exportingFormat, setExportingFormat] = useState<
+    'pdf' | 'excel' | null
+  >(null);
+  const [exportSuccessMessage, setExportSuccessMessage] = useState<
+    string | null
+  >(null);
 
   const columnDropdownRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -132,7 +138,9 @@ export const AllOrders = () => {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Export failed');
-        throw new Error(errorText || `Export failed with status ${response.status}`);
+        throw new Error(
+          errorText || `Export failed with status ${response.status}`
+        );
       }
 
       const blob = await response.blob();
@@ -151,12 +159,13 @@ export const AllOrders = () => {
       setTimeout(() => setExportSuccessMessage(null), 4000);
     } catch (err: any) {
       console.error('Failed to export orders report:', err);
-      alert('Failed to export orders report: ' + (err.message || 'Unknown error'));
+      alert(
+        'Failed to export orders report: ' + (err.message || 'Unknown error')
+      );
     } finally {
       setExportingFormat(null);
     }
   };
-
 
   const filteredOrders = orders.filter((order: any) => {
     const matchStatus =
@@ -164,7 +173,36 @@ export const AllOrders = () => {
     const matchSearch =
       order.orderNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchStatus && matchSearch;
+    let matchDate = true;
+    if (startDate || endDate) {
+      if (!order.createdAt) {
+        matchDate = false; // Date မရှိရင် ဖျောက်မည်
+      } else {
+        // "2026-10-29 08:07 PM" ကဲ့သို့သော String ကို Date Object ပြောင်းခြင်း
+        // (API က ဘယ်လိုပုံစံနဲ့ပဲ လာလာ Date Object အဖြစ် အရင်ပြောင်းပါမည်)
+        const orderDateObj = new Date(order.createdAt);
+
+        // Invalid Date ဖြစ်နေလျှင် (Parsing Error တက်လျှင်) ဖျောက်မည်
+        if (isNaN(orderDateObj.getTime())) {
+          matchDate = false;
+        } else {
+          // Date Object မှနေ၍ YYYY-MM-DD ပုံစံ String ပြန်ထုတ်ခြင်း (Timezone ပြဿနာကို ဖြေရှင်းပြီး)
+          // ဥပမာ: "2026-10-29"
+          const year = orderDateObj.getFullYear();
+          const month = String(orderDateObj.getMonth() + 1).padStart(2, '0');
+          const day = String(orderDateObj.getDate()).padStart(2, '0');
+          const formattedOrderDate = `${year}-${month}-${day}`;
+
+          if (startDate && formattedOrderDate < startDate) {
+            matchDate = false; // Start Date ထက် စောနေလျှင် ဖျောက်မည်
+          }
+          if (endDate && formattedOrderDate > endDate) {
+            matchDate = false; // End Date ထက် နောက်ကျနေလျှင် ဖျောက်မည်
+          }
+        }
+      }
+    }
+    return matchStatus && matchSearch && matchDate;
   });
 
   const getOrderCountByStatus = (status: string) => {
@@ -336,8 +374,8 @@ export const AllOrders = () => {
               <FiShoppingCart /> All Orders
             </h1>
             <p>
-              Track customer purchases, fulfillment stages, shipments, and payment
-              statuses
+              Track customer purchases, fulfillment stages, shipments, and
+              payment statuses
             </p>
           </div>
         </div>
@@ -378,8 +416,33 @@ export const AllOrders = () => {
             );
           })}
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <div className={styles.rightFilterGroup}>
+          <div className={styles.datePickerContainer}>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className={styles.dateInput}
+              title="Start Date"
+            />
+            <span className={styles.dateSeparator}>-</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className={styles.dateInput}
+              title="End Date"
+            />
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+          }}
+        >
           <div className={styles.searchContainer}>
             <FiSearch className={styles.searchIcon} />
             <input
@@ -392,7 +455,10 @@ export const AllOrders = () => {
           </div>
 
           {/* Dynamic Column Selector Popover */}
-          <div className={styles.columnSelectorContainer} ref={columnDropdownRef}>
+          <div
+            className={styles.columnSelectorContainer}
+            ref={columnDropdownRef}
+          >
             <button
               type="button"
               className={styles.btnColumnSelector}
@@ -406,7 +472,9 @@ export const AllOrders = () => {
             {showColumnDropdown && (
               <div className={styles.columnDropdownMenu}>
                 <div className={styles.columnDropdownHeader}>
-                  <span className={styles.columnDropdownTitle}>Export Columns</span>
+                  <span className={styles.columnDropdownTitle}>
+                    Export Columns
+                  </span>
                   <button
                     type="button"
                     className={styles.columnDropdownAction}
@@ -450,7 +518,10 @@ export const AllOrders = () => {
                 <>
                   <i className="bi bi-download me-1" />
                   <span>Export</span>
-                  <i className="bi bi-chevron-down ms-1" style={{ fontSize: '11px' }} />
+                  <i
+                    className="bi bi-chevron-down ms-1"
+                    style={{ fontSize: '11px' }}
+                  />
                 </>
               )}
             </button>
@@ -471,7 +542,9 @@ export const AllOrders = () => {
                     <i className="bi bi-file-earmark-excel fs-5" />
                   </div>
                   <div className={styles.exportMenuText}>
-                    <span className={styles.exportMenuTitle}>Excel Spreadsheet</span>
+                    <span className={styles.exportMenuTitle}>
+                      Excel Spreadsheet
+                    </span>
                     <span className={styles.exportMenuSub}>.xlsx format</span>
                   </div>
                 </button>
@@ -489,7 +562,9 @@ export const AllOrders = () => {
                   </div>
                   <div className={styles.exportMenuText}>
                     <span className={styles.exportMenuTitle}>PDF Document</span>
-                    <span className={styles.exportMenuSub}>Standard PDF report</span>
+                    <span className={styles.exportMenuSub}>
+                      Standard PDF report
+                    </span>
                   </div>
                 </button>
               </div>
@@ -546,17 +621,31 @@ export const AllOrders = () => {
                       <span
                         className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}
                       >
-                        {order.orderStatus === 'DELIVERED' && <span className={styles.statusDot}>✔</span>}
-                        {order.orderStatus === 'PENDING' && <span className={styles.statusDot}>⏳</span>}
-                        {order.orderStatus === 'SHIPPED' && <span className={styles.statusDot}>🚚</span>}
-                        {order.orderStatus === 'PROCESSING' && <span className={styles.statusDot}>⚙</span>}
-                        {order.orderStatus === 'CANCELLED' && <span className={styles.statusDot}>✖</span>}
+                        {order.orderStatus === 'DELIVERED' && (
+                          <span className={styles.statusDot}>✔</span>
+                        )}
+                        {order.orderStatus === 'PENDING' && (
+                          <span className={styles.statusDot}>⏳</span>
+                        )}
+                        {order.orderStatus === 'SHIPPED' && (
+                          <span className={styles.statusDot}>🚚</span>
+                        )}
+                        {order.orderStatus === 'PROCESSING' && (
+                          <span className={styles.statusDot}>⚙</span>
+                        )}
+                        {order.orderStatus === 'CANCELLED' && (
+                          <span className={styles.statusDot}>✖</span>
+                        )}
                         <span>{order.orderStatus}</span>
                       </span>
                     </td>
                     <td>
-                      <span className={`${styles.paymentBadge} ${order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID' ? styles.paymentSuccess : (order.paymentStatus === 'REFUNDED' || order.paymentStatus === 'PARTIALLY_REFUNDED' ? styles.paymentRefunded : styles.paymentPending)}`}>
-                        {(order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID') && '✔ '}
+                      <span
+                        className={`${styles.paymentBadge} ${order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID' ? styles.paymentSuccess : order.paymentStatus === 'REFUNDED' || order.paymentStatus === 'PARTIALLY_REFUNDED' ? styles.paymentRefunded : styles.paymentPending}`}
+                      >
+                        {(order.paymentStatus === 'SUCCESS' ||
+                          order.paymentStatus === 'PAID') &&
+                          '✔ '}
                         {order.paymentStatus}
                       </span>
                     </td>
