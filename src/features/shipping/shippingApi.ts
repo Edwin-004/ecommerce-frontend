@@ -1,10 +1,10 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type {
   CreateZoneGroupRequest,
-  DeliveryZoneGroup,
   LocationRegion,
   UpdateZoneRateRequest,
 } from '../../types/shipping';
+import type { PaginatedResponse } from '../../types/PaginatedResponse';
 
 export const shippingApi = createApi({
   reducerPath: 'shippingApi',
@@ -21,9 +21,29 @@ export const shippingApi = createApi({
   tagTypes: ['ShippingZone'], // Cache မှတ်ထားရန်နှင့် Auto-refresh လုပ်ရန်
   endpoints: (builder) => ({
     // ၁။ Zone Group အားလုံးနှင့် လက်ရှိဈေးနှုန်းများကို ဆွဲထုတ်ရန် (GET)
-    getZoneGroups: builder.query<DeliveryZoneGroup[], void>({
-      query: () => '/backoffice/shipping/zones',
+   getZoneGroups: builder.query<
+      PaginatedResponse<any>,
+      { search?: string; status?: string; page?: number; size?: number } | void
+    >({
+      query: (args) => {
+        const page = args?.page ?? 0;
+        const size = args?.size ?? 10;
+        let url = `/backoffice/shipping/zones?page=${page}&size=${size}`;
+        
+        if (args?.search) url += `&search=${args.search}`;
+        if (args?.status && args.status !== 'ALL') url += `&status=${args.status}`;
+        
+        return url;
+      },
       providesTags: ['ShippingZone'],
+    }),
+
+    toggleZoneStatus: builder.mutation<void, { zoneName: string; city: string; newStatus: string }>({
+      query: ({ zoneName, city, newStatus }) => ({
+        url: `/backoffice/shipping/zones/${encodeURIComponent(zoneName)}/status?city=${encodeURIComponent(city)}&newStatus=${newStatus}`,
+        method: 'PATCH',
+      }),
+      invalidatesTags: ['ShippingZone'],
     }),
 
     // ၂။ မြန်မာတစ်နိုင်ငံလုံးရှိ တိုင်း/ပြည်နယ် နှင့် မြို့နယ် Master Data ဆွဲထုတ်ရန် (GET)
@@ -66,4 +86,5 @@ export const {
   useGetAssignedTownshipsQuery,
   useCreateZoneGroupMutation,
   useUpdateZoneRateMutation,
+  useToggleZoneStatusMutation,
 } = shippingApi;
