@@ -26,6 +26,9 @@ export const StaffList: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
+    const [showModal, setShowModal] = useState(false);
+    const [selectedStaff, setSelectedStaff] = useState<{ id: number; name: string; status: string } | null>(null);
+
     const fetchStaff = async () => {
         try {
             const response = await api.get('/staff');
@@ -49,7 +52,7 @@ export const StaffList: React.FC = () => {
     const filteredStaff = staffList.filter((staff) => {
         const matchesTab = activeTab === 'ALL' || staff.status === activeTab;
         const matchesSearch = staff.userName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              staff.email.toLowerCase().includes(searchQuery.toLowerCase());
+                            staff.email.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesTab && matchesSearch;
     });
 
@@ -71,31 +74,38 @@ export const StaffList: React.FC = () => {
         navigate(`/admin/staff/edit/${id}`);
     };
 
-    async function handleStatusToggle(id: number, name: string, currentStatus: string) {
-        const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-        const actionText = currentStatus === 'ACTIVE' ? 'Suspend' : 'Activate';
+    const openConfirmModal = (id: number, name: string, status: string) => {
+        setSelectedStaff({ id, name, status });
+        setShowModal(true);
+    };
 
-        if (window.confirm(`${name} ၏ အကောင့်ကို ${actionText} လုပ်မှာ သေချာပြီလား?`)) {
-            try {
-                await api.put(`/staff/${id}/status`, null, {
-                    params: { status: newStatus }
-                });
+    const handleConfirmAction = async () => {
+        if (!selectedStaff) return;
 
-                setStaffList(prevList => prevList.map(staff => staff.userId === id ? { ...staff, status: newStatus } : staff
-                ));
-            } catch (err) {
-                console.error(`Error ${actionText.toLowerCase()}ing staff:`, err);
-                alert(`${actionText} လုပ်ရာတွင် အမှားအယွင်းဖြစ်ပေါ်ခဲ့ပါသည်။`);
-            }
+        const { id, name, status } = selectedStaff;
+        const newStatus = status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+        const actionText = status === 'ACTIVE' ? 'Suspend' : 'Activate';
+
+        try {
+            await api.put(`/staff/${id}/status`, null, {
+                params: { status: newStatus }
+            });
+
+            setStaffList(prevList => prevList.map(staff => staff.userId === id ? { ...staff, status: newStatus } : staff));
+            setShowModal(false);
+            setSelectedStaff(null);
+        } catch (err) {
+            console.error(`Error ${actionText.toLowerCase()}ing staff:`, err);
+            alert(`${actionText} လုပ်ရာတွင် အမှားအယွင်းဖြစ်ပေါ်ခဲ့ပါသည်။`);
+            setShowModal(false);
         }
-    }
+    };
 
     if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading staff data...</div>;
     if (error) return <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>{error}</div>;
 
     return (
         <div className="staff-container">
-            {/* Header Section */}
             <div className="header-section">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                     <BackButton fallbackUrl="/admin/dashboard" />
@@ -109,7 +119,6 @@ export const StaffList: React.FC = () => {
                 </button>
             </div>
 
-            {/* Summary Cards */}
             <div className="summary-cards">
                 <div className="card">
                     <div className="icon-box icon-blue">👥</div>
@@ -150,7 +159,6 @@ export const StaffList: React.FC = () => {
                 </div>
             </div>
 
-            {/* Table Area */}
             <div className="table-section">
                 <div className="table-controls">
                     <div className="tabs">
@@ -192,7 +200,6 @@ export const StaffList: React.FC = () => {
                     <table className="staff-table">
                         <thead>
                             <tr>
-                                {/* ID Column Header ဖယ်ရှားလိုက်ပါသည် */}
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Role</th>
@@ -205,7 +212,6 @@ export const StaffList: React.FC = () => {
                             {currentStaffData.length > 0 ? (
                                 currentStaffData.map((staff) => (
                                     <tr key={staff.userId}>
-                                        {/* ID Data Row ဖယ်ရှားလိုက်ပါသည် */}
                                         <td style={{ fontWeight: '500' }}>{staff.userName}</td>
                                         <td>{staff.email}</td>
                                         <td>
@@ -234,7 +240,7 @@ export const StaffList: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         className="table-btn-delete"
-                                                        onClick={() => handleStatusToggle(staff.userId, staff.userName, staff.status)}
+                                                        onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status)}
                                                         title="Suspend staff account"
                                                     >
                                                         <FiSlash size={12} /> Suspend
@@ -243,7 +249,7 @@ export const StaffList: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         className="table-btn-activate"
-                                                        onClick={() => handleStatusToggle(staff.userId, staff.userName, staff.status)}
+                                                        onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status)}
                                                         title="Activate staff account"
                                                     >
                                                         <FiCheck size={12} /> Activate
@@ -264,7 +270,6 @@ export const StaffList: React.FC = () => {
                     </table>
                 </div>
 
-                {/* Table Footer with Adjusted Compact Pagination */}
                 <div className="pagination-container">
                     <span className="pagination-info">
                         Showing {filteredStaff.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredStaff.length)} of {filteredStaff.length} Entries
@@ -301,6 +306,67 @@ export const StaffList: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {showModal && selectedStaff && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: '#fff',
+                        padding: '24px',
+                        borderRadius: '8px',
+                        width: '400px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
+                            အတည်ပြုရန်
+                        </h3>
+                        <p style={{ marginBottom: '20px', color: '#4b5563', fontSize: '14px' }}>
+                            <b>{selectedStaff.name}</b> ၏ အကောင့်ကို {selectedStaff.status === 'ACTIVE' ? 'Suspend' : 'Activate'} လုပ်မှာ သေချာပြီလား?
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                            <button 
+                                onClick={() => setShowModal(false)}
+                                style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: '#e5e7eb',
+                                    color: '#374151',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={handleConfirmAction}
+                                style={{
+                                    padding: '8px 16px',
+                                    backgroundColor: selectedStaff.status === 'ACTIVE' ? '#dc2626' : '#16a34a',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                Confirm
+                            </button>
+                         </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
