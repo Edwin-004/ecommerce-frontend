@@ -227,7 +227,17 @@ export const productManagementApi = {
       headers,
       body: formData,
     });
-    if (!res.ok) throw new Error('Variant image upload failed');
+    if (!res.ok) {
+      let errorMsg = `Upload failed (${res.status})`;
+      try {
+        const errorJson = await res.json();
+        errorMsg = errorJson.message || errorJson.error || JSON.stringify(errorJson);
+      } catch {
+        const errorText = await res.text().catch(() => '');
+        if (errorText) errorMsg = errorText;
+      }
+      throw new Error(errorMsg);
+    }
     return res.json();
   },
 

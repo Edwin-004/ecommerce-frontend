@@ -347,6 +347,18 @@ export const ShippingRates = () => {
           />
         )}
       </div>
+
+      <AddNewZoneModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+      {editingZone && (
+        <EditZoneModal
+          isOpen={!!editingZone}
+          zone={editingZone}
+          onClose={() => setEditingZone(null)}
+        />
+      )}
     </div>
   );
 };

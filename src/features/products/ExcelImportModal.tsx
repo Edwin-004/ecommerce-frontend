@@ -230,7 +230,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     } catch (err: any) {
       console.error(err);
       if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        setErrorMsg('Backend Server (Port 8080) ရပ်တန့်နေပါသည် သို့မဟုတ် ချိတ်ဆက်မရသေးပါ။ Backend ကို Run ပေးပါရန်။');
+        setErrorMsg('Backend Server (Port 8080) is not reachable. Please ensure the backend is running.');
       } else {
         setErrorMsg(err.response?.data?.message || err.message || 'Failed to save products.');
       }
@@ -255,7 +255,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     } catch (err: any) {
       console.error(err);
       if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        setErrorMsg('Backend Server (Port 8080) ရပ်တန့်နေပါသည် သို့မဟုတ် ချိတ်ဆက်မရသေးပါ။ Backend ကို Run ပေးပါရန်။');
+        setErrorMsg('Backend Server (Port 8080) is not reachable. Please ensure the backend is running.');
       } else {
         setErrorMsg(err.response?.data?.message || err.message || 'Failed to open Excel template.');
       }
@@ -273,7 +273,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     } catch (err: any) {
       console.error(err);
       if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        setErrorMsg('Backend Server (Port 8080) ရပ်တန့်နေပါသည် သို့မဟုတ် ချိတ်ဆက်မရသေးပါ။ Backend ကို Run ပေးပါရန်။');
+        setErrorMsg('Backend Server (Port 8080) is not reachable. Please ensure the backend is running.');
       } else {
         setErrorMsg(err.response?.data?.message || err.message || 'Failed to download Excel template.');
       }
@@ -294,7 +294,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
     } catch (err: any) {
       console.error(err);
       if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-        setErrorMsg('Backend Server (Port 8080) ရပ်တန့်နေပါသည် သို့မဟုတ် ချိတ်ဆက်မရသေးပါ။ Backend ကို Run ပေးပါရန်။');
+        setErrorMsg('Backend Server (Port 8080) is not reachable. Please ensure the backend is running.');
       } else {
         setErrorMsg(err.response?.data?.message || err.message || 'Failed to import products from Excel.');
       }
@@ -372,10 +372,10 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a' }}>
-                Excel Bulk Import (ကုန်ပစ္စည်း အမြောက်အမြား သွင်းယူခြင်း)
+                Bulk Product Import (Excel .xlsx)
               </h2>
               <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                Open in Microsoft Excel App to enter 1,000 to 5,000 products easily.
+                Bulk import 100 to 10,000 products & variants into the database easily.
               </p>
             </div>
           </div>
@@ -429,7 +429,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
               }}
             >
               <FiFileText size={16} />
-              Microsoft Excel App (Excel တွင် တိုက်ရိုက်ဖွင့်သွင်းမည်)
+              Microsoft Excel File (.xlsx Import)
             </button>
 
             <button
@@ -450,7 +450,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
               }}
             >
               <FiGrid size={15} />
-              Interactive Web Grid (Browser တွင် ရိုက်သွင်းမည်)
+              Interactive Web Grid (In-Browser)
             </button>
           </div>
         )}
@@ -976,10 +976,10 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: '15px', color: '#14532d', marginBottom: '4px' }}>
-                      အဆင့် ၁: Microsoft Excel Software ဖြင့် တိုက်ရိုက်ဖွင့်ပါ
+                      Step 1: Download or Open Excel Template
                     </div>
                     <div style={{ fontSize: '13px', color: '#166534', lineHeight: 1.5 }}>
-                      အောက်ပါခလုတ်ကို နှိပ်လိုက်ပါက သင့်ကွန်ပျူတာရှိ Microsoft Excel App တန်းပွင့်လာပါမည်။ Category နှင့် Brand Dropdown များ အသင့်ပါဝင်ပြီး Product ၁,၀၀၀ မှ ၅,၀၀၀ ထိ စိတ်ကြိုက် လျင်မြန်စွာ ရိုက်ထည့်နိုင်ပါသည်။
+                      Download or launch the pre-formatted Excel template (.xlsx). It includes Category & Brand dropdown validations from your database so you can easily enter hundreds or thousands of products at once.
                     </div>
                   </div>
                 </div>
@@ -1005,7 +1005,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                     }}
                   >
                     <FiExternalLink size={16} />
-                    {downloadingTemplate ? 'Excel ဖွင့်နေပါသည်...' : 'Open in Microsoft Excel App'}
+                    {downloadingTemplate ? 'Opening Excel...' : 'Open in Microsoft Excel'}
                   </button>
 
                   <button
@@ -1047,7 +1047,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                   >
                     <FiCheckCircle size={16} color="#16a34a" />
                     <span>
-                      Microsoft Excel App ကို ဖွင့်လှစ်နေပါသည်... Browser က <strong>&quot;Open Microsoft Excel?&quot;</strong> ဟု မေးပါက <strong>Open</strong> ကို နှိပ်ပေးပါ။ သို့မဟုတ် ဒေါင်းလုဒ်ဆွဲထားသော ဖိုင်ကို နှိပ်၍လည်း Excel တွင် တိုက်ရိုက် ဖွင့်နိုင်ပါသည်။
+                      Opening Microsoft Excel... If your browser asks <strong>&quot;Open Microsoft Excel?&quot;</strong>, click <strong>Open</strong>, or double-click the downloaded template file directly.
                     </span>
                   </div>
                 )}
@@ -1067,10 +1067,10 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
               >
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b' }}>
-                    အဆင့် ၂: Excel တွင် Save ပြီးပါက ဤနေရာသို့ ပြန်တင်သွင်းပါ
+                    Step 2: Upload Completed Excel File
                   </div>
                   <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
-                    Excel ထဲတွင် Data ဖြည့်ပြီး Save (Ctrl + S) လုပ်ထားသော .xlsx ဖိုင်ကို အောက်တွင် ထည့်သွင်းပေးပါ။
+                    Once you have filled in your product data and saved (Ctrl + S), drag & drop or select the .xlsx file below.
                   </div>
                 </div>
 
@@ -1110,7 +1110,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                         {selectedFile.name}
                       </div>
                       <div style={{ fontSize: '12px', color: '#16a34a' }}>
-                        {(selectedFile.size / 1024).toFixed(1)} KB — ရွေးချယ်ပြီးပါပြီ
+                        {(selectedFile.size / 1024).toFixed(1)} KB — File selected
                       </div>
                     </div>
                   ) : (
@@ -1214,11 +1214,11 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
                 {uploading ? (
                   <>
                     <FiRefreshCw className="spin" size={14} />
-                    စနစ်ထဲသို့ သွင်းနေပါသည်...
+                    Importing to Database...
                   </>
                 ) : (
                   <>
-                    <span>စနစ်ထဲသို့ စတင်သွင်းမည် (Import Products)</span>
+                    <span>Import Products to Database</span>
                     <FiArrowRight size={14} />
                   </>
                 )}

@@ -14,29 +14,42 @@ export const CreateStaff: React.FC = () => {
     });
     const [loading, setLoading] = useState(false);
 
+    // Custom Modal State
+    const [modalConfig, setModalConfig] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'warning' }>({ show: false, message: '', type: 'success' });
+
+    const showModal = (message: string, type: 'success' | 'error' | 'warning') => {
+        setModalConfig({ show: true, message, type });
+    };
+
+    const handleModalClose = () => {
+        setModalConfig({ ...modalConfig, show: false });
+        if (modalConfig.type === 'success') {
+            navigate('/admin/staff'); 
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         if(newStaff.roleName === 'ADMIN') {
-            alert("စနစ်အတွင်းသို့ ADMIN အကောင့် အသစ်ထည့်သွင်းခွင့် မရှိပါ။");
+            showModal("You cannot create a new ADMIN account.", 'warning');
             return;
         }
 
         setLoading(true);
         try {
             await api.post('/staff', newStaff);
-            alert("ဝန်ထမ်းအသစ် အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။");
-            navigate('/admin/staff'); 
+            showModal("Staff account created successfully.", 'success');
         } catch (err) {
             console.error("Error creating staff:", err);
-            alert("ဝန်ထမ်းအသစ် ထည့်သွင်းရာတွင် အမှားဖြစ်ပေါ်ခဲ့ပါသည်။");
+            showModal("An error occurred while creating the staff account.", 'error');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="create-staff-container">
+        <div className="create-staff-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '50px 20px', position: 'relative' }}>
             
             <div style={{ width: '100%', maxWidth: '600px' }}>
                 
@@ -93,6 +106,7 @@ export const CreateStaff: React.FC = () => {
                                 value={newStaff.roleName} 
                                 onChange={e => setNewStaff({...newStaff, roleName: e.target.value})}
                             >
+                                <option value="ADMIN">ADMIN (Full System Access)</option>
                                 <option value="INVENTORY_STAFF">INVENTORY STAFF (Manage Stock & Products)</option>
                                 <option value="SALES_STAFF">SALES STAFF (Manage Orders)</option>
                             </select>
@@ -112,6 +126,59 @@ export const CreateStaff: React.FC = () => {
                 </div>
 
             </div>
+
+            {/* Custom Modal Box */}
+            {modalConfig.show && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: '#fff',
+                        padding: '24px',
+                        borderRadius: '8px',
+                        width: '350px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{ 
+                            fontSize: '40px', 
+                            marginBottom: '10px', 
+                            color: modalConfig.type === 'success' ? '#16a34a' : modalConfig.type === 'warning' ? '#f59e0b' : '#dc2626' 
+                        }}>
+                            {modalConfig.type === 'success' ? '✅' : modalConfig.type === 'warning' ? '⚠️' : '❌'}
+                        </div>
+                        <h3 style={{ marginBottom: '12px', fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
+                            {modalConfig.type === 'success' ? 'Success' : modalConfig.type === 'warning' ? 'Warning' : 'Error'}
+                        </h3>
+                        <p style={{ marginBottom: '20px', color: '#4b5563', fontSize: '15px' }}>
+                            {modalConfig.message}
+                        </p>
+                        <button 
+                            onClick={handleModalClose}
+                            style={{
+                                padding: '8px 24px',
+                                backgroundColor: modalConfig.type === 'success' ? '#16a34a' : '#374151',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontWeight: '500'
+                            }}
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
