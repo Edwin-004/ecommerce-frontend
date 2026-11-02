@@ -20,6 +20,7 @@ import {
   FiTruck,
   FiUserPlus,
   FiBarChart2,
+  FiFileText,
   FiRotateCcw,
   FiSearch,
   FiX,
@@ -484,45 +485,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <>
               <div className={styles.navSectionTitle}>Management</div>
 
-              <div className={styles.dropdownGroup}>
-                <button
-                  type="button"
-                  className={`${styles.dropdownToggle} ${
-                    isStaffActive ? styles.parentActive : ''
-                  }`}
-                  onClick={() => handleDropdownToggle('staff')}
-                  title="Staff Management"
-                >
-                  <div className={styles.linkLeftGroup}>
-                    <FiUsers className={styles.linkIcon} />
-                    <span className={styles.linkLabel}>Staff Management</span>
-                  </div>
-                  <FiChevronDown
-                    className={`${styles.chevron} ${
-                      staffOpen || isSearching ? styles.chevronRotated : ''
-                    }`}
-                  />
-                </button>
+            {/* Inventory */}
+            {canAccessInventory && (
+              <NavLink to="/admin/inventory" className={navClass}>
+                <FiBox className={styles.linkIcon} />
+                <span>Inventory</span>
+              </NavLink>
+            )}
+          </>
+        )}
 
-                {(!isCollapsed ? (staffOpen || isSearching) : false) && (
-                  <div className={styles.submenu}>
-                    {matchStaffList && (
-                      <NavLink to="/admin/staff" end className={subNavClass} title="All Staff">
-                        <FiUsers size={13} className={styles.subIcon} />
-                        <span>All Staff</span>
-                      </NavLink>
-                    )}
-                    {matchCreateStaff && (
-                      <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Staff">
-                        <FiUserPlus size={13} className={styles.subIcon} />
-                        <span>Add New Staff</span>
-                      </NavLink>
-                    )}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+        {/* ================= 3. OPERATIONS ================= */}
+        {canAccessOperations && (
+          <>
+            <div className={styles.navSectionTitle}>OPERATIONS</div>
+
+            {/* Orders */}
+            <NavLink to="/admin/orders" className={navClass}>
+              <FiShoppingCart className={styles.linkIcon} />
+              <span>Orders</span>
+            </NavLink>
+
+            {/* Refunds */}
+            <NavLink to="/admin/refunds" className={navClass}>
+              <FiRotateCcw className={styles.linkIcon} />
+              <span>Refunds</span>
+            </NavLink>
+
+            {/* Shipping rate */}
+            <NavLink to="/admin/shipping-rates" className={navClass}>
+              <FiTruck className={styles.linkIcon} />
+              <span>Shipping Rates</span>
+            </NavLink>
+          </>
+        )}
 
           {/* Section: Reports & Analytics */}
           {canAccessReports && hasAnalyticsMatches && (
@@ -558,19 +554,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <span className={styles.onlineDot} title="Online" />
           </div>
-        </div>
-      ) : (
-        <div className={styles.sidebarFooterCollapsed}>
-          <div
-            className={styles.avatarBoxCollapsed}
-            onClick={() => navigate('/admin/profile')}
-            title={`${username || 'Admin'} (${getProfileSubtitle()})`}
-          >
-            {firstLetter}
-            <span className={styles.onlineDotCollapsed} />
-          </div>
-        </div>
-      )}
+        )}
+
+        {/* ================= 5. REPORTS & ANALYTICS (Admin only) ================= */}
+        {canAccessReports && (
+          <NavLink to="/admin/reports" className={navClass}>
+            <FiBarChart2 className={styles.linkIcon} />
+            <span>Reports & Analytics</span>
+          </NavLink>
+        )}
+
+        {/* ================= 6. SYSTEM (Admin only) ================= */}
+        {isAdmin && (
+          <>
+            <div className={styles.navSectionTitle}>SYSTEM</div>
+            <NavLink to="/admin/audit-logs" className={navClass}>
+              <FiFileText className={styles.linkIcon} />
+              <span>Audit Logs</span>
+            </NavLink>
+          </>
+        )}
+      </nav>
     </aside>
   );
 };

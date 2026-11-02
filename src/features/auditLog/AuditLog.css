@@ -1,0 +1,72 @@
+.audit-container {
+  padding: 24px;
+  font-family: sans-serif;
+}
+
+.audit-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.audit-table-wrapper {
+  overflow-x: auto;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.audit-table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.audit-table th, 
+.audit-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.audit-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.audit-table tr:hover {
+  background-color: #f3f4f6;
+}
+
+.action-text {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-success {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.status-error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.message-text {
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.error-text {
+  color: #ef4444;
+}
