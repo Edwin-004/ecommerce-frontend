@@ -813,22 +813,10 @@ export const CreateProductPage: React.FC = () => {
                   status: 'ACTIVE',
                   optionIds: validOptionIds,
                   initialStock: varStock,
+                  expiryDate: isPerishable && expiryDate ? expiryDate : undefined,
+                  batchNumber: isPerishable && batchNumber ? batchNumber.trim() : undefined,
+                  isPerishable: isPerishable,
                 });
-
-              // Link expiry details to inventory if product is perishable
-              if (isPerishable && expiryDate && createdVariant?.variantId) {
-                try {
-                  await inventoryApi.restockVariant({
-                    variantId: createdVariant.variantId,
-                    quantity: 0,
-                    expiryDate: expiryDate,
-                    batchNumber: batchNumber.trim() || undefined,
-                    remark: 'Initial batch expiry setup',
-                  });
-                } catch (invErr) {
-                  console.warn('Initial expiry setup for variant skipped:', invErr);
-                }
-              }
             } catch (createVarErr) {
               console.warn(`Failed to create variant ${gv.sku}:`, createVarErr);
             }
@@ -875,22 +863,10 @@ export const CreateProductPage: React.FC = () => {
             status: 'ACTIVE',
             optionIds: [],
             initialStock: initQty,
+            expiryDate: isPerishable && expiryDate ? expiryDate : undefined,
+            batchNumber: isPerishable && batchNumber ? batchNumber.trim() : undefined,
+            isPerishable: isPerishable,
           });
-
-          // Link expiry details to inventory if product is perishable
-          if (isPerishable && expiryDate && createdSimpleVar?.variantId) {
-            try {
-              await inventoryApi.restockVariant({
-                variantId: createdSimpleVar.variantId,
-                quantity: 0,
-                expiryDate: expiryDate,
-                batchNumber: batchNumber.trim() || undefined,
-                remark: 'Initial batch expiry setup',
-              });
-            } catch (invErr) {
-              console.warn('Initial expiry setup for simple variant skipped:', invErr);
-            }
-          }
         } catch (singleVarErr: any) {
           console.warn('Default variant creation skipped:', singleVarErr);
           throw new Error('Base product was created, but stock inventory setup failed: ' + (singleVarErr.message || ''));

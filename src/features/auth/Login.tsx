@@ -232,7 +232,7 @@ export const Login: React.FC = () => {
                 type="button"
                 className="login-password-toggle"
                 onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}\
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
                 title={showPassword ? 'Hide password' : 'Show password'}
                 tabIndex={-1}
               >

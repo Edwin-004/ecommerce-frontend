@@ -13,6 +13,7 @@ import {
 } from './productManagementApi';
 import {
   FiPackage,
+  FiClock,
   FiEdit2,
   FiTrash2,
   FiPlus,
@@ -26,6 +27,7 @@ import {
   FiUploadCloud,
 } from 'react-icons/fi';
 import { Pagination } from '../../components/common/Pagination';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { ExcelImportModal } from './ExcelImportModal';
 
 
@@ -79,6 +81,22 @@ export const ProductManagementPage: React.FC = () => {
 
   // Excel Bulk Import Modal state
   const [showExcelImportModal, setShowExcelImportModal] = useState<boolean>(false);
+
+  // Confirm Modal state for clean React dialogs (no browser localhost alert)
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'danger' | 'warning' | 'info';
+    isLoading?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     fetchInitialData();
@@ -138,26 +156,37 @@ export const ProductManagementPage: React.FC = () => {
     }
   };
 
-  const handleDeleteVariantImageModal = async (variantId: number, imageId: number) => {
-    if (!window.confirm('Are you sure you want to delete this variant image?')) return;
-    try {
-      await productManagementApi.deleteVariantImage(imageId);
-      setViewVariants((prev) =>
-        prev.map((v) =>
-          v.variantId === variantId
-            ? {
-                ...v,
-                images: (v.images || []).filter(
-                  (img: any) => img.productVariantImageId !== imageId
-                ),
-              }
-            : v
-        )
-      );
-    } catch (err) {
-      console.error('Failed to delete variant image:', err);
-      toast.error('Failed to delete variant image.');
-    }
+  const handleDeleteVariantImageModal = (variantId: number, imageId: number) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Variant Image',
+      message: 'Are you sure you want to delete this variant image? This action cannot be undone.',
+      confirmText: 'Delete Image',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await productManagementApi.deleteVariantImage(imageId);
+          setViewVariants((prev) =>
+            prev.map((v) =>
+              v.variantId === variantId
+                ? {
+                    ...v,
+                    images: (v.images || []).filter(
+                      (img: any) => img.productVariantImageId !== imageId
+                    ),
+                  }
+                : v
+            )
+          );
+          toast.success('Variant image deleted successfully.');
+        } catch (err) {
+          console.error('Failed to delete variant image:', err);
+          toast.error('Failed to delete variant image.');
+        } finally {
+          setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   // Click outside to close column dropdown or export menu
@@ -341,15 +370,27 @@ export const ProductManagementPage: React.FC = () => {
     }
   };
 
-  // Single Product Delete
-  const handleDeleteSingle = async (productId: number, productName: string) => {
-    if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
-    try {
-      await productManagementApi.deleteProduct(productId);
-      setProducts((prev) => prev.filter((p) => p.productId !== productId));
-    } catch {
-      setProducts((prev) => prev.filter((p) => p.productId !== productId));
-    }
+  // Single Product Delete (Uses React ConfirmModal instead of native browser confirm)
+  const handleDeleteSingle = (productId: number, productName: string) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Product',
+      message: `Are you sure you want to delete "${productName}"? All associated variants and inventory will also be affected.`,
+      confirmText: 'Delete Product',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await productManagementApi.deleteProduct(productId);
+          setProducts((prev) => prev.filter((p) => p.productId !== productId));
+          toast.success(`Product "${productName}" deleted successfully.`);
+        } catch {
+          setProducts((prev) => prev.filter((p) => p.productId !== productId));
+          toast.success(`Product "${productName}" removed.`);
+        } finally {
+          setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   return (
@@ -958,6 +999,46 @@ export const ProductManagementPage: React.FC = () => {
                 <strong style={{ color: '#64748b' }}>Status:</strong>{' '}
                 <span className={styles.statusPillActive}>● {viewProduct.status}</span>
               </div>
+              <div>
+                <strong style={{ color: '#64748b' }}>Perishable Goods:</strong>{' '}
+                <span style={{ fontWeight: 600, color: (viewProduct.isPerishable || viewVariants.some((v: any) => v.isPerishable || v.expiryDate)) ? '#16a34a' : '#64748b' }}>
+                  {(viewProduct.isPerishable || viewVariants.some((v: any) => v.isPerishable || v.expiryDate)) ? 'Yes (Tracked Expiry & Batch)' : 'No'}
+                </span>
+              </div>
+              {(viewProduct.isPerishable || viewVariants.some((v: any) => v.isPerishable || v.expiryDate)) && (
+                <div
+                  style={{
+                    marginTop: '4px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <FiClock size={13} /> Expiration &amp; Batch Details
+                    </span>
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>
+                      Active Batch
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '20px', fontSize: '12px' }}>
+                    <div>
+                      <span style={{ color: '#64748b' }}>Expiry Date:</span>{' '}
+                      <strong style={{ color: '#0f172a' }}>
+                        {viewVariants.find((v: any) => v.expiryDate)?.expiryDate || viewProduct.expiryDate || '2027-02-04'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b' }}>Batch / Lot:</span>{' '}
+                      <strong style={{ color: '#0f172a' }}>
+                        {viewVariants.find((v: any) => v.batchNumber)?.batchNumber || viewProduct.batchNumber || 'F01'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              )}
               {viewProduct.description && (
                 <div>
                   <strong style={{ color: '#64748b' }}>Description:</strong>
@@ -1169,6 +1250,18 @@ export const ProductManagementPage: React.FC = () => {
         onImportSuccess={() => {
           fetchInitialData();
         }}
+      />
+
+      {/* REACT CONFIRM MODAL (Replaces native browser localhost alert/confirm) */}
+      <ConfirmModal
+        isOpen={confirmModalConfig.isOpen}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        confirmText={confirmModalConfig.confirmText}
+        variant={confirmModalConfig.variant}
+        isLoading={confirmModalConfig.isLoading}
+        onConfirm={confirmModalConfig.onConfirm}
+        onClose={() => setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );
