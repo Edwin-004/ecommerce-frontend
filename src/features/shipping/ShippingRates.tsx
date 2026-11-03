@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   useGetZoneGroupsQuery,
   useToggleZoneStatusMutation,
+  useGetZoneStatsQuery,
 } from './shippingApi';
 import styles from './ShippingRates.module.css';
 import {
@@ -17,6 +18,8 @@ import {
 } from 'react-icons/fi';
 import { AddNewZoneModal } from './AddNewZoneModal';
 import { EditZoneModal } from './EditZoneModal';
+import { BulkEditRateModal } from './BulkEditRateModal'; // BulkEditRateModal ကို Import လုပ်ရန်
+import Swal from 'sweetalert2';
 
 export const ShippingRates = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,6 +28,10 @@ export const ShippingRates = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const pageSize = 10;
+
+  const { data: stats } = useGetZoneStatsQuery();
+  const [selectedZoneGroups, setSelectedZoneGroups] = useState<any[]>([]);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   useEffect(() => {
     setCurrentPage(0);
@@ -49,35 +56,37 @@ export const ShippingRates = () => {
 
   const handleToggleStatus = async (zone: any) => {
     const newStatus = zone.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    if (
-      window.confirm(
-        `Are you sure you want to mark ${zone.zoneName} as ${newStatus}?`
-      )
-    ) {
+
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Do you want to mark ${zone.zoneName} as ${newStatus}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, change it!',
+    });
+    if (result.isConfirmed) {
       try {
         await toggleStatus({
           zoneName: zone.zoneName,
           city: zone.city,
           newStatus,
         }).unwrap();
+        Swal.fire('Updated!', 'Zone status has been changed.', 'success');
       } catch (err) {
-        alert('Failed to change status. Please try again.');
+        Swal.fire('Error!', 'Failed to change status.', 'error');
       }
     }
   };
 
   const displayZoneGroups = useMemo(() => {
-    // ⭐️ Backend ကလာတဲ့ နာမည် (၂) မျိုးလုံးကို ဖမ်းနိုင်မည့် Helper Function
     const checkIsDefault = (zone: any) =>
       zone.isCityDefault === true || zone.cityDefault === true;
 
-    // က။ Default မဟုတ်သော Zone များကို ခွဲထုတ်မည် (Yangon Downtown)
     const specificZones = zoneGroups.filter((zone) => !checkIsDefault(zone));
-
-    // ခ။ Default ဖြစ်သော Zone များကို ခွဲထုတ်မည် (Yangon Uptown Default)
     const defaultZones = zoneGroups.filter((zone) => checkIsDefault(zone));
 
-    // ဂ။ Specific Zone တစ်ခုစီတိုင်းတွင် ၎င်း၏ City နှင့် တူညီသော Default Zone Data များကို ပေါင်းထည့်မည်
     return specificZones.map((specificZone) => {
       const matchingDefaultZone = defaultZones.find(
         (dz) => dz.city === specificZone.city
@@ -93,9 +102,28 @@ export const ShippingRates = () => {
     });
   }, [zoneGroups]);
 
+  const handleSelectZone = (zone: any, isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedZoneGroups((prev) => [...prev, zone]);
+    } else {
+      setSelectedZoneGroups((prev) =>
+        prev.filter(
+          (zg) => !(zg.zoneName === zone.zoneName && zg.city === zone.city)
+        )
+      );
+    }
+  };
+
+  const handleSelectAll = (isChecked: boolean) => {
+    if (isChecked) {
+      setSelectedZoneGroups(displayZoneGroups);
+    } else {
+      setSelectedZoneGroups([]);
+    }
+  };
+
   return (
     <div className={styles.container}>
-      {/* Header Section */}
       <div className={styles.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <BackButton fallbackUrl="/admin/dashboard" />
@@ -107,6 +135,18 @@ export const ShippingRates = () => {
               Configure regional delivery zones, shipping fees, and estimated
               transit times
             </p>
+            <div
+              style={{ marginTop: '8px', fontSize: '14px', color: '#64748b' }}
+            >
+              Total Zones:{' '}
+              <strong style={{ color: '#0f172a' }}>{stats?.total || 0}</strong>{' '}
+              &nbsp;|&nbsp; Active Zones:{' '}
+              <strong style={{ color: '#10b981' }}>{stats?.active || 0}</strong>{' '}
+              &nbsp;|&nbsp; Inactive Zones:{' '}
+              <strong style={{ color: '#ef4444' }}>
+                {stats?.inactive || 0}
+              </strong>
+            </div>
           </div>
         </div>
 
@@ -119,7 +159,6 @@ export const ShippingRates = () => {
         </button>
       </div>
 
-      {/* API Error တက်ခဲ့လျှင် ပြသမည့် အပိုင်း */}
       {isError && (
         <div className={styles.errorBanner}>
           <span>
@@ -157,35 +196,65 @@ export const ShippingRates = () => {
             </button>
           ))}
         </div>
-        <div style={{ position: 'relative' }}>
-          <FiSearch
-            style={{
-              position: 'absolute',
-              top: '10px',
-              left: '12px',
-              color: '#94a3b8',
-            }}
-          />
-          <input
-            type="text"
-            placeholder="Search zones, cities..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              padding: '8px 12px 8px 36px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '6px',
-              width: '250px',
-            }}
-          />
+
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {selectedZoneGroups.length > 0 && (
+            <button
+              onClick={() => setIsBulkModalOpen(true)}
+              style={{
+                backgroundColor: '#f59e0b',
+                color: '#fff',
+                padding: '8px 16px',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '600',
+              }}
+            >
+              <FiEdit2 style={{ display: 'inline', marginRight: '6px' }} />
+              Bulk Update ({selectedZoneGroups.length})
+            </button>
+          )}
+
+          <div style={{ position: 'relative' }}>
+            <FiSearch
+              style={{
+                position: 'absolute',
+                top: '10px',
+                left: '12px',
+                color: '#94a3b8',
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Search zones, cities..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                padding: '8px 12px 8px 36px',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                width: '250px',
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Table Section */}
       <div className={styles.tableContainer}>
         <table className={styles.zoneTable}>
           <thead>
             <tr>
+              <th style={{ width: '40px' }}>
+                <input
+                  type="checkbox"
+                  checked={
+                    displayZoneGroups.length > 0 &&
+                    selectedZoneGroups.length === displayZoneGroups.length
+                  }
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                />
+              </th>
               <th>Zone Name</th>
               <th>Region / City</th>
               <th>Townships</th>
@@ -198,19 +267,29 @@ export const ShippingRates = () => {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} className={styles.stateCell}>
+                <td colSpan={8} className={styles.stateCell}>
                   Loading delivery zones...
                 </td>
               </tr>
             ) : displayZoneGroups.length === 0 ? (
               <tr>
-                <td colSpan={7} className={styles.stateCell}>
+                <td colSpan={8} className={styles.stateCell}>
                   No delivery zones found matching your search or filter.
                 </td>
               </tr>
             ) : (
               displayZoneGroups.map((zone) => (
                 <tr key={`${zone.zoneName}_${zone.city}`}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedZoneGroups.some(
+                        (zg) =>
+                          zg.zoneName === zone.zoneName && zg.city === zone.city
+                      )}
+                      onChange={(e) => handleSelectZone(zone, e.target.checked)}
+                    />
+                  </td>
                   <td>
                     <div style={{ fontWeight: 500 }}>{zone.zoneName}</div>
                     <div className={styles.subText}>{zone.zoneCode}</div>
@@ -285,7 +364,7 @@ export const ShippingRates = () => {
             )}
           </tbody>
         </table>
-        {/* Pagination Controls */}
+
         {zoneGroups.length > 0 && totalPages > 1 && (
           <div
             style={{
@@ -335,10 +414,21 @@ export const ShippingRates = () => {
           </div>
         )}
 
+        <BulkEditRateModal
+          isOpen={isBulkModalOpen}
+          onClose={() => setIsBulkModalOpen(false)}
+          selectedZones={selectedZoneGroups}
+          onSuccess={() => {
+            setSelectedZoneGroups([]);
+            refetch();
+          }}
+        />
+
         <AddNewZoneModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
         />
+
         {editingZone && (
           <EditZoneModal
             isOpen={!!editingZone}
@@ -347,18 +437,6 @@ export const ShippingRates = () => {
           />
         )}
       </div>
-
-      <AddNewZoneModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
-      {editingZone && (
-        <EditZoneModal
-          isOpen={!!editingZone}
-          zone={editingZone}
-          onClose={() => setEditingZone(null)}
-        />
-      )}
     </div>
   );
 };

@@ -51,6 +51,14 @@ export const shippingApi = createApi({
       query: () => '/locations',
     }),
 
+    getCitiesByRegion: builder.query<string[], string>({
+      query: (region) => `/locations/cities?region=${encodeURIComponent(region)}`,
+    }),
+
+    getTownshipsByCity: builder.query<string[], string>({
+      query: (city) => `/locations/townships?city=${encodeURIComponent(city)}`,
+    }),
+
     // ၃။ သက်ဆိုင်ရာ မြို့ (City) အောက်တွင် သတ်မှတ်ပြီးသား မြို့နယ်စာရင်းကို စစ်ဆေးရန် (GET)
     getAssignedTownships: builder.query<string[], string>({
       query: (city) => `/backoffice/shipping/zones/assigned-townships?city=${encodeURIComponent(city)}`,
@@ -77,6 +85,12 @@ export const shippingApi = createApi({
       }),
       invalidatesTags: ['ShippingZone'],
     }),
+
+    getZoneStats: builder.query<{ total: number; active: number; inactive: number }, void>({
+      query: () => '/backoffice/shipping/zones/stats',
+      providesTags: ['ShippingZone'], // Create, Edit, Toggle လုပ်တိုင်း Auto Refresh ဖြစ်စေရန်
+    }),
+
   }),
 });
 
@@ -87,4 +101,7 @@ export const {
   useCreateZoneGroupMutation,
   useUpdateZoneRateMutation,
   useToggleZoneStatusMutation,
+  useGetCitiesByRegionQuery,
+  useGetTownshipsByCityQuery,
+  useGetZoneStatsQuery,
 } = shippingApi;
