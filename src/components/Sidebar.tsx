@@ -48,10 +48,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const firstLetter = username ? username.charAt(0).toUpperCase() : 'A';
 
   const formatRole = (roleStr: string | null): string => {
-    if (roleStr === 'BUSINESS_OWNER' || roleStr === 'OWNER') return 'Business Owner';
     if (roleStr === 'ADMIN') return 'System Admin';
     if (roleStr === 'INVENTORY_STAFF') return 'Inventory Staff';
-    if (roleStr === 'SALES_STAFF') return 'Sales Staff';
+    if (roleStr === 'SALES_STAFF' || roleStr === 'ORDER_STAFF') return 'Order / Sales Staff';
     return roleStr || 'Staff';
   };
 
@@ -142,8 +141,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const matchOrders = matches('Orders', ['sales', 'purchases', 'transactions', 'order']);
   const matchRefunds = matches('Refunds', ['returns', 'claims', 'reversals', 'refund']);
   const matchShipping = matches('Shipping Rates', ['delivery', 'zones', 'shipping', 'courier', 'rates']);
-  const matchStaffList = matches('All Staff', ['users', 'employees', 'team', 'accounts', 'staff']);
-  const matchCreateStaff = matches('Add New Staff', ['create user', 'invite', 'new employee', 'add staff']);
+  const matchStaffList = matches('All Accounts', ['all staff', 'users', 'employees', 'team', 'accounts', 'staff', 'admins']);
+  const matchCreateStaff = matches('Add New Account', ['add new staff', 'create user', 'invite', 'new employee', 'add staff', 'new account']);
   const matchReports = matches('Reports & Analytics', ['reports', 'sales report', 'export', 'charts', 'data', 'analytics']);
   const matchAuditLogs = matches('Audit Logs', ['logs', 'audit', 'activity', 'history', 'security']);
 
@@ -443,7 +442,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </>
           )}
 
-          {/* Section: Staff Management */}
+          {/* Section: Staff & Admin Management */}
           {canAccessStaff && hasStaffMatches && (
             <>
               <div className={styles.navSectionTitle}>Management</div>
@@ -455,11 +454,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     isStaffActive ? styles.parentActive : ''
                   }`}
                   onClick={() => handleDropdownToggle('staff')}
-                  title="Staff Management"
+                  title="Staff & Administrator Management"
                 >
                   <div className={styles.linkLeftGroup}>
                     <FiUsers className={styles.linkIcon} />
-                    <span className={styles.linkLabel}>Staff Management</span>
+                    <span className={styles.linkLabel}>Staff &amp; Admin</span>
                   </div>
                   <FiChevronDown
                     className={`${styles.chevron} ${
@@ -471,15 +470,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {(!isCollapsed ? (staffOpen || isSearching) : false) && (
                   <div className={styles.submenu}>
                     {matchStaffList && (
-                      <NavLink to="/admin/staff" end className={subNavClass} title="All Staff">
+                      <NavLink to="/admin/staff" end className={subNavClass} title="All Accounts">
                         <FiUsers size={13} className={styles.subIcon} />
-                        <span>All Staff</span>
+                        <span>All Accounts</span>
                       </NavLink>
                     )}
                     {matchCreateStaff && (
-                      <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Staff">
+                      <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Account">
                         <FiUserPlus size={13} className={styles.subIcon} />
-                        <span>Add New Staff</span>
+                        <span>Add New Account</span>
                       </NavLink>
                     )}
                   </div>
