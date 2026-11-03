@@ -14,6 +14,9 @@ export interface ProductItem {
   stock?: number;
   sku?: string;
   imageUrl?: string;
+  isPerishable?: boolean;
+  expiryDate?: string;
+  batchNumber?: string;
 }
 
 export interface CategoryItem {
