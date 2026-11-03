@@ -49,7 +49,7 @@ export const categoryApi = {
   getAllCategories: async (
     page = 0,
     size = 20,
-    sort = "categoryName"
+    sort = "categoryId,desc"
   ): Promise<
     PageResponse<CategoryResponseDto>
   > => {
