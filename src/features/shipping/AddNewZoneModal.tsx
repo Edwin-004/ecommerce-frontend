@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import {
@@ -25,7 +26,8 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
   const [createZoneGroup, { isLoading: isSubmitting }] =
     useCreateZoneGroupMutation();
 
-  const { data: existingZones = [] } = useGetZoneGroupsQuery();
+  const { data: zoneGroupsResponse } = useGetZoneGroupsQuery();
+  const existingZones = zoneGroupsResponse?.content || [];
 
   // Form State များ
   const [zoneName, setZoneName] = useState('');
@@ -159,9 +161,10 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
     }
   };
 
-  return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
+  return createPortal(
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+      
         <div className={styles.modalHeader}>
           <h3>Add New Delivery Zone</h3>
           <button onClick={onClose} className={styles.closeBtn}>
@@ -407,6 +410,7 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

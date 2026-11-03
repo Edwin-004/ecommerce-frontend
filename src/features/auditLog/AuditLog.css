@@ -61,91 +61,77 @@
 
 .btn-preset:hover {
   background-color: #e5e7eb;
-  border-color: #9ca3af;
 }
 
 .btn-preset.active {
   background-color: #2563eb;
   color: #ffffff;
-  border-color: #1d4ed8;
+  border-color: #2563eb;
 }
 
-.filter-inputs-row {
+/* Date Form */
+.date-filter-form {
   display: flex;
+  gap: 12px;
   align-items: flex-end;
-  gap: 16px;
   flex-wrap: wrap;
 }
 
-.filter-group {
+.date-input-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
-.filter-group label {
-  font-size: 13px;
+.date-input-group label {
+  font-size: 12px;
   font-weight: 600;
   color: #4b5563;
 }
 
-.filter-input {
-  padding: 8px 12px;
+.date-input-group input[type="date"] {
+  padding: 7px 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 14px;
-  color: #1f2937;
-  background-color: #ffffff;
-  min-width: 170px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.filter-input:focus {
+  font-size: 13px;
   outline: none;
+  background-color: #f9fafb;
+}
+
+.date-input-group input[type="date"]:focus {
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background-color: #ffffff;
 }
 
-.filter-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.btn-filter {
+.btn-filter-apply {
+  padding: 7px 16px;
   background-color: #2563eb;
   color: #ffffff;
   border: none;
-  padding: 8px 18px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  transition: background-color 0.2s;
 }
 
-.btn-filter:hover {
+.btn-filter-apply:hover {
   background-color: #1d4ed8;
 }
 
-.btn-reset {
+.btn-filter-reset {
+  padding: 7px 14px;
   background-color: #ffffff;
   color: #4b5563;
   border: 1px solid #d1d5db;
-  padding: 8px 16px;
   border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
-.btn-reset:hover {
+.btn-filter-reset:hover {
   background-color: #f3f4f6;
-  color: #111827;
 }
 
 /* Stats / Status Bar */
@@ -358,7 +344,6 @@
   color: #4b5563;
 }
 
-
 /* Search and Action Filter Controls */
 .audit-controls-row {
   display: flex;
@@ -452,10 +437,6 @@
   color: #ffffff;
   border-color: #2563eb;
 }
-
-/* ==========================================================================
-   User-Friendly Audit Log Modal Enhancements
-   ========================================================================== */
 
 /* Modal Subtitle & Header */
 .audit-modal-subtitle {

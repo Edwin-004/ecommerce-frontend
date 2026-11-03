@@ -388,3 +388,5 @@ export const EditStaff: React.FC = () => {
         </div>
     );
 };
+
+export default EditStaff;

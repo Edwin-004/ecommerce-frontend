@@ -318,54 +318,38 @@ const AuditLog: React.FC = () => {
           </button>
         </div>
 
-        {/* Date Inputs Form */}
-        <form onSubmit={handleApplyFilter} className="filter-inputs-row">
-          <div className="filter-group">
-            <label htmlFor="startDate">From Date</label>
+        {/* Custom Date Form */}
+        <form className="date-filter-form" onSubmit={handleApplyFilter}>
+          <div className="date-input-group">
+            <label>From Date</label>
             <input 
-              id="startDate"
-              type="date"
-              className="filter-input"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                setActivePreset('custom');
-              }}
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)} 
             />
           </div>
 
-          <div className="filter-group">
-            <label htmlFor="endDate">To Date</label>
+          <div className="date-input-group">
+            <label>To Date</label>
             <input 
-              id="endDate"
-              type="date"
-              className="filter-input"
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-                setActivePreset('custom');
-              }}
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)} 
             />
           </div>
 
-          <div className="filter-actions">
-            <button type="submit" className="btn-filter" disabled={loading}>
-              {loading ? 'Filtering...' : 'Apply Date'}
-            </button>
-            <button 
-              type="button" 
-              className="btn-reset" 
-              onClick={handleReset}
-              disabled={loading && !startDate && !endDate && selectedAction === 'ALL' && !searchQuery}
-            >
-              Reset All
-            </button>
-          </div>
+          <button type="submit" className="btn-filter-apply">
+            Apply Date
+          </button>
+
+          <button type="button" className="btn-filter-reset" onClick={handleReset}>
+            Reset All
+          </button>
         </form>
 
         {/* Search & Action Filter Controls */}
         <div className="audit-controls-row">
-          <input
+          <input 
             type="text"
             className="audit-search-input"
             placeholder="Search by username, module, description, or IP..."
@@ -373,7 +357,7 @@ const AuditLog: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
 
-          <select
+          <select 
             className="audit-select"
             value={selectedAction}
             onChange={(e) => setSelectedAction(e.target.value)}
@@ -386,7 +370,7 @@ const AuditLog: React.FC = () => {
             <option value="DELETE">DELETE</option>
           </select>
 
-          <select
+          <select 
             className="audit-select"
             value={itemsPerPage}
             onChange={(e) => setItemsPerPage(Number(e.target.value))}
@@ -398,34 +382,19 @@ const AuditLog: React.FC = () => {
         </div>
       </div>
 
-      {/* Error Banner */}
-      {error && (
-        <div className="error-banner">
-          <strong>Error loading audit logs:</strong> {error}
-        </div>
-      )}
+      {/* Error Message */}
+      {error && <div className="error-banner">Error: {error}</div>}
 
       {/* Stats Bar */}
       <div className="audit-stats-bar">
         <div>
-          Showing <strong>{filteredLogs.length}</strong> of <strong>{logs.length}</strong> total records
-          {(startDate || endDate) && (
-            <span className="active-filter-badge" style={{ marginLeft: '10px' }}>
-              Date: {startDate || 'Beginning'} &rarr; {endDate || 'Now'}
-            </span>
-          )}
-          {selectedAction !== 'ALL' && (
-            <span className="active-filter-badge" style={{ marginLeft: '8px' }}>
-              Action: {selectedAction}
-            </span>
-          )}
-          {searchQuery && (
-            <span className="active-filter-badge" style={{ marginLeft: '8px' }}>
-              Search: "{searchQuery}"
-            </span>
-          )}
+          Showing <strong>{filteredLogs.length}</strong> of <strong>{logs.length}</strong> total events
         </div>
-        {loading && <span style={{ color: '#2563eb', fontWeight: '500' }}>Loading...</span>}
+        {activePreset !== 'all' && (
+          <span className="active-filter-badge">
+            Date filter active ({startDate || '...'} to {endDate || '...'})
+          </span>
+        )}
       </div>
 
       {/* Table */}
@@ -433,14 +402,14 @@ const AuditLog: React.FC = () => {
         <table className="audit-table">
           <thead>
             <tr>
-              <th style={{ width: '60px' }}>ID</th>
+              <th>ID</th>
               <th>Action</th>
               <th>Module</th>
               <th>Performed By</th>
               <th>IP Address</th>
               <th>Status</th>
               <th>Date & Time</th>
-              <th style={{ textAlign: 'center', width: '130px' }}>Details</th>
+              <th style={{ textAlign: 'center' }}>Details</th>
             </tr>
           </thead>
           <tbody>

@@ -1,6 +1,9 @@
 import { BackButton } from '../../components/common/BackButton';
-import { useMemo, useState } from 'react';
-import { useGetZoneGroupsQuery } from './shippingApi';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  useGetZoneGroupsQuery,
+  useToggleZoneStatusMutation,
+} from './shippingApi';
 import styles from './ShippingRates.module.css';
 import {
   FiTruck,
@@ -8,19 +11,60 @@ import {
   FiEdit2,
   FiCheckCircle,
   FiXCircle,
+  FiSearch,
+  FiChevronLeft,
+  FiChevronRight,
 } from 'react-icons/fi';
 import { AddNewZoneModal } from './AddNewZoneModal';
 import { EditZoneModal } from './EditZoneModal';
 
 export const ShippingRates = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingZone, setEditingZone] = useState<any | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchTerm, statusFilter]);
+
   const {
-    data: zoneGroups = [],
+    data: zoneGroupsResponse,
     isLoading,
     isError,
     refetch,
-  } = useGetZoneGroupsQuery();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingZone, setEditingZone] = useState<any | null>(null);
+  } = useGetZoneGroupsQuery({
+    page: currentPage,
+    size: pageSize,
+    search: searchTerm,
+    status: statusFilter,
+  });
+
+  const zoneGroups = zoneGroupsResponse?.content || [];
+  const totalPages = zoneGroupsResponse?.totalPages || 0;
+
+  const [toggleStatus] = useToggleZoneStatusMutation();
+
+  const handleToggleStatus = async (zone: any) => {
+    const newStatus = zone.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    if (
+      window.confirm(
+        `Are you sure you want to mark ${zone.zoneName} as ${newStatus}?`
+      )
+    ) {
+      try {
+        await toggleStatus({
+          zoneName: zone.zoneName,
+          city: zone.city,
+          newStatus,
+        }).unwrap();
+      } catch (err) {
+        alert('Failed to change status. Please try again.');
+      }
+    }
+  };
 
   const displayZoneGroups = useMemo(() => {
     // ⭐️ Backend ကလာတဲ့ နာမည် (၂) မျိုးလုံးကို ဖမ်းနိုင်မည့် Helper Function
@@ -56,15 +100,15 @@ export const ShippingRates = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <BackButton fallbackUrl="/admin/dashboard" />
           <div className={styles.titleArea}>
-          <h1>
-            <FiTruck /> Delivery Zones & Rates
-          </h1>
-          <p>
-            Configure regional delivery zones, shipping fees, and estimated
-            transit times
-          </p>
+            <h1>
+              <FiTruck /> Delivery Zones & Rates
+            </h1>
+            <p>
+              Configure regional delivery zones, shipping fees, and estimated
+              transit times
+            </p>
+          </div>
         </div>
-      </div>
 
         <button
           type="button"
@@ -86,6 +130,56 @@ export const ShippingRates = () => {
           </button>
         </div>
       )}
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
+        }}
+      >
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {['ALL', 'ACTIVE', 'INACTIVE'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              style={{
+                padding: '6px 16px',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                background: statusFilter === status ? '#e0e7ff' : '#fff',
+                color: statusFilter === status ? '#4338ca' : '#475569',
+                fontWeight: statusFilter === status ? '600' : '400',
+                cursor: 'pointer',
+              }}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+        <div style={{ position: 'relative' }}>
+          <FiSearch
+            style={{
+              position: 'absolute',
+              top: '10px',
+              left: '12px',
+              color: '#94a3b8',
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Search zones, cities..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: '8px 12px 8px 36px',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
+              width: '250px',
+            }}
+          />
+        </div>
+      </div>
 
       {/* Table Section */}
       <div className={styles.tableContainer}>
@@ -111,8 +205,7 @@ export const ShippingRates = () => {
             ) : displayZoneGroups.length === 0 ? (
               <tr>
                 <td colSpan={7} className={styles.stateCell}>
-                  No delivery zones found. Click <strong>"Add New Zone"</strong>{' '}
-                  to create one.
+                  No delivery zones found matching your search or filter.
                 </td>
               </tr>
             ) : (
@@ -133,7 +226,7 @@ export const ShippingRates = () => {
                       </span>
                     ) : (
                       <div className={styles.townshipList}>
-                        {zone.townships.map((t) => (
+                        {zone.townships.map((t: string) => (
                           <span key={t} className={styles.townshipTag}>
                             {t}
                           </span>
@@ -148,20 +241,32 @@ export const ShippingRates = () => {
                     {zone.estimatedDays ? `${zone.estimatedDays} Days` : '-'}
                   </td>
                   <td>
-                    <span
-                      className={`badge-status ${
-                        zone.status === 'ACTIVE'
-                          ? 'badge-status-active'
-                          : 'badge-status-inactive'
-                      }`}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(zone)}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                      title="Click to toggle status"
                     >
-                      {zone.status === 'ACTIVE' ? (
-                        <FiCheckCircle size={12} />
-                      ) : (
-                        <FiXCircle size={12} />
-                      )}
-                      {zone.status}
-                    </span>
+                      <span
+                        className={`badge-status ${
+                          zone.status === 'ACTIVE'
+                            ? 'badge-status-active'
+                            : 'badge-status-inactive'
+                        }`}
+                      >
+                        {zone.status === 'ACTIVE' ? (
+                          <FiCheckCircle size={12} />
+                        ) : (
+                          <FiXCircle size={12} />
+                        )}
+                        {zone.status}
+                      </span>
+                    </button>
                   </td>
                   <td>
                     <div className={styles.actionGroup}>
@@ -180,6 +285,56 @@ export const ShippingRates = () => {
             )}
           </tbody>
         </table>
+        {/* Pagination Controls */}
+        {zoneGroups.length > 0 && totalPages > 1 && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '16px',
+              borderTop: '1px solid #e2e8f0',
+              alignItems: 'center',
+            }}
+          >
+            <span style={{ fontSize: '14px', color: '#64748b' }}>
+              Page {currentPage + 1} of {totalPages}
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
+                disabled={currentPage === 0}
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '4px',
+                  cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <FiChevronLeft /> Previous
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+                }
+                disabled={
+                  zoneGroupsResponse?.last || currentPage === totalPages - 1
+                }
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '4px',
+                  cursor:
+                    zoneGroupsResponse?.last || currentPage === totalPages - 1
+                      ? 'not-allowed'
+                      : 'pointer',
+                }}
+              >
+                Next <FiChevronRight />
+              </button>
+            </div>
+          </div>
+        )}
+
         <AddNewZoneModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -192,6 +347,18 @@ export const ShippingRates = () => {
           />
         )}
       </div>
+
+      <AddNewZoneModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+      {editingZone && (
+        <EditZoneModal
+          isOpen={!!editingZone}
+          zone={editingZone}
+          onClose={() => setEditingZone(null)}
+        />
+      )}
     </div>
   );
 };
