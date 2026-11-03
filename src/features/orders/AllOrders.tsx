@@ -17,6 +17,7 @@ import {
   FiX,
   FiSearch,
 } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 
 const ORDER_EXPORT_COLUMNS = [
   { key: 'orderNo', label: 'Order No' },
@@ -107,7 +108,7 @@ export const AllOrders = () => {
     setSelectedExportColumns((prev) => {
       if (prev.includes(colKey)) {
         if (prev.length === 1) {
-          alert('At least one column must be selected for export.');
+          toast.error('At least one column must be selected for export.');
           return prev;
         }
         return prev.filter((k) => k !== colKey);
@@ -122,7 +123,7 @@ export const AllOrders = () => {
 
   const handleDynamicExport = async (format: 'pdf' | 'excel') => {
     if (selectedExportColumns.length === 0) {
-      alert('Please select at least one column to export.');
+      toast.error('Please select at least one column to export.');
       return;
     }
     try {
@@ -169,7 +170,7 @@ export const AllOrders = () => {
       setTimeout(() => setExportSuccessMessage(null), 4000);
     } catch (err: any) {
       console.error('Failed to export orders report:', err);
-      alert(
+      toast.error(
         'Failed to export orders report: ' + (err.message || 'Unknown error')
       );
     } finally {
@@ -295,12 +296,11 @@ export const AllOrders = () => {
         }).unwrap();
       }
 
-      alert('Status Updated Successfully!');
       setShowShipmentModal(false);
       setTrackingNumber('');
     } catch (error) {
       console.log('Error updating status:', error);
-      alert('Status Update unsuccessful! Please try again.');
+      toast.error('Please fill in all required fields.');
     }
   };
 
@@ -584,9 +584,9 @@ export const AllOrders = () => {
                         {order.orderStatus === 'DELIVERED' && (
                           <span className={styles.statusDot}>✔</span>
                         )}
-                        {order.orderStatus === 'PENDING' && (
+                        {/* {order.orderStatus === 'PENDING' && (
                           <span className={styles.statusDot}>⏳</span>
-                        )}
+                        )} */}
                         {order.orderStatus === 'SHIPPED' && (
                           <span className={styles.statusDot}>🚚</span>
                         )}
