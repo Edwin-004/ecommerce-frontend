@@ -247,8 +247,34 @@ const AuditLog: React.FC = () => {
     }
   };
 
-  // Filter logs by action and search query
+  // Helper to parse log timestamps safely
+  const parseLogTime = (dateStr?: string): number | null => {
+    if (!dateStr) return null;
+    let d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d.getTime();
+    d = new Date(dateStr.replace(' ', 'T'));
+    if (!isNaN(d.getTime())) return d.getTime();
+    return null;
+  };
+
+  // Filter logs by date, action, and search query
   const filteredLogs = logs.filter((log) => {
+    // 1. Date Filter (Quick Presets or Custom Start/End Date)
+    if (startDate || endDate) {
+      const logTime = parseLogTime(log.createdAt);
+      if (logTime !== null) {
+        if (startDate) {
+          const [sY, sM, sD] = startDate.split('-').map(Number);
+          const startBoundary = new Date(sY, sM - 1, sD, 0, 0, 0, 0).getTime();
+          if (logTime < startBoundary) return false;
+        }
+        if (endDate) {
+          const [eY, eM, eD] = endDate.split('-').map(Number);
+          const endBoundary = new Date(eY, eM - 1, eD, 23, 59, 59, 999).getTime();
+          if (logTime > endBoundary) return false;
+        }
+      }
+    }
     if (selectedAction !== 'ALL' && log.action?.toUpperCase() !== selectedAction) {
       return false;
     }
@@ -403,7 +429,7 @@ const AuditLog: React.FC = () => {
           <thead>
             <tr>
               <th>ID</th>
-              <th>Action</th>
+              <th style={{ width: '120px', minWidth: '120px', whiteSpace: 'nowrap' }}>Action</th>
               <th>Module</th>
               <th>Performed By</th>
               <th>IP Address</th>

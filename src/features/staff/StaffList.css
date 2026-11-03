@@ -163,7 +163,7 @@
     font-weight: 500 !important;
     cursor: pointer;
     background: #ffffff !important;
-    color: #334155 !important; /* Clearly readable, high contrast dark slate */
+    color: #334155 !important;
     transition: all 0.15s ease;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
@@ -176,7 +176,7 @@
 
 .tabs .tab-btn.active {
     background: #2563eb !important;
-    color: #ffffff !important; /* Crisp, pure white text */
+    color: #ffffff !important;
     border-color: #2563eb !important;
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
     font-weight: 600 !important;
@@ -214,7 +214,7 @@
 
 .staff-table th {
     background: #f8fafc !important;
-    color: #334155 !important; /* text-slate-700 - high contrast and crystal clear */
+    color: #334155 !important;
     font-size: 12px !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
@@ -235,10 +235,49 @@
     background-color: #f8fafc !important;
 }
 
-/* --- Badges & Buttons --- */
+/* Mini Avatars */
+.avatar-mini {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.avatar-super {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #ffffff;
+    border: 2px solid #fef3c7;
+    font-size: 16px;
+}
+
+.avatar-admin {
+    background: linear-gradient(135deg, #8b5cf6, #6b21a8);
+    color: #ffffff;
+    border: 2px solid #f3e8ff;
+}
+
+.avatar-inventory {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: #ffffff;
+    border: 2px solid #eff6ff;
+}
+
+.avatar-sales {
+    background: linear-gradient(135deg, #10b981, #047857);
+    color: #ffffff;
+    border: 2px solid #ecfdf5;
+}
+
+/* --- Badges --- */
 .staff-badge,
 .staff-table .badge {
-    padding: 3.5px 10px !important;
+    padding: 4px 10px !important;
     border-radius: 8px !important;
     font-size: 11.5px !important;
     font-weight: 600 !important;
@@ -246,49 +285,52 @@
     align-items: center !important;
     gap: 4px !important;
     white-space: nowrap !important;
-    line-height: 16px !important;
+    line-height: 1.2 !important;
 }
 
-/* Role Badges - High Contrast Colors */
+/* Super Admin Special Badge */
+.badge-super-admin {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+    color: #92400e !important;
+    border: 1px solid #f59e0b !important;
+    font-weight: 700 !important;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Role Badges */
 .badge-role-admin,
 .staff-table .badge-admin {
     background-color: #f3e8ff !important;
-    color: #6b21a8 !important; /* Deep Purple */
+    color: #6b21a8 !important;
     border: 1px solid #d8b4fe !important;
 }
 
 .badge-role-inventory {
     background-color: #eff6ff !important;
-    color: #1d4ed8 !important; /* Rich Royal Blue */
+    color: #1d4ed8 !important;
     border: 1px solid #bfdbfe !important;
 }
 
 .badge-role-sales {
     background-color: #ecfdf5 !important;
-    color: #047857 !important; /* Rich Dark Green */
+    color: #047857 !important;
     border: 1px solid #a7f3d0 !important;
-}
-
-.badge-role-order {
-    background-color: #fff7ed !important;
-    color: #c2410c !important; /* Deep Warm Amber */
-    border: 1px solid #fed7aa !important;
 }
 
 .badge-role-default,
 .badge-staff,
 .staff-table .badge-staff {
     background-color: #eff6ff !important;
-    color: #1d4ed8 !important; /* Rich Royal Blue */
+    color: #1d4ed8 !important;
     border: 1px solid #bfdbfe !important;
 }
 
-/* Status Badges - High Contrast Colors */
+/* Status Badges */
 .badge-status-active,
 .badge-active,
 .staff-table .badge-active {
     background-color: #ecfdf5 !important;
-    color: #047857 !important; /* High-contrast Dark Green */
+    color: #047857 !important;
     border: 1px solid #a7f3d0 !important;
 }
 
@@ -296,51 +338,71 @@
 .badge-inactive,
 .staff-table .badge-inactive {
     background-color: #fef2f2 !important;
-    color: #b91c1c !important; /* High-contrast Deep Red */
+    color: #b91c1c !important;
     border: 1px solid #fecaca !important;
 }
 
-/* Actions */
-.action-btn {
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-right: 8px;
-    transition: all 0.15s ease;
-    border: 1px solid transparent;
+/* Actions - Horizontal & Non-Wrapping */
+.btn-action-edit,
+.btn-action-suspend,
+.btn-action-activate {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+    padding: 6.5px 13px !important;
+    border-radius: 8px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+    text-decoration: none !important;
 }
 
-.btn-edit {
+.btn-action-edit {
     background: #ffffff !important;
     border: 1px solid #cbd5e1 !important;
     color: #334155 !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
 }
 
-.btn-edit:hover {
+.btn-action-edit:hover:not(:disabled) {
     background: #eff6ff !important;
     border-color: #93c5fd !important;
     color: #2563eb !important;
     transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.12);
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.15) !important;
 }
 
-.btn-suspend {
+.btn-action-suspend {
     background: #fef2f2 !important;
     border: 1px solid #fecaca !important;
     color: #b91c1c !important;
-    margin-right: 0;
 }
 
-.btn-suspend:hover {
+.btn-action-suspend:hover:not(:disabled) {
     background: #fee2e2 !important;
     color: #991b1b !important;
     transform: translateY(-1px);
 }
 
-/* Table Footer Pagination - Adjusted Size & Clean Layout */
+.btn-action-activate {
+    background: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #047857 !important;
+}
+
+.btn-action-activate:hover:not(:disabled) {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+    transform: translateY(-1px);
+}
+
+/* Table Footer Pagination */
 .pagination-container {
     padding: 12px 20px !important;
     display: flex !important;

@@ -1,6 +1,9 @@
 /* src/components/Profile.module.css */
 .container {
   width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 24px 16px;
 }
 
 .header {
@@ -8,8 +11,8 @@
 }
 
 .titleArea h1 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.025em;
   margin: 0;
@@ -20,41 +23,129 @@
 }
 
 .titleArea p {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
-  margin: 2px 0 0 0;
+  margin: 4px 0 0 0;
   font-weight: 400;
-  line-height: 16px;
+  line-height: 18px;
 }
 
 .profileCard {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 16px;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95);
   padding: 28px;
-  max-width: 560px;
+}
+
+/* Avatar Section */
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.avatarWrapper {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 3px solid #ffffff;
+  outline: 2px solid #e2e8f0;
+  margin-bottom: 12px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: #ffffff;
+  font-size: 36px;
+  font-weight: 700;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.avatarUploadLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.avatarUploadLabel:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.infoSection {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
 }
 
 .infoRow {
   display: flex;
-  margin-bottom: 16px;
   align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.infoRow:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.infoRow:first-child {
+  padding-top: 0;
 }
 
 .label {
   font-size: 13.5px;
   font-weight: 600;
-  color: #475569;
-  width: 100px;
+  color: #64748b;
+  width: 120px;
+  flex-shrink: 0;
 }
 
 .value {
   color: #0f172a;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  word-break: break-all;
 }
 
 .roleBadge {
@@ -70,16 +161,19 @@
 
 .divider {
   height: 1px;
-  background: #f1f5f9;
+  background: #e2e8f0;
   margin: 24px 0;
   border: none;
 }
 
 .sectionTitle {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: #0f172a;
   margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .alert {
@@ -104,17 +198,8 @@
   border: 1px solid #fecaca;
 }
 
-.alertInfo {
-  background: #eff6ff;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
-  text-align: center;
-  font-weight: 500;
-  justify-content: center;
-}
-
 .formGroup {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -126,12 +211,19 @@
   color: #334155;
 }
 
+.passwordInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
 .inputField {
   width: 100%;
-  padding: 9px 13px;
+  padding: 10px 42px 10px 14px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 13.5px;
+  font-size: 14px;
   color: #0f172a;
   outline: none;
   transition: all 0.15s ease;
@@ -141,4 +233,51 @@
 .inputField:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  transition: color 0.15s ease;
+}
+
+.eyeBtn:hover {
+  color: #0f172a;
+}
+
+.submitBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 18px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 6px;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
