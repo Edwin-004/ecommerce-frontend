@@ -316,71 +316,119 @@ export function BrandModal({
                 />
               </div>
 
-              {/* CATEGORIES */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold">
-                  Categories
-                </label>
+             
+{/* CATEGORIES */}
+<div className="mb-3">
+  <label className="form-label fw-semibold">
+    Categories
+  </label>
 
-                {categories.length === 0 ? (
-                  <div className="border rounded-3 p-3 text-secondary small">
-                    No categories available.
-                  </div>
-                ) : (
-                  <div
-                    className="border rounded-3 p-3"
-                    style={{
-                      maxHeight: 220,
-                      overflowY: 'auto',
-                    }}
-                  >
-                    <div className="row g-2">
-                      {categories.map((category) => {
-                        const checked = (
-                          form.categoryIds ?? []
-                        ).includes(category.categoryId);
+  {categories.length === 0 ? (
+    <div className="border rounded-3 p-3 text-secondary small">
+      No categories available.
+    </div>
+  ) : (
+    <div
+      className="border rounded-3 p-3"
+      style={{
+        maxHeight: 220,
+        overflowY: 'auto',
+      }}
+    >
+      <div className="row g-2">
+        {categories.map((category) => {
+          const checked = (
+            form.categoryIds ?? []
+          ).includes(category.categoryId);
 
-                        return (
-                          <div
-                            className="col-md-6"
-                            key={category.categoryId}
-                          >
-                            <label
-                              className={`d-flex align-items-center gap-2 border rounded-3 p-2 ${
-                                checked
-                                  ? 'border-primary bg-primary-subtle'
-                                  : ''
-                              }`}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              <input
-                                type="checkbox"
-                                className="form-check-input m-0"
-                                checked={checked}
-                                disabled={loading}
-                                onChange={(e) =>
-                                  handleCategoryChange(
-                                    category.categoryId,
-                                    e.target.checked
-                                  )
-                                }
-                              />
+          return (
+            <div
+              className="col-md-6"
+              key={category.categoryId}
+            >
+              <label
+                className="d-flex align-items-center gap-2 border rounded-3 p-2"
+                style={{
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  borderColor: checked ? '#0d6efd' : '#dee2e6',
+                  backgroundColor: checked ? '#cfe2ff' : '#ffffff',
+                  transition: 'background-color 0.15s ease, border-color 0.15s ease',
+                  minHeight: 48,
+                  userSelect: 'none',
+                  opacity: loading ? 0.7 : 1,
+                }}
+              >
+                {/* Hidden Native Checkbox */}
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={loading}
+                  onChange={(e) => {
+                    handleCategoryChange(
+                      category.categoryId,
+                      e.currentTarget.checked
+                    );
+                  }}
+                  style={{
+                    position: 'absolute',
+                    width: 1,
+                    height: 1,
+                    opacity: 0,
+                    pointerEvents: 'none',
+                  }}
+                />
 
-                              <span>
-                                {category.categoryName}
-                              </span>
-                            </label>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                {/* Custom Checkbox UI */}
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 20,
+                    height: 20,
+                    minWidth: 20,
+                    borderRadius: 5,
+                    border: checked
+                      ? '2px solid #0d6efd'
+                      : '1.5px solid #cbd5e1',
+                    backgroundColor: checked
+                      ? '#0d6efd'
+                      : '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {checked && (
+                    <FiCheck
+                      size={14}
+                      color="#ffffff"
+                      strokeWidth={3}
+                    />
+                  )}
+                </span>
 
-                <div className="form-text">
-                  Select one or more categories. Existing categories are checked when editing.
-                </div>
-              </div>
+                <span
+                  style={{
+                    fontSize: 15,
+                    color: '#212529',
+                    fontWeight: checked ? 500 : 400,
+                  }}
+                >
+                  {category.categoryName}
+                </span>
+              </label>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  )}
+
+  <div className="form-text">
+    Select one or more categories. Existing categories are checked when editing.
+  </div>
+</div>
+
 
               {/* DESCRIPTION */}
               <div className="mb-3">
