@@ -1,67 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { setCredentials } from './authSlice';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiLogIn, FiAlertCircle } from 'react-icons/fi';
 import './Login.css';
 
-export const Login: React.FC = () => {
+export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Field-specific Error States
+  // States for Validation Errors
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [generalError, setGeneralError] = useState('');
+  const [apiError, setApiError] = useState('');
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Listen for session expiry / kick-out messages from axios interceptor
-  useEffect(() => {
-    const expiredMsg = sessionStorage.getItem('auth_expired_message');
-    if (expiredMsg) {
-      sessionStorage.removeItem('auth_expired_message');
-      setGeneralError(expiredMsg);
-      toast.warning(expiredMsg, {
-        position: 'top-right',
-        autoClose: 5000,
-      });
+  // --- Frontend Validation ---
+  const validateForm = () => {
+    let isValid = true;
+    setEmailError('');
+    setPasswordError('');
+    setApiError('');
+
+    // Email Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError('Email is required.');
+      isValid = false;
+    } else if (!emailRegex.test(email)) {
+      setEmailError('Invalid email format.');
+      isValid = false;
     }
-  }, []);
+
+    // Password Validation
+    if (!password) {
+      setPasswordError('Password is required.');
+      isValid = false;
+    } else if (password.length < 8) {
+      setPasswordError('Password must be at least 8 characters long.');
+      isValid = false;
+    } else if (!/(?=.*[a-z])/.test(password)) {
+      setPasswordError('Password must contain at least one lowercase letter (a-z).');
+      isValid = false;
+    } else if (!/(?=.*[A-Z])/.test(password)) {
+      setPasswordError('Password must contain at least one uppercase letter (A-Z).');
+      isValid = false;
+    }
+
+    return isValid;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Reset previous errors
-    setEmailError('');
-    setPasswordError('');
-    setGeneralError('');
-
-    let hasClientError = false;
-
-    // Email validation
-    const emailTrimmed = email.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailTrimmed) {
-      setEmailError('Email is required.');
-      hasClientError = true;
-    } else if (!emailRegex.test(emailTrimmed)) {
-      setEmailError('Invalid email format.');
-      hasClientError = true;
-    }
-
-    // Password validation
-    if (!password) {
-      setPasswordError('Password is required.');
-      hasClientError = true;
-    }
-
-    // If there is any client-side error, do not call API
-    if (hasClientError) {
+    // Check Frontend Validation first. Do not call API if validation fails.
+    if (!validateForm()) {
       return;
     }
 
@@ -71,22 +68,15 @@ export const Login: React.FC = () => {
       const response = await fetch('http://localhost:8080/api/backoffice/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailTrimmed, password }),
+        body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        // Backend မှ သီးသန့် field အလိုက် ပြန်ပို့သော Error ကို သက်ဆိုင်ရာ နေရာတွင်သာ ပြသမည်
-        if (data.field === 'email') {
-          setEmailError(data.message || 'Email not registered.');
-        } else if (data.field === 'password') {
-          setPasswordError(data.message || 'Incorrect password.');
-        } else {
-          setGeneralError(data.message || 'Login failed. Please try again.');
-        }
-        return;
+        // If Backend returns 400 Bad Request due to @Valid
+        throw new Error('Login failed');
       }
+
+      const data = await response.json();
 
       dispatch(
         setCredentials({
@@ -95,22 +85,16 @@ export const Login: React.FC = () => {
           email: data.email,
           role: data.role,
           permissions: data.permissions || [],
-          mustChangePassword: data.mustChangePassword,
         })
       );
 
-      // First-time login / Force password change check
-      if (data.mustChangePassword) {
-        toast.info("Please set your new password before accessing the system.");
-        navigate('/admin/force-change-password');
-      } else if (['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF'].includes(data.role)) {
+      if (['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF'].includes(data.role)) {
         navigate('/admin/dashboard');
       } else {
-        setGeneralError('Unauthorized account access.');
+        setApiError('Unauthorized account access.');
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setGeneralError('Cannot connect to server. Please ensure the backend is running.');
+    } catch (error) {
+      setApiError('Invalid email or password.');
     } finally {
       setLoading(false);
     }
@@ -118,12 +102,12 @@ export const Login: React.FC = () => {
 
   return (
     <div className="login-container">
-      {/* Background ambient decorative glows */}
+      {/* Ambient background glows for Liquid Glass effect */}
       <div className="login-glow-bg login-glow-1" />
       <div className="login-glow-bg login-glow-2" />
 
       <div className="login-card">
-        {/* Brand Icon Badge */}
+        {/* Modern Dual-Tone Brand Logo Badge */}
         <div className="login-badge-wrapper">
           <div className="login-logo-badge" aria-label="Ecommerce Logo">
             <svg
@@ -146,13 +130,16 @@ export const Login: React.FC = () => {
                   <stop offset="1" stopColor="#7c3aed" />
                 </linearGradient>
               </defs>
+              {/* Modern Shopping Bag Form */}
               <rect x="4" y="8" width="20" height="16" rx="4.5" fill="#ffffff" />
+              {/* Sleek Curved Handle */}
               <path
                 d="M10 8V6C10 3.79086 11.7909 2 14 2C16.2091 2 18 3.79086 18 6V8"
                 stroke="#ffffff"
                 strokeLinecap="round"
                 strokeWidth="1.2"
               />
+              {/* Dynamic Center Retail Spark */}
               <path
                 d="M14 11.5L14.9 14.1L17.5 15L14.9 15.9L14 18.5L13.1 15.9L10.5 15L13.1 14.1L14 11.5Z"
                 fill="url(#loginBrandSparkGrad)"
@@ -167,21 +154,20 @@ export const Login: React.FC = () => {
             Ecommerce <span className="login-brand-badge">Admin</span>
           </h1>
           <p className="login-subtitle">
-            Welcome back! Please sign in to your account.
+            Welcome back! Please sign in to your dashboard.
           </p>
         </div>
 
-        {/* General Error (Server down, unauthorized, or session expired) */}
-        {generalError && (
+        {/* API Error Notification */}
+        {apiError && (
           <div className="login-alert-error">
             <FiAlertCircle size={16} className="login-alert-icon" />
-            <span>{generalError}</span>
+            <span>{apiError}</span>
           </div>
         )}
 
-        {/* Login Form */}
         <form className="login-form" onSubmit={handleLogin} noValidate>
-          {/* Email Field */}
+          {/* Email Address */}
           <div className="login-input-group">
             <label htmlFor="login-email" className="login-label">
               Email Address
@@ -196,20 +182,20 @@ export const Login: React.FC = () => {
                 onChange={(e) => {
                   setEmail(e.target.value);
                   if (emailError) setEmailError('');
-                  if (generalError) setGeneralError('');
                 }}
                 className="login-input"
                 autoComplete="email"
+                required
               />
             </div>
             {emailError && (
               <span className="login-error-text">
-                <FiAlertCircle size={13} /> {emailError}
+                <FiAlertCircle size={12} /> {emailError}
               </span>
             )}
           </div>
 
-          {/* Password Field */}
+          {/* Password with Visibility Toggle */}
           <div className="login-input-group">
             <label htmlFor="login-password" className="login-label">
               Password
@@ -219,15 +205,15 @@ export const Login: React.FC = () => {
               <input
                 id="login-password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Enter your password"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   if (passwordError) setPasswordError('');
-                  if (generalError) setGeneralError('');
                 }}
                 className="login-input login-input-password"
                 autoComplete="current-password"
+                required
               />
               <button
                 type="button"
@@ -242,12 +228,12 @@ export const Login: React.FC = () => {
             </div>
             {passwordError && (
               <span className="login-error-text">
-                <FiAlertCircle size={13} /> {passwordError}
+                <FiAlertCircle size={12} /> {passwordError}
               </span>
             )}
           </div>
 
-          {/* Sign In Button */}
+          {/* Submit Button */}
           <button type="submit" disabled={loading} className="login-btn">
             {loading ? (
               <>

@@ -51,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (roleStr === 'BUSINESS_OWNER' || roleStr === 'OWNER') return 'Business Owner';
     if (roleStr === 'ADMIN') return 'System Admin';
     if (roleStr === 'INVENTORY_STAFF') return 'Inventory Staff';
-    if (roleStr === 'SALES_STAFF' || roleStr === 'ORDER_STAFF') return 'Order / Sales Staff';
+    if (roleStr === 'SALES_STAFF') return 'Sales Staff';
     return roleStr || 'Staff';
   };
 
@@ -455,11 +455,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     isStaffActive ? styles.parentActive : ''
                   }`}
                   onClick={() => handleDropdownToggle('staff')}
-                  title="Staff & Admin Management"
+                  title="Staff Management"
                 >
                   <div className={styles.linkLeftGroup}>
                     <FiUsers className={styles.linkIcon} />
-                    <span className={styles.linkLabel}>Staff &amp; Admin</span>
+                    <span className={styles.linkLabel}>Staff Management</span>
                   </div>
                   <FiChevronDown
                     className={`${styles.chevron} ${
@@ -471,15 +471,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {(!isCollapsed ? (staffOpen || isSearching) : false) && (
                   <div className={styles.submenu}>
                     {matchStaffList && (
-                      <NavLink to="/admin/staff" end className={subNavClass} title="All Accounts">
+                      <NavLink to="/admin/staff" end className={subNavClass} title="All Staff">
                         <FiUsers size={13} className={styles.subIcon} />
-                        <span>All Accounts</span>
+                        <span>All Staff</span>
                       </NavLink>
                     )}
                     {matchCreateStaff && (
-                      <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Account">
+                      <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Staff">
                         <FiUserPlus size={13} className={styles.subIcon} />
-                        <span>Add New Account</span>
+                        <span>Add New Staff</span>
                       </NavLink>
                     )}
                   </div>
