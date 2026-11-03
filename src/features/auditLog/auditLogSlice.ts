@@ -14,21 +14,11 @@ const initialState: AuditLogState = {
   error: null,
 };
 
-export interface FetchAuditLogsParams {
-  startDate?: string;
-  endDate?: string;
-}
-
 export const fetchAuditLogs = createAsyncThunk(
   'auditLog/fetchAuditLogs',
-  async (params: FetchAuditLogsParams | undefined = {}, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<AuditLog[]>('/audit-logs', {
-        params: {
-          startDate: params?.startDate || undefined,
-          endDate: params?.endDate || undefined,
-        },
-      });
+      const response = await axiosInstance.get<AuditLog[]>('/audit-logs');
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch audit logs');
