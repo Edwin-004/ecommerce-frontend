@@ -6,6 +6,7 @@ interface AuthState {
   email: string | null;
   role: string | null;
   permissions: string[];
+  mustChangePassword: boolean;
 }
 
 const safeParseJson = (str: string | null): string[] => {
@@ -23,6 +24,7 @@ const initialState: AuthState = {
   email: localStorage.getItem('email'),
   role: localStorage.getItem('role'),
   permissions: safeParseJson(localStorage.getItem('permissions')),
+  mustChangePassword: localStorage.getItem('mustChangePassword') === 'true',
 };
 
 const authSlice = createSlice({
@@ -37,6 +39,7 @@ const authSlice = createSlice({
         email: string;
         role: string;
         permissions?: string[];
+        mustChangePassword?: boolean;
       }>
     ) => {
       state.token = action.payload.token;
@@ -44,6 +47,7 @@ const authSlice = createSlice({
       state.email = action.payload.email;
       state.role = action.payload.role;
       state.permissions = action.payload.permissions || [];
+      state.mustChangePassword = Boolean(action.payload.mustChangePassword);
 
       localStorage.setItem('token', action.payload.token);
       localStorage.setItem('username', action.payload.username);
@@ -53,6 +57,11 @@ const authSlice = createSlice({
         'permissions',
         JSON.stringify(action.payload.permissions || [])
       );
+      localStorage.setItem('mustChangePassword', String(Boolean(action.payload.mustChangePassword)));
+    },
+    clearMustChangePassword: (state) => {
+      state.mustChangePassword = false;
+      localStorage.setItem('mustChangePassword', 'false');
     },
     logout: (state) => {
       state.token = null;
@@ -60,10 +69,11 @@ const authSlice = createSlice({
       state.email = null;
       state.role = null;
       state.permissions = [];
+      state.mustChangePassword = false;
       localStorage.clear();
     },
   },
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, clearMustChangePassword, logout } = authSlice.actions;
 export default authSlice.reducer;
