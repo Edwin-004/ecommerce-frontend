@@ -12,7 +12,6 @@ const api = axios.create({
 
 api.interceptors.request.use(
     (config) => {
-        // Redux ထဲမှဖြစ်စေ၊ localStorage ထဲမှဖြစ်စေ Token ကို သေချာပေါက် ဆွဲထုတ်ပါမည်
         const state: any = store.getState();
         const token = state.auth?.token || localStorage.getItem('token'); 
 
@@ -27,7 +26,14 @@ api.interceptors.request.use(
 );
 
 const handleAuthError = (error: any) => {
-    if (error.response && error.response.status === 401) {
+    const status = error.response?.status;
+    const isAccountDisabled = status === 403 && error.response?.data?.error === 'ACCOUNT_DISABLED';
+
+    if (status === 401 || isAccountDisabled) {
+        // Extract server-provided message (e.g. logged in from another device, expired token, or account deactivated)
+        const expiredMsg = error.response?.data?.message || 'Your session has expired. Please sign in again.';
+        sessionStorage.setItem('auth_expired_message', expiredMsg);
+
         store.dispatch(logout());
         localStorage.removeItem('token');
         localStorage.removeItem('username');

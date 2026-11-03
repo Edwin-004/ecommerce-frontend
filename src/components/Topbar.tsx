@@ -5,12 +5,15 @@ import {
   FiRefreshCcw,
   FiCheck,
   FiZap,
-  
   FiHome,
+  FiLogOut,
 } from "react-icons/fi";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { type RootState } from "../store";
+import { logout } from "../features/auth/authSlice";
+import api from "../utils/axiosConfig";
+import { toast } from "react-toastify";
 import styles from "./Topbar.module.css";
 import { useNotificationSocket } from "../hooks/useNotificationSocket";
 import { NotificationToast } from "./notifications/NotificationToast";
@@ -25,6 +28,7 @@ interface TopbarProps {
 export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
 
   // Redux auth state
   const { username, role } = useSelector((state: RootState) => state.auth);
@@ -71,6 +75,18 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
   };
 
   const firstLetter = username ? username.charAt(0).toUpperCase() : 'A';
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {
+      console.warn('Backend logout failed or network error:', e);
+    } finally {
+      dispatch(logout());
+      toast.success('Logged out successfully.');
+      navigate('/login', { replace: true });
+    }
+  };
 
   const handleNotificationItemClick = (item: AdminNotificationItem) => {
     if (!item.isRead) {
@@ -155,8 +171,6 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
 
           {/* Breadcrumb / Back Bar ([Icon] Overview + ← Back button) */}
           <div className={styles.breadcrumbBar}>
-            
-
             <div
               className={styles.breadcrumbItem}
               onClick={() => navigate('/admin/dashboard')}
@@ -285,6 +299,17 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
             <div className={styles.avatar}>{firstLetter}</div>
             <span className={styles.profileName}>{formatRole(role) || username || 'System Admin'}</span>
           </div>
+
+          {/* Logout Button */}
+          <button
+            type="button"
+            className={styles.logoutBtn}
+            onClick={handleLogout}
+            title="Sign out of system"
+          >
+            <FiLogOut size={13} />
+            <span className={styles.logoutText}>Logout</span>
+          </button>
         </div>
       </header>
     </>

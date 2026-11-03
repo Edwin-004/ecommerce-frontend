@@ -1,6 +1,7 @@
 // src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './features/auth/Login';
+import { FirstTimePassword } from './features/auth/FirstTimePassword';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLayout } from './components/AdminLayout';
 import { ProductManagementPage } from './features/products/ProductManagementPage';
@@ -33,6 +34,17 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+
+        {/* Force Password Change Route (Isolated from AdminLayout navigation for full lock-in) */}
+        <Route
+          element={
+            <ProtectedRoute
+              allowedRoles={['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF']}
+            />
+          }
+        >
+          <Route path="/admin/force-change-password" element={<FirstTimePassword />} />
+        </Route>
 
         {/* Back-office authenticated users check */}
         <Route
