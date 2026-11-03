@@ -1,4 +1,3 @@
-
 import {
   type ChangeEvent,
   type FormEvent,
@@ -76,9 +75,13 @@ export function BrandModal({
   const [preview, setPreview] =
     useState('');
 
+  const [errorMessage, setErrorMessage] = useState('');
+
   // Load existing brand data for Edit
   useEffect(() => {
     if (!show) return;
+
+    setErrorMessage('');
 
     if (brand) {
       setForm({
@@ -118,9 +121,9 @@ export function BrandModal({
 
   const handleChange = (
     e: ChangeEvent<
-      HTMLInputElement |
-      HTMLTextAreaElement |
-      HTMLSelectElement
+      | HTMLInputElement
+      | HTMLTextAreaElement
+      | HTMLSelectElement
     >
   ) => {
     const { name, value } = e.target;
@@ -163,7 +166,7 @@ export function BrandModal({
     if (!selectedFile) return;
 
     if (selectedFile.size > 5 * 1024 * 1024) {
-      alert('Logo file must be smaller than 5MB.');
+      setErrorMessage('Logo file must be smaller than 5MB.');
       e.target.value = '';
       return;
     }
@@ -175,11 +178,12 @@ export function BrandModal({
     ];
 
     if (!allowedTypes.includes(selectedFile.type)) {
-      alert('Only PNG, JPG or WEBP images are allowed.');
+      setErrorMessage('Only PNG, JPG or WEBP images are allowed.');
       e.target.value = '';
       return;
     }
 
+    setErrorMessage('');
     setFile(selectedFile);
   };
 
@@ -187,24 +191,47 @@ export function BrandModal({
     e: FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
+    setErrorMessage('');
 
     const brandName = form.brandName.trim();
 
     if (!brandName) {
-      alert('Brand name is required.');
+      setErrorMessage('Brand name is required.');
       return;
     }
 
-    await onSubmit(
-      {
-        ...form,
-        brandName,
-        description: form.description?.trim() ?? '',
-        brandLogoUrl: form.brandLogoUrl?.trim() ?? '',
-        categoryIds: [...(form.categoryIds ?? [])],
-      },
-      file
-    );
+    try {
+      await onSubmit(
+        {
+          ...form,
+          brandName,
+          description: form.description?.trim() ?? '',
+          brandLogoUrl: form.brandLogoUrl?.trim() ?? '',
+          categoryIds: [...(form.categoryIds ?? [])],
+        },
+        file
+      );
+    } catch (error: any) {
+     
+      const rawMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        '';
+
+    
+      if (
+        rawMsg.toLowerCase().includes('already exists') ||
+        rawMsg.toLowerCase().includes('duplicate')
+      ) {
+        setErrorMessage(
+          'This brand name already exists. Please choose a different brand name and try again.'
+        );
+      } else {
+        setErrorMessage(
+          rawMsg || 'An unexpected error occurred. Please try again.'
+        );
+      }
+    }
   };
 
   return (
@@ -244,6 +271,20 @@ export function BrandModal({
 
           <form onSubmit={handleSubmit}>
             <div className="modal-body p-4">
+
+              {errorMessage && (
+                <div
+                  className="alert alert-danger mb-4 py-2 px-3 rounded-3"
+                  role="alert"
+                >
+                  <div className="d-flex align-items-start gap-2">
+                    <span style={{ fontSize: '16px', lineHeight: '1.2' }}>⚠️</span>
+                    <div className="small" style={{ wordBreak: 'break-word', lineHeight: '1.4' }}>
+                      {errorMessage}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* LOGO */}
               <div className="d-flex align-items-center gap-3 mb-4">
@@ -311,124 +352,121 @@ export function BrandModal({
                   value={form.brandName}
                   onChange={handleChange}
                   maxLength={100}
-                  required
                   disabled={loading}
                 />
               </div>
 
-             
-{/* CATEGORIES */}
-<div className="mb-3">
-  <label className="form-label fw-semibold">
-    Categories
-  </label>
+              {/* CATEGORIES */}
+              <div className="mb-3">
+                <label className="form-label fw-semibold">
+                  Categories
+                </label>
 
-  {categories.length === 0 ? (
-    <div className="border rounded-3 p-3 text-secondary small">
-      No categories available.
-    </div>
-  ) : (
-    <div
-      className="border rounded-3 p-3"
-      style={{
-        maxHeight: 220,
-        overflowY: 'auto',
-      }}
-    >
-      <div className="row g-2">
-        {categories.map((category) => {
-          const checked = (
-            form.categoryIds ?? []
-          ).includes(category.categoryId);
+                {categories.length === 0 ? (
+                  <div className="border rounded-3 p-3 text-secondary small">
+                    No categories available.
+                  </div>
+                ) : (
+                  <div
+                    className="border rounded-3 p-3"
+                    style={{
+                      maxHeight: 220,
+                      overflowY: 'auto',
+                    }}
+                  >
+                    <div className="row g-2">
+                      {categories.map((category) => {
+                        const checked = (
+                          form.categoryIds ?? []
+                        ).includes(category.categoryId);
 
-          return (
-            <div
-              className="col-md-6"
-              key={category.categoryId}
-            >
-              <label
-                className="d-flex align-items-center gap-2 border rounded-3 p-2"
-                style={{
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  borderColor: checked ? '#0d6efd' : '#dee2e6',
-                  backgroundColor: checked ? '#cfe2ff' : '#ffffff',
-                  transition: 'background-color 0.15s ease, border-color 0.15s ease',
-                  minHeight: 48,
-                  userSelect: 'none',
-                  opacity: loading ? 0.7 : 1,
-                }}
-              >
-                {/* Hidden Native Checkbox */}
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  disabled={loading}
-                  onChange={(e) => {
-                    handleCategoryChange(
-                      category.categoryId,
-                      e.currentTarget.checked
-                    );
-                  }}
-                  style={{
-                    position: 'absolute',
-                    width: 1,
-                    height: 1,
-                    opacity: 0,
-                    pointerEvents: 'none',
-                  }}
-                />
+                        return (
+                          <div
+                            className="col-md-6"
+                            key={category.categoryId}
+                          >
+                            <label
+                              className="d-flex align-items-center gap-2 border rounded-3 p-2"
+                              style={{
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                borderColor: checked ? '#0d6efd' : '#dee2e6',
+                                backgroundColor: checked ? '#cfe2ff' : '#ffffff',
+                                transition: 'background-color 0.15s ease, border-color 0.15s ease',
+                                minHeight: 48,
+                                userSelect: 'none',
+                                opacity: loading ? 0.7 : 1,
+                              }}
+                            >
+                              {/* Hidden Native Checkbox */}
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={loading}
+                                onChange={(e) => {
+                                  handleCategoryChange(
+                                    category.categoryId,
+                                    e.currentTarget.checked
+                                  );
+                                }}
+                                style={{
+                                  position: 'absolute',
+                                  width: 1,
+                                  height: 1,
+                                  opacity: 0,
+                                  pointerEvents: 'none',
+                                }}
+                              />
 
-                {/* Custom Checkbox UI */}
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: 20,
-                    height: 20,
-                    minWidth: 20,
-                    borderRadius: 5,
-                    border: checked
-                      ? '2px solid #0d6efd'
-                      : '1.5px solid #cbd5e1',
-                    backgroundColor: checked
-                      ? '#0d6efd'
-                      : '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  {checked && (
-                    <FiCheck
-                      size={14}
-                      color="#ffffff"
-                      strokeWidth={3}
-                    />
-                  )}
-                </span>
+                              {/* Custom Checkbox UI */}
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  width: 20,
+                                  height: 20,
+                                  minWidth: 20,
+                                  borderRadius: 5,
+                                  border: checked
+                                    ? '2px solid #0d6efd'
+                                    : '1.5px solid #cbd5e1',
+                                  backgroundColor: checked
+                                    ? '#0d6efd'
+                                    : '#ffffff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                {checked && (
+                                  <FiCheck
+                                    size={14}
+                                    color="#ffffff"
+                                    strokeWidth={3}
+                                  />
+                                )}
+                              </span>
 
-                <span
-                  style={{
-                    fontSize: 15,
-                    color: '#212529',
-                    fontWeight: checked ? 500 : 400,
-                  }}
-                >
-                  {category.categoryName}
-                </span>
-              </label>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  )}
+                              <span
+                                style={{
+                                  fontSize: 15,
+                                  color: '#212529',
+                                  fontWeight: checked ? 500 : 400,
+                                }}
+                              >
+                                {category.categoryName}
+                              </span>
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
-  <div className="form-text">
-    Select one or more categories. Existing categories are checked when editing.
-  </div>
-</div>
-
+                <div className="form-text">
+                  Select one or more categories. Existing categories are checked when editing.
+                </div>
+              </div>
 
               {/* DESCRIPTION */}
               <div className="mb-3">
@@ -525,4 +563,3 @@ export function BrandModal({
     </div>
   );
 }
-
