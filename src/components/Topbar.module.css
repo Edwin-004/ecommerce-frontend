@@ -5,7 +5,7 @@
 
 .topbar {
   height: 32px; /* h-8 exact 32px */
-  margin-bottom: 12px; /* mb-3 / 12px gap */
+  margin-bottom: 0; /* mb-0: Header wrapper handles sticky padding */
   padding-top: 0; /* pt-0 */
   display: flex;
   justify-content: space-between;
@@ -220,23 +220,149 @@
 }
 
 /* ==========================================================
-   TOPBAR NOTIFICATIONS DROPDOWN
+   Quick Create Dropdown (Consistent with Website Action UI)
+   ========================================================== */
+.createBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background-color: #2563eb;
+  color: #ffffff !important;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+  outline: none;
+}
+
+.createBtn:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.createBtn:active {
+  transform: translateY(0);
+}
+
+.createMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+  padding: 6px;
+  z-index: 100;
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+.createMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155 !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease;
+}
+
+.createMenuItem:hover {
+  background-color: #f1f5f9;
+  color: #2563eb !important;
+}
+
+.createMenuIcon {
+  font-size: 14px;
+  color: #64748b;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.createMenuItem:hover .createMenuIcon {
+  color: #2563eb;
+}
+
+/* ==========================================================
+   Notification Bell Button & Badge (High-Visibility Refinement)
+   ========================================================== */
+.bellBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  background-color: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  padding: 0;
+  outline: none;
+}
+
+.bellBtn:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.bellIcon {
+  width: 17px;
+  height: 17px;
+  color: #334155;
+  transition: color 0.15s ease;
+}
+
+.bellBtn:hover .bellIcon {
+  color: #0f172a;
+}
+
+.bellBadge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  border: 1.5px solid #ffffff;
+}
+
+/* ==========================================================
+   TOPBAR NOTIFICATIONS DROPDOWN (Round Corner Text Box)
    ========================================================== */
 .notificationDropdown {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 320px;
-  background: rgba(255, 255, 255, 0.92);
+  width: 330px;
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   z-index: 100;
   overflow: hidden;
   animation: dropdownFadeIn 0.15s ease-out;
 }
-
 @keyframes dropdownFadeIn {
   from {
     opacity: 0;
@@ -413,4 +539,202 @@
 
 .notifFooterLink:hover {
   text-decoration: underline;
+}
+
+
+/* ==========================================================
+   Topbar Center Global Search Bar
+   ========================================================== */
+.centerSearch {
+  position: relative;
+  flex: 1;
+  max-width: 440px;
+  margin: 0 16px;
+  z-index: 1000;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  height: 32px;
+  padding: 0 10px;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: all 0.15s ease;
+}
+
+.searchBarFocused {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  background-color: #ffffff;
+}
+
+.searchIcon {
+  color: #94a3b8;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: #1e293b;
+  min-width: 0;
+  font-family: inherit;
+}
+
+.searchInput::placeholder {
+  color: #94a3b8;
+}
+
+.searchClearBtn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.searchClearBtn:hover {
+  color: #475569;
+}
+
+.searchShortcut {
+  font-size: 10px;
+  font-family: inherit;
+  color: #94a3b8;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 2px 6px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+/* Results Dropdown */
+.searchResultsDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.06);
+  max-height: 340px;
+  overflow-y: auto;
+  z-index: 1200;
+  animation: fadeInSearch 0.12s ease-out;
+}
+
+@keyframes fadeInSearch {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.searchResultsList {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.searchResultItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.searchResultItem:hover,
+.searchResultItemSelected {
+  background-color: #eff6ff;
+}
+
+.searchResultLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.searchResultCategory {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #f1f5f9;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.searchResultItemSelected .searchResultCategory {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.searchResultTitle {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.searchResultItemSelected .searchResultTitle {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.searchResultArrow {
+  font-size: 13px;
+  color: #cbd5e1;
+  transition: all 0.12s ease;
+}
+
+.searchResultItemSelected .searchResultArrow {
+  color: #2563eb;
+  transform: translateX(2px);
+}
+
+.searchNoResults {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .centerSearch {
+    max-width: 180px;
+    margin: 0 8px;
+  }
+  .searchShortcut {
+    display: none;
+  }
 }

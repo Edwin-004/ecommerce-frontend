@@ -12,6 +12,8 @@ import {
   FiCheck,
 } from 'react-icons/fi';
 import styles from './Refunds.module.css';
+import { DatePicker } from '../../components/common/DatePicker';
+import { formatDateTime } from '../../utils/dateUtils';
 import {
   getRefunds,
   getRefundStats,
@@ -271,6 +273,23 @@ export function RefundManagementPage() {
       return;
     }
 
+    if (search && search.trim().length > 100) {
+      alert('Search query cannot exceed 100 characters for export.');
+      return;
+    }
+
+    if (startDate && endDate) {
+      if (startDate > endDate) {
+        alert('Start date cannot be after end date.');
+        return;
+      }
+      const diffDays = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24);
+      if (diffDays > 365) {
+        alert('Date range cannot exceed 1 year (365 days) for report generation.');
+        return;
+      }
+    }
+
     setExportingFormat(format);
     setExportSuccessMessage(null);
 
@@ -364,19 +383,9 @@ export function RefundManagementPage() {
     setEndDate('');
   };
 
-  // Helper date formatter
+  // Helper date formatter - Day/Month/Year with AM/PM
   const formatDate = (isoString?: string | null) => {
-    if (!isoString) return '-';
-    try {
-      const d = new Date(isoString);
-      return d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return isoString;
-    }
+    return formatDateTime(isoString);
   };
 
   return (
@@ -402,11 +411,9 @@ export function RefundManagementPage() {
       {/* HEADER */}
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
-          <BackButton fallbackUrl="/admin/dashboard" />
           <div>
-            <div className={styles.smallBadge}>OPERATIONS</div>
-            <h1 className={styles.title}>Refund Management</h1>
-            <p className={styles.subtitle}>
+            <h1 className={`${styles.title} text-xl font-semibold text-slate-900 tracking-tight`}>Refund Management</h1>
+            <p className={`${styles.subtitle} text-xs text-slate-500`}>
               Directly review customer refund requests, process approvals or rejections, and export reports.
             </p>
           </div>
@@ -473,6 +480,7 @@ export function RefundManagementPage() {
                 type="text"
                 className={styles.fieldInputSearch}
                 placeholder="Search Order No, Customer, Reason..."
+                maxLength={100}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -507,9 +515,7 @@ export function RefundManagementPage() {
           {/* Date Range: FROM */}
           <div className={styles.fieldWithLabel} style={{ width: '145px' }}>
             <label>FROM</label>
-            <input
-              type="date"
-              className={styles.fieldDateControl}
+            <DatePicker
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               title="Start Date"
@@ -519,12 +525,11 @@ export function RefundManagementPage() {
           {/* Date Range: TO */}
           <div className={styles.fieldWithLabel} style={{ width: '145px' }}>
             <label>TO</label>
-            <input
-              type="date"
-              className={styles.fieldDateControl}
+            <DatePicker
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               title="End Date"
+              align="right"
             />
           </div>
 
@@ -671,49 +676,51 @@ export function RefundManagementPage() {
 
       {/* DATA TABLE CARD - ORIGINAL 8 COLUMNS WITH MODERN SLIDE BAR & DRAG-TO-SCROLL */}
       <div className={styles.tableCard}>
-        {/* Modern Interactive Slide Toggle Bar */}
-        <div className={styles.scrollNoticeBar}>
-          <div className={styles.scrollNoticeLeft}>
-            <i className="bi bi-arrows-expand text-primary" style={{ transform: 'rotate(45deg)', fontSize: '13px' }} />
-            <span className={styles.scrollNoticeTitle}>Table Slide Bar:</span>
-            <span className={styles.scrollNoticeTag}>
-              {scrollPercent <= 5 ? 'Start (Refund ID)' : scrollPercent >= 95 ? 'End (Actions)' : `${scrollPercent}%`}
-            </span>
-          </div>
-
-          <div className={styles.slideToggleWrapper}>
-            <button
-              type="button"
-              className={styles.sliderEndpointBtn}
-              onClick={() => scrollToEndpoint('start')}
-              title="Jump to Start (Refund ID)"
-            >
-              <i className="bi bi-chevron-left" /> Left (Refund ID)
-            </button>
-            <div className={styles.sliderTrackContainer}>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={scrollPercent}
-                onChange={handleSliderChange}
-                className={styles.modernSlideRange}
-                title="Slide cursor across this bar to scroll table sideways"
-                style={{
-                  background: `linear-gradient(to right, #6366f1 0%, #6366f1 ${scrollPercent}%, #e2e8f0 ${scrollPercent}%, #e2e8f0 100%)`
-                }}
-              />
+        {/* Modern Interactive Slide Toggle Bar (Only shown when data is loaded) */}
+        {refunds.length > 0 && (
+          <div className={styles.scrollNoticeBar}>
+            <div className={styles.scrollNoticeLeft}>
+              <i className="bi bi-arrows-expand text-primary" style={{ transform: 'rotate(45deg)', fontSize: '13px' }} />
+              <span className={styles.scrollNoticeTitle}>Table Slide Bar:</span>
+              <span className={styles.scrollNoticeTag}>
+                {scrollPercent <= 5 ? 'Start (Refund ID)' : scrollPercent >= 95 ? 'End (Actions)' : `${scrollPercent}%`}
+              </span>
             </div>
-            <button
-              type="button"
-              className={styles.sliderEndpointBtn}
-              onClick={() => scrollToEndpoint('end')}
-              title="Jump to Actions"
-            >
-              Right (Actions) <i className="bi bi-chevron-right" />
-            </button>
+
+            <div className={styles.slideToggleWrapper}>
+              <button
+                type="button"
+                className={styles.sliderEndpointBtn}
+                onClick={() => scrollToEndpoint('start')}
+                title="Jump to Start (Refund ID)"
+              >
+                <i className="bi bi-chevron-left" /> Left (Refund ID)
+              </button>
+              <div className={styles.sliderTrackContainer}>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={scrollPercent}
+                  onChange={handleSliderChange}
+                  className={styles.modernSlideRange}
+                  title="Slide cursor across this bar to scroll table sideways"
+                  style={{
+                    background: `linear-gradient(to right, #6366f1 0%, #6366f1 ${scrollPercent}%, #e2e8f0 ${scrollPercent}%, #e2e8f0 100%)`
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                className={styles.sliderEndpointBtn}
+                onClick={() => scrollToEndpoint('end')}
+                title="Jump to Actions"
+              >
+                Right (Actions) <i className="bi bi-chevron-right" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         <div
           ref={tableRef}
@@ -721,17 +728,17 @@ export function RefundManagementPage() {
           onMouseDown={handleMouseDown}
           onScroll={handleTableScroll}
         >
-          <table className={styles.modernTable}>
+          <table className={`${styles.modernTable} ${refunds.length > 0 ? 'table-with-data' : 'table-empty'}`}>
             <thead>
               <tr>
-                <th style={{ paddingLeft: '24px', width: '100px' }}>REFUND ID</th>
+                <th className="text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
                 <th style={{ width: '160px' }}>ORDER NO</th>
                 <th style={{ minWidth: '180px' }}>CUSTOMER</th>
                 <th style={{ width: '140px' }}>AMOUNT</th>
                 <th style={{ width: '160px' }}>REASON</th>
                 <th style={{ width: '125px' }}>DATE</th>
                 <th style={{ width: '120px' }}>STATUS</th>
-                <th style={{ textAlign: 'right', paddingRight: '24px', width: '170px' }}>ACTIONS</th>
+                <th className="text-right" style={{ textAlign: 'right', paddingRight: '24px', width: '170px' }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -762,7 +769,7 @@ export function RefundManagementPage() {
                   </td>
                 </tr>
               ) : (
-                refunds.map((item) => {
+                refunds.map((item, index) => {
                   const isPending = item.status === 'PENDING';
                   const isApproved = item.status === 'APPROVED';
                   const isRejected = item.status === 'REJECTED';
@@ -770,8 +777,8 @@ export function RefundManagementPage() {
                   return (
                     <tr key={item.refundId}>
                       {/* 1. REFUND ID */}
-                      <td style={{ paddingLeft: '24px' }}>
-                        <span className={styles.refundIdText}>#{item.refundId}</span>
+                      <td className="text-center" style={{ textAlign: 'center' }}>
+                        <span className={styles.refundIdText}>{index + 1}</span>
                       </td>
 
                       {/* 2. ORDER NO */}
@@ -843,7 +850,7 @@ export function RefundManagementPage() {
                       </td>
 
                       {/* 8. ACTIONS */}
-                      <td style={{ textAlign: 'right', paddingRight: '24px' }}>
+                      <td className="text-right" style={{ textAlign: 'right', paddingRight: '24px' }}>
                         {isPending ? (
                           <div className={styles.actionGroup}>
                             <button
@@ -907,29 +914,25 @@ export function RefundManagementPage() {
           <div className={styles.modalDialog} onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className={styles.modalHeader}>
-              <div className="d-flex align-items-center gap-2">
-                {activeModal.type === 'APPROVE' ? (
-                  <div className="text-success fs-5">
-                    <FiCheckCircle />
-                  </div>
-                ) : (
-                  <div className="text-danger fs-5">
-                    <FiAlertCircle />
-                  </div>
-                )}
-                <h5 className="modal-title fw-bold mb-0">
-                  {activeModal.type === 'APPROVE'
-                    ? `Approve Refund #${activeModal.item.refundId}`
-                    : `Reject Refund #${activeModal.item.refundId}`}
-                </h5>
+              <div className="d-flex align-items-center gap-3">
+                <BackButton onClick={closeModal} disabled={actionLoading} />
+                <div className="d-flex align-items-center gap-2">
+                  {activeModal.type === 'APPROVE' ? (
+                    <div className="text-success fs-5">
+                      <FiCheckCircle />
+                    </div>
+                  ) : (
+                    <div className="text-danger fs-5">
+                      <FiAlertCircle />
+                    </div>
+                  )}
+                  <h5 className="modal-title fw-bold mb-0">
+                    {activeModal.type === 'APPROVE'
+                      ? `Approve Refund #${activeModal.item.refundId}`
+                      : `Reject Refund #${activeModal.item.refundId}`}
+                  </h5>
+                </div>
               </div>
-              <button
-                type="button"
-                className="btn-close"
-                onClick={closeModal}
-                disabled={actionLoading}
-                aria-label="Close"
-              />
             </div>
 
             {/* Modal Body */}
@@ -1067,15 +1070,12 @@ export function RefundManagementPage() {
         <div className={styles.modalBackdrop} onClick={() => setViewNoteItem(null)}>
           <div className={styles.modalDialog} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h5 className="modal-title fw-bold mb-0">
-                Refund #{viewNoteItem.refundId} - Admin Note
-              </h5>
-              <button
-                type="button"
-                className="btn-close"
-                onClick={() => setViewNoteItem(null)}
-                aria-label="Close"
-              />
+              <div className="d-flex align-items-center gap-3">
+                <BackButton onClick={() => setViewNoteItem(null)} />
+                <h5 className="modal-title fw-bold mb-0">
+                  Refund #{viewNoteItem.refundId} - Admin Note
+                </h5>
+              </div>
             </div>
             <div className={styles.modalBody}>
               <div className="mb-2">

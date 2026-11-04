@@ -13,8 +13,8 @@
 
 .headerLeft {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .iconBadge {
@@ -368,9 +368,20 @@
 
 .table {
   width: 100%;
-  min-width: 1550px;
   border-collapse: collapse;
   text-align: left;
+}
+
+.tableEmpty {
+  width: 100% !important;
+  min-width: 100% !important;
+  table-layout: auto !important;
+}
+
+.tableWithData {
+  width: 100%;
+  min-width: max-content;
+  table-layout: auto;
 }
 
 .table th {
@@ -383,6 +394,11 @@
   letter-spacing: 0.5px;
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
+}
+
+.table th.text-center,
+.table td.text-center {
+  text-align: center !important;
 }
 
 .table td {
@@ -475,8 +491,11 @@
 
 /* Actions in Table */
 .actionGroup {
-  display: flex;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .btnAction {
@@ -502,38 +521,51 @@
 .btnHistory { background: #eff6ff; color: #1e40af; }
 
 /* General Buttons */
+/* General Buttons */
 .btnPrimary {
   background: #2563eb;
-  color: white;
+  color: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
 }
 
-.btnPrimary:hover {
+.btnPrimary:hover:not(:disabled) {
   background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
 }
 
 .btnSecondary {
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 600;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: all 0.18s ease-in-out;
+  white-space: nowrap;
 }
 
-.btnSecondary:hover {
-  background: #e2e8f0;
+.btnSecondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
 }
 
 /* Empty / Loading States */

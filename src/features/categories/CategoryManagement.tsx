@@ -1,6 +1,7 @@
 import { BackButton } from '../../components/common/BackButton';
 
 import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   FiLayers,
   FiFolder,
@@ -22,6 +23,8 @@ import {
 import styles from "./CategoryManagement.module.css";
 
 export const CategoryManagement: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"flat" | "tree">("flat");
 
   const [categories, setCategories] = useState<CategoryResponseDto[]>([]);
@@ -71,13 +74,14 @@ export const CategoryManagement: React.FC = () => {
 
   useEffect(() => {
     void fetchData();
+  }, []);
 
-    const params = new URLSearchParams(window.location.search);
-
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
     if (params.get("create") === "true") {
       openCreateModal();
     }
-  }, []);
+  }, [location.search]);
 
   // Handle form inputs
   const handleInputChange = (
@@ -120,6 +124,9 @@ export const CategoryManagement: React.FC = () => {
     setIsModalOpen(false);
     setEditingId(null);
     setErrorMessage(null);
+    if (location.search.includes("create=true")) {
+      navigate("/admin/categories", { replace: true });
+    }
   };
 
   // Create or update category, optionally creating child categories
@@ -342,10 +349,10 @@ export const CategoryManagement: React.FC = () => {
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <BackButton fallbackUrl="/admin/dashboard" />
           <div>
-          <h1>Category Management</h1>
-          <p>Organize and manage your product categories</p>
+            <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Category Management</h1>
+            <p className="text-xs text-slate-500">Organize and manage your product categories</p>
+          </div>
         </div>
-      </div>
 
       <div className="d-flex gap-2">
           <button
@@ -354,7 +361,7 @@ export const CategoryManagement: React.FC = () => {
             onClick={openCreateModal}
             disabled={saving}
           >
-            <FiPlus />
+            <FiPlus size={16} />
             Add Category
           </button>
 
@@ -364,7 +371,7 @@ export const CategoryManagement: React.FC = () => {
             onClick={() => void fetchData()}
             disabled={loading || saving}
           >
-            <FiRefreshCw />
+            <FiRefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>

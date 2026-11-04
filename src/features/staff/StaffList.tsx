@@ -1,8 +1,8 @@
-import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiEdit2, FiSlash, FiCheck } from 'react-icons/fi';
-import api from '../../utils/axiosConfig'; 
+import { FiEdit2, FiSlash, FiCheck, FiPlus, FiUsers, FiCheckCircle, FiShield, FiUserX, FiSearch } from 'react-icons/fi';
+import api from '../../utils/axiosConfig';
+import { formatDate } from '../../utils/dateUtils'; 
 import './StaffList.css';
 
 interface StaffResponseDTO {
@@ -75,7 +75,7 @@ export const StaffList: React.FC = () => {
         const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
         const actionText = currentStatus === 'ACTIVE' ? 'Suspend' : 'Activate';
 
-        if (window.confirm(`${name} ၏ အကောင့်ကို ${actionText} လုပ်မှာ သေချာပြီလား?`)) {
+        if (window.confirm(`${name} á á€¡á€€á€±á€¬á€„á€·á€ºá€€á€­á€¯ ${actionText} á€œá€¯á€•á€ºá€™á€¾á€¬ á€žá€±á€á€»á€¬á€•á€¼á€®á€œá€¬á€¸?`)) {
             try {
                 await api.put(`/staff/${id}/status`, null, {
                     params: { status: newStatus }
@@ -85,7 +85,7 @@ export const StaffList: React.FC = () => {
                 ));
             } catch (err) {
                 console.error(`Error ${actionText.toLowerCase()}ing staff:`, err);
-                alert(`${actionText} လုပ်ရာတွင် အမှားအယွင်းဖြစ်ပေါ်ခဲ့ပါသည်။`);
+                alert(`${actionText} á€œá€¯á€•á€ºá€›á€¬á€á€½á€„á€º á€¡á€™á€¾á€¬á€¸á€¡á€šá€½á€„á€ºá€¸á€–á€¼á€…á€ºá€•á€±á€«á€ºá€á€²á€·á€•á€«á€žá€Šá€ºá‹`);
             }
         }
     }
@@ -97,22 +97,19 @@ export const StaffList: React.FC = () => {
         <div className="staff-container">
             {/* Header Section */}
             <div className="header-section">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <BackButton fallbackUrl="/admin/dashboard" />
-                    <div>
-                        <h2 className="header-title">Staff Management</h2>
-                    <p className="header-subtitle">Manage system users, roles, and account statuses</p>
+                <div>
+                    <h1 className="header-title text-xl font-semibold text-slate-900 tracking-tight">Staff Management</h1>
+                    <p className="header-subtitle text-xs text-slate-500">Manage system users, roles, and account statuses</p>
                 </div>
-              </div>
                 <button className="btn-add" onClick={() => navigate('/admin/staff/new')}>
-                    + Add New Staff
+                    <FiPlus size={16} /> Add New Staff
                 </button>
             </div>
 
             {/* Summary Cards */}
             <div className="summary-cards">
                 <div className="card">
-                    <div className="icon-box icon-blue">👥</div>
+                    <div className="icon-box icon-blue"><FiUsers size={20} /></div>
                     <div>
                         <p className="card-value">{staffList.length}</p>
                         <p className="card-label">Total Staff</p>
@@ -120,7 +117,7 @@ export const StaffList: React.FC = () => {
                 </div>
                 
                 <div className="card">
-                    <div className="icon-box icon-green">✅</div>
+                    <div className="icon-box icon-green"><FiCheckCircle size={20} /></div>
                     <div>
                         <p className="card-value">
                             {staffList.filter(s => s.status === 'ACTIVE').length}
@@ -130,7 +127,7 @@ export const StaffList: React.FC = () => {
                 </div>
 
                 <div className="card">
-                    <div className="icon-box icon-purple">🛡️</div>
+                    <div className="icon-box icon-purple"><FiShield size={20} /></div>
                     <div>
                         <p className="card-value">
                             {staffList.filter(s => s.roleName === 'ADMIN').length}
@@ -140,7 +137,7 @@ export const StaffList: React.FC = () => {
                 </div>
 
                 <div className="card">
-                    <div className="icon-box icon-red">🚫</div>
+                    <div className="icon-box icon-red"><FiUserX size={20} /></div>
                     <div>
                         <p className="card-value">
                             {staffList.filter(s => s.status !== 'ACTIVE').length}
@@ -177,11 +174,13 @@ export const StaffList: React.FC = () => {
                         </button>
                     </div>
                     
-                    <div>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <FiSearch style={{ position: 'absolute', left: 12, color: '#94a3b8', pointerEvents: 'none' }} size={15} />
                         <input
                             type="text"
-                            placeholder="🔍 Search staff..."
+                            placeholder="Search staff..."
                             className="search-input"
+                            style={{ paddingLeft: '34px' }}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -189,23 +188,27 @@ export const StaffList: React.FC = () => {
                 </div>
 
                 <div className="table-responsive">
-                    <table className="staff-table">
+                    <table className={`staff-table ${currentStaffData.length > 0 ? 'table-with-data' : 'table-empty'}`}>
                         <thead>
                             <tr>
-                                {/* ID Column Header ဖယ်ရှားလိုက်ပါသည် */}
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th>Created At</th>
-                                <th>Actions</th>
+                                {/* Row Number Column */}
+                                <th className="text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
+                                <th style={{ minWidth: '160px', textAlign: 'left' }}>Name</th>
+                                <th style={{ minWidth: '220px', textAlign: 'left' }}>Email</th>
+                                <th style={{ minWidth: '140px', textAlign: 'left' }}>Role</th>
+                                <th className="text-center" style={{ width: '120px', textAlign: 'center' }}>Status</th>
+                                <th className="text-center" style={{ width: '140px', textAlign: 'center' }}>Created At</th>
+                                <th className="text-center" style={{ width: '190px', textAlign: 'center' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {currentStaffData.length > 0 ? (
-                                currentStaffData.map((staff) => (
+                                currentStaffData.map((staff, index) => {
+                                    const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                                    return (
                                     <tr key={staff.userId}>
-                                        {/* ID Data Row ဖယ်ရှားလိုက်ပါသည် */}
+                                        {/* Row Number Cell */}
+                                        <td className="text-center" style={{ textAlign: 'center', fontWeight: 600, color: '#64748b' }}>{rowNumber}</td>
                                         <td style={{ fontWeight: '500' }}>{staff.userName}</td>
                                         <td>{staff.email}</td>
                                         <td>
@@ -213,14 +216,14 @@ export const StaffList: React.FC = () => {
                                                 {staff.roleName.replace('_', ' ')}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td className="text-center" style={{ textAlign: 'center' }}>
                                             <span className={`staff-badge ${staff.status === 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'}`}>
                                                 {staff.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
-                                        <td>{staff.createdAt ? new Date(staff.createdAt).toLocaleDateString() : '-'}</td>
-                                        <td>
-                                            <div className="table-action-group">
+                                        <td className="text-center" style={{ textAlign: 'center' }}>{formatDate(staff.createdAt)}</td>
+                                        <td className="text-center" style={{ textAlign: 'center' }}>
+                                            <div className="table-action-group" style={{ justifyContent: 'center' }}>
                                                 <button
                                                     type="button"
                                                     className="table-btn-edit"
@@ -252,10 +255,11 @@ export const StaffList: React.FC = () => {
                                             </div>
                                         </td>
                                     </tr>
-                                ))
+                                  );
+                                })
                             ) : (
                                 <tr>
-                                    <td colSpan={6} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
+                                    <td colSpan={7} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
                                         No staff found matching your criteria.
                                     </td>
                                 </tr>

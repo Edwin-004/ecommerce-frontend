@@ -1,4 +1,5 @@
 
+import { BackButton } from '../../components/common/BackButton';
 import {
   type ChangeEvent,
   type FormEvent,
@@ -220,9 +221,10 @@ export function BrandModal({
       <div className="modal-dialog modal-dialog-centered modal-lg">
         <div className="modal-content border-0 shadow-lg rounded-4">
 
-          <div className="modal-header px-4 py-3">
+          <div className="modal-header px-4 py-3 d-flex align-items-center gap-3">
+            <BackButton onClick={onClose} disabled={loading} />
             <div>
-              <h5 className="modal-title fw-bold mb-1">
+              <h5 className="modal-title fw-bold mb-0">
                 {brand ? 'Edit Brand' : 'Create Brand'}
               </h5>
 
@@ -232,14 +234,6 @@ export function BrandModal({
                   : 'Add a new brand to your store'}
               </small>
             </div>
-
-            <button
-              type="button"
-              className="btn-close"
-              aria-label="Close"
-              onClick={onClose}
-              disabled={loading}
-            />
           </div>
 
           <form onSubmit={handleSubmit}>

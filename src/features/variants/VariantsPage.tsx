@@ -1,4 +1,3 @@
-import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   FiPackage,
@@ -135,7 +134,7 @@ export const VariantsPage: React.FC = () => {
   // Filtered variants (latest first)
   const filteredVariants = useMemo(() => {
     return [...variants]
-      .sort((a, b) => (b.variantId || 0) - (a.variantId || 0))
+      .sort((a, b) => (a.variantId || 0) - (b.variantId || 0))
       .filter((v) => {
         const q = searchQuery.toLowerCase();
         return (
@@ -165,15 +164,12 @@ export const VariantsPage: React.FC = () => {
     <div className={styles.container}>
       {/* Page Header */}
       <div className={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <BackButton fallbackUrl="/admin/dashboard" />
-          <div>
-            <h1 className={styles.title}>Product Variants & Variations</h1>
-          <p className={styles.subtitle}>
+        <div>
+          <h1 className={`${styles.title} text-xl font-semibold text-slate-900 tracking-tight`}>Product Variants & Variations</h1>
+          <p className={`${styles.subtitle} text-xs text-slate-500`}>
             Manage sellable SKU combinations, variation attributes (Color, Size), and automated SKU generation
           </p>
         </div>
-      </div>
 
       <div className={styles.headerActions}>
           <button className={styles.btnSecondary} onClick={loadData} disabled={loading}>
@@ -265,7 +261,9 @@ export const VariantsPage: React.FC = () => {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Variant ID</th>
+                <th className="w-14 py-3 px-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  No.
+                </th>
                 <th>SKU</th>
                 <th>Base Product</th>
                 <th>Selling Price</th>
@@ -283,9 +281,13 @@ export const VariantsPage: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                paginatedVariants.map((v) => (
-                  <tr key={v.variantId}>
-                    <td style={{ color: '#64748b' }}>#{v.variantId}</td>
+                paginatedVariants.map((v, index) => {
+                  const rowNumber = (page - 1) * pageSize + index + 1;
+                  return (
+                    <tr key={v.variantId}>
+                      <td className="py-3.5 px-4 text-[13px] font-medium text-slate-500 tabular-nums">
+                        {rowNumber}
+                      </td>
                     <td><span className={styles.skuTag}>{v.sku}</span></td>
                     <td style={{ fontWeight: 600 }}>{v.product?.productName || '-'}</td>
                     <td style={{ fontWeight: 700, color: '#0f172a' }}>
@@ -323,7 +325,8 @@ export const VariantsPage: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

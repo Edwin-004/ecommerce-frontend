@@ -2,6 +2,7 @@ import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
+import { DatePicker } from '../../components/common/DatePicker';
 import {
   productManagementApi,
   type CategoryItem,
@@ -1301,19 +1302,17 @@ export const CreateProductPage: React.FC = () => {
             >
               <div className={styles.inputGroup} style={{ margin: 0 }}>
                 <label>Expiration Date *</label>
-                <input
-                  type="date"
+                <DatePicker
                   required={isPerishable}
-                  className={styles.inputField}
-                  style={{
-                    borderColor: expiryTouched && !expiryDate ? '#ef4444' : undefined,
-                  }}
                   value={expiryDate}
                   onChange={(e) => {
                     setExpiryDate(e.target.value);
                     if (!expiryTouched) setExpiryTouched(true);
                   }}
                   onBlur={() => setExpiryTouched(true)}
+                  inputStyle={{
+                    borderColor: expiryTouched && !expiryDate ? '#ef4444' : undefined,
+                  }}
                 />
                 {expiryTouched && !expiryDate && (
                   <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1324,9 +1323,7 @@ export const CreateProductPage: React.FC = () => {
 
               <div className={styles.inputGroup} style={{ margin: 0 }}>
                 <label>Manufacture Date (Optional)</label>
-                <input
-                  type="date"
-                  className={styles.inputField}
+                <DatePicker
                   value={manufactureDate}
                   onChange={(e) => setManufactureDate(e.target.value)}
                 />

@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
+import { BackButton } from "../../components/common/BackButton";
 import {
   FiSave,
   FiPlus,
@@ -165,11 +166,12 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
       <div className="modal-dialog modal-dialog-centered modal-lg">
         <div className="modal-content border-0 shadow-lg rounded-4">
           {/* Header */}
-          <div className="modal-header px-4 py-3">
+          <div className="modal-header px-4 py-3 d-flex align-items-center gap-3">
+            <BackButton onClick={onClose} disabled={saving} />
             <div>
               <h5
                 id="categoryModalTitle"
-                className="modal-title fw-bold mb-1"
+                className="modal-title fw-bold mb-0"
               >
                 {editingId !== null
                   ? "Edit Category"
@@ -182,14 +184,6 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
                   : "Create a category and optionally add subcategories"}
               </small>
             </div>
-
-            <button
-              type="button"
-              className="btn-close"
-              aria-label="Close"
-              onClick={onClose}
-              disabled={saving}
-            />
           </div>
 
           {/* Form */}

@@ -1,4 +1,3 @@
-import { BackButton } from '../../components/common/BackButton';
 import { useState } from 'react';
 import { 
   FiDownload, 
@@ -12,6 +11,7 @@ import {
   FiTruck
 } from 'react-icons/fi';
 import styles from './ReportsPage.module.css';
+import { DatePicker } from '../../components/common/DatePicker';
 import api from '../../utils/axiosConfig';
 
 // Helper to get local date string YYYY-MM-DD
@@ -50,6 +50,7 @@ export const ReportsPage = () => {
   const [downloadingFormat, setDownloadingFormat] = useState<string>('pdf');
   const [downloadTitle, setDownloadTitle] = useState<string>('');
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+  const [emptyDataNotice, setEmptyDataNotice] = useState<string | null>(null);
 
   // Validation: Daily Product Sales
   const getDailySalesError = (): string | null => {
@@ -63,6 +64,10 @@ export const ReportsPage = () => {
     }
     if (salesStartDate > salesEndDate) {
       return 'Start date cannot be after End date (End date must be on or after Start date).';
+    }
+    const diffDays = (new Date(salesEndDate).getTime() - new Date(salesStartDate).getTime()) / (1000 * 3600 * 24);
+    if (diffDays > 365) {
+      return 'Date range cannot exceed 1 year (365 days) for report generation.';
     }
     return null;
   };
@@ -81,6 +86,10 @@ export const ReportsPage = () => {
     if (refundStartDate > refundEndDate) {
       return 'Start date cannot be after End date (End date must be on or after Start date).';
     }
+    const diffDays = (new Date(refundEndDate).getTime() - new Date(refundStartDate).getTime()) / (1000 * 3600 * 24);
+    if (diffDays > 365) {
+      return 'Date range cannot exceed 1 year (365 days) for report generation.';
+    }
     return null;
   };
   const refundError = getRefundError();
@@ -97,6 +106,10 @@ export const ReportsPage = () => {
     }
     if (fulfillmentStartDate > fulfillmentEndDate) {
       return 'Start date cannot be after End date (End date must be on or after Start date).';
+    }
+    const diffDays = (new Date(fulfillmentEndDate).getTime() - new Date(fulfillmentStartDate).getTime()) / (1000 * 3600 * 24);
+    if (diffDays > 365) {
+      return 'Date range cannot exceed 1 year (365 days) for report generation.';
     }
     return null;
   };
@@ -133,6 +146,9 @@ export const ReportsPage = () => {
       const response = await api.get(`/reports${path}`, { 
         responseType: 'blob'
       });
+
+      const totalCountHeader = response.headers?.['x-total-count'];
+      const recordCount = totalCountHeader !== undefined && totalCountHeader !== null ? parseInt(totalCountHeader, 10) : null;
       
       const blob = new Blob([response.data], { 
         type: exportFormat === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
@@ -149,9 +165,16 @@ export const ReportsPage = () => {
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
 
-      // Trigger success feedback
-      setDownloadSuccess(`${reportTitle} (${exportFormat.toUpperCase()})`);
-      setTimeout(() => setDownloadSuccess(null), 3500);
+      // Trigger success feedback or zero-record notice
+      if (recordCount === 0) {
+        setDownloadSuccess(null);
+        setEmptyDataNotice(`သတိပေးချက်- ရွေးချယ်ထားသော ကာလအတွင်း အချက်အလက် မရှိပါ (Notice: No records found for ${reportTitle}. An empty report template was downloaded.)`);
+        setTimeout(() => setEmptyDataNotice(null), 6000);
+      } else {
+        setEmptyDataNotice(null);
+        setDownloadSuccess(`${reportTitle} (${exportFormat.toUpperCase()})`);
+        setTimeout(() => setDownloadSuccess(null), 3500);
+      }
     } catch (error: any) {
       console.error('Failed to download report', error);
       const status = error.response?.status;
@@ -182,12 +205,9 @@ export const ReportsPage = () => {
   return (
     <div className={styles.pageContainer}>
       <header className={styles.headerSection}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <BackButton fallbackUrl="/admin/dashboard" />
-          <div className={styles.titleArea}>
-            <h1>Reports & Analytics</h1>
-            <p>Generate and export comprehensive insights for your e-commerce operations.</p>
-          </div>
+        <div className={styles.titleArea}>
+          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Reports & Analytics</h1>
+          <p className="text-xs text-slate-500">Generate and export comprehensive insights for your e-commerce operations.</p>
         </div>
       </header>
 
@@ -205,23 +225,24 @@ export const ReportsPage = () => {
           <div className={styles.inputGroup}>
             <div className={styles.dateInputWrapper}>
               <span className={styles.inputLabel}>Start Date</span>
-              <input 
-                type="date" 
-                className={`${styles.styledInput} ${dailySalesError && (!salesStartDate || salesStartDate > salesEndDate || salesStartDate > todayStr) ? styles.inputError : ''}`} 
-                value={salesStartDate} 
+              <DatePicker
+                inputClassName={styles.styledInput}
+                className={dailySalesError && (!salesStartDate || salesStartDate > salesEndDate || salesStartDate > todayStr) ? styles.inputError : ''}
+                value={salesStartDate}
                 max={salesEndDate && salesEndDate < todayStr ? salesEndDate : todayStr}
-                onChange={(e) => setSalesStartDate(e.target.value)} 
+                onChange={(e) => setSalesStartDate(e.target.value)}
               />
             </div>
             <div className={styles.dateInputWrapper}>
               <span className={styles.inputLabel}>End Date</span>
-              <input 
-                type="date" 
-                className={`${styles.styledInput} ${dailySalesError && (!salesEndDate || salesStartDate > salesEndDate || salesEndDate > todayStr) ? styles.inputError : ''}`} 
-                value={salesEndDate} 
+              <DatePicker
+                align="right"
+                inputClassName={styles.styledInput}
+                className={dailySalesError && (!salesEndDate || salesStartDate > salesEndDate || salesEndDate > todayStr) ? styles.inputError : ''}
+                value={salesEndDate}
                 min={salesStartDate || undefined}
                 max={todayStr}
-                onChange={(e) => setSalesEndDate(e.target.value)} 
+                onChange={(e) => setSalesEndDate(e.target.value)}
               />
             </div>
           </div>
@@ -377,23 +398,24 @@ export const ReportsPage = () => {
           <div className={styles.inputGroup}>
             <div className={styles.dateInputWrapper}>
               <span className={styles.inputLabel}>Start Date</span>
-              <input 
-                type="date" 
-                className={`${styles.styledInput} ${refundError && (!refundStartDate || refundStartDate > refundEndDate || refundStartDate > todayStr) ? styles.inputError : ''}`} 
-                value={refundStartDate} 
+              <DatePicker
+                inputClassName={styles.styledInput}
+                className={refundError && (!refundStartDate || refundStartDate > refundEndDate || refundStartDate > todayStr) ? styles.inputError : ''}
+                value={refundStartDate}
                 max={refundEndDate && refundEndDate < todayStr ? refundEndDate : todayStr}
-                onChange={(e) => setRefundStartDate(e.target.value)} 
+                onChange={(e) => setRefundStartDate(e.target.value)}
               />
             </div>
             <div className={styles.dateInputWrapper}>
               <span className={styles.inputLabel}>End Date</span>
-              <input 
-                type="date" 
-                className={`${styles.styledInput} ${refundError && (!refundEndDate || refundStartDate > refundEndDate || refundEndDate > todayStr) ? styles.inputError : ''}`} 
-                value={refundEndDate} 
+              <DatePicker
+                align="right"
+                inputClassName={styles.styledInput}
+                className={refundError && (!refundEndDate || refundStartDate > refundEndDate || refundEndDate > todayStr) ? styles.inputError : ''}
+                value={refundEndDate}
                 min={refundStartDate || undefined}
                 max={todayStr}
-                onChange={(e) => setRefundEndDate(e.target.value)} 
+                onChange={(e) => setRefundEndDate(e.target.value)}
               />
             </div>
           </div>
@@ -488,23 +510,24 @@ export const ReportsPage = () => {
           <div className={styles.inputGroup}>
             <div className={styles.dateInputWrapper}>
               <span className={styles.inputLabel}>Start Date</span>
-              <input 
-                type="date" 
-                className={`${styles.styledInput} ${fulfillmentError && (!fulfillmentStartDate || fulfillmentStartDate > fulfillmentEndDate || fulfillmentStartDate > todayStr) ? styles.inputError : ''}`} 
-                value={fulfillmentStartDate} 
+              <DatePicker
+                inputClassName={styles.styledInput}
+                className={fulfillmentError && (!fulfillmentStartDate || fulfillmentStartDate > fulfillmentEndDate || fulfillmentStartDate > todayStr) ? styles.inputError : ''}
+                value={fulfillmentStartDate}
                 max={fulfillmentEndDate && fulfillmentEndDate < todayStr ? fulfillmentEndDate : todayStr}
-                onChange={(e) => setFulfillmentStartDate(e.target.value)} 
+                onChange={(e) => setFulfillmentStartDate(e.target.value)}
               />
             </div>
             <div className={styles.dateInputWrapper}>
               <span className={styles.inputLabel}>End Date</span>
-              <input 
-                type="date" 
-                className={`${styles.styledInput} ${fulfillmentError && (!fulfillmentEndDate || fulfillmentStartDate > fulfillmentEndDate || fulfillmentEndDate > todayStr) ? styles.inputError : ''}`} 
-                value={fulfillmentEndDate} 
+              <DatePicker
+                align="right"
+                inputClassName={styles.styledInput}
+                className={fulfillmentError && (!fulfillmentEndDate || fulfillmentStartDate > fulfillmentEndDate || fulfillmentEndDate > todayStr) ? styles.inputError : ''}
+                value={fulfillmentEndDate}
                 min={fulfillmentStartDate || undefined}
                 max={todayStr}
-                onChange={(e) => setFulfillmentEndDate(e.target.value)} 
+                onChange={(e) => setFulfillmentEndDate(e.target.value)}
               />
             </div>
           </div>
@@ -596,6 +619,14 @@ export const ReportsPage = () => {
         <div className={styles.successToast}>
           <FiCheckCircle className={styles.successIcon} />
           <span>{downloadSuccess} ready & downloaded!</span>
+        </div>
+      )}
+
+      {/* Empty Data Alert Toast */}
+      {emptyDataNotice && (
+        <div className={styles.warningToast}>
+          <FiAlertCircle className={styles.warningToastIcon} />
+          <span>{emptyDataNotice}</span>
         </div>
       )}
     </div>

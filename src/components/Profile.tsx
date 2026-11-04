@@ -1,11 +1,11 @@
-import { BackButton } from './common/BackButton';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../store';
 import api from '../utils/axiosConfig';
 import styles from './Profile.module.css';
+import { BackButton } from './common/BackButton';
 import {
-  FiUser,
   FiLock,
   FiSave,
   FiCheckCircle,
@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fi';
 
 export const Profile = () => {
+  const navigate = useNavigate();
   const { username, email, role } = useSelector(
     (state: RootState) => state.auth
   );
@@ -28,6 +29,21 @@ export const Profile = () => {
     text: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Keyboard shortcut: Pressing Escape (outside of inputs) navigates back safely
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && document.activeElement?.tagName !== 'INPUT') {
+        if (window.history.state && window.history.state.idx > 0) {
+          navigate(-1);
+        } else {
+          navigate('/admin/dashboard');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
 
   const formatRole = (roleStr: string | null) => {
     if (roleStr === 'ADMIN') return 'System Admin';
@@ -83,10 +99,10 @@ export const Profile = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <BackButton fallbackUrl="/admin/dashboard" />
           <div className={styles.titleArea}>
-            <h1>
-              <FiUser /> My Profile
+            <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
+              My Profile
             </h1>
-            <p>View your personal profile details and security settings</p>
+            <p className="text-xs text-slate-500">View your personal profile details and security settings</p>
           </div>
         </div>
       </div>

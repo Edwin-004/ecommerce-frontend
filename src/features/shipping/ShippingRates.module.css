@@ -16,9 +16,9 @@
   background: #2563eb;
   color: #ffffff;
   border: none;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 9px 18px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 16px;
   border-radius: 10px;
   display: inline-flex;
   align-items: center;
@@ -26,6 +26,7 @@
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
 }
 
 .primaryAddBtn:hover {
@@ -102,6 +103,7 @@
 .actionGroup {
   display: flex;
   align-items: center;
+  justify-content: center;
   white-space: nowrap;
 }
 
@@ -172,7 +174,7 @@
   display: inline-block;
 }
 
-/* Loading နှင့် Empty State အတွက် */
+/* Loading á€”á€¾á€„á€·á€º Empty State á€¡á€á€½á€€á€º */
 .stateCell {
   text-align: center;
   padding: 40px 16px !important;
@@ -180,7 +182,7 @@
   font-size: 14px;
 }
 
-/* Error Banner အတွက် */
+/* Error Banner á€¡á€á€½á€€á€º */
 .errorBanner {
   background-color: #fef2f2;
   border: 1px solid #fecaca;

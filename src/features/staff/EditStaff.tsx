@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BackButton } from '../../components/common/BackButton';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../utils/axiosConfig';
 import './EditStaff.css';
@@ -64,8 +65,13 @@ export const EditStaff: React.FC = () => {
     return (
         <div className="edit-staff-container">
             <div className="edit-staff-card">
-                <h2 className="edit-staff-title">Edit Staff Member</h2>
-                <p className="edit-staff-subtitle">Update information for staff ID: {id}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+                    <BackButton fallbackUrl="/admin/staff" />
+                    <div>
+                        <h2 className="edit-staff-title" style={{ margin: 0 }}>Edit Staff Member</h2>
+                        <p className="edit-staff-subtitle" style={{ margin: 0 }}>Update information for staff ID: {id}</p>
+                    </div>
+                </div>
 
                 <form onSubmit={handleSubmit} className="edit-staff-form">
                     <div className="form-group">

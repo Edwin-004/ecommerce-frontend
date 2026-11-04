@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BackButton } from '../../components/common/BackButton';
 import { useUpdateZoneRateMutation } from './shippingApi';
 import styles from './EditZoneModal.module.css';
 
@@ -86,11 +87,9 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
-        <div className={styles.modalHeader}>
-          <h3>Edit Zone & Rates</h3>
-          <button onClick={onClose} className={styles.closeBtn}>
-            &times;
-          </button>
+        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
+          <BackButton onClick={onClose} />
+          <h3 style={{ margin: 0 }}>Edit Zone & Rates</h3>
         </div>
 
         {errorMessage && (

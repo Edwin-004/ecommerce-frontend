@@ -91,7 +91,7 @@ export const AdminDashboard = () => {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const dateKey = d.toISOString().split("T")[0]; // YYYY-MM-DD
-      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const label = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 
       list.push({
         dateKey,

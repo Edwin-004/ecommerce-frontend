@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BackButton } from '../../components/common/BackButton';
 import { toast } from 'react-toastify';
 import {
   useGetLocationsQuery,
@@ -162,11 +163,9 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
-        <div className={styles.modalHeader}>
-          <h3>Add New Delivery Zone</h3>
-          <button onClick={onClose} className={styles.closeBtn}>
-            &times;
-          </button>
+        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
+          <BackButton onClick={onClose} />
+          <h3 style={{ margin: 0 }}>Add New Delivery Zone</h3>
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>

@@ -1,9 +1,7 @@
-import { BackButton } from '../../components/common/BackButton';
 import { useMemo, useState } from 'react';
 import { useGetZoneGroupsQuery } from './shippingApi';
 import styles from './ShippingRates.module.css';
 import {
-  FiTruck,
   FiPlus,
   FiEdit2,
   FiCheckCircle,
@@ -53,18 +51,15 @@ export const ShippingRates = () => {
     <div className={styles.container}>
       {/* Header Section */}
       <div className={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <BackButton fallbackUrl="/admin/dashboard" />
-          <div className={styles.titleArea}>
-          <h1>
-            <FiTruck /> Delivery Zones & Rates
+        <div className={styles.titleArea}>
+          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
+            Delivery Zones & Rates
           </h1>
-          <p>
+          <p className="text-xs text-slate-500">
             Configure regional delivery zones, shipping fees, and estimated
             transit times
           </p>
         </div>
-      </div>
 
         <button
           type="button"
@@ -89,35 +84,37 @@ export const ShippingRates = () => {
 
       {/* Table Section */}
       <div className={styles.tableContainer}>
-        <table className={styles.zoneTable}>
+        <table className={`${styles.zoneTable} ${displayZoneGroups.length > 0 ? 'table-with-data' : 'table-empty'}`}>
           <thead>
             <tr>
+              <th className="w-14 py-3 px-4 text-center text-xs font-medium text-slate-400 uppercase tracking-wider" style={{ textAlign: 'center' }}>No.</th>
               <th>Zone Name</th>
               <th>Region / City</th>
               <th>Townships</th>
               <th>Current Fee</th>
               <th>Est. Days</th>
               <th>Status</th>
-              <th>Actions</th>
+              <th className="text-center" style={{ textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} className={styles.stateCell}>
+                <td colSpan={8} className={styles.stateCell}>
                   Loading delivery zones...
                 </td>
               </tr>
             ) : displayZoneGroups.length === 0 ? (
               <tr>
-                <td colSpan={7} className={styles.stateCell}>
+                <td colSpan={8} className={styles.stateCell}>
                   No delivery zones found. Click <strong>"Add New Zone"</strong>{' '}
                   to create one.
                 </td>
               </tr>
             ) : (
-              displayZoneGroups.map((zone) => (
+              displayZoneGroups.map((zone, index) => (
                 <tr key={`${zone.zoneName}_${zone.city}`}>
+                  <td className="text-center" style={{ fontWeight: 600, color: '#64748b', textAlign: 'center' }}>{index + 1}</td>
                   <td>
                     <div style={{ fontWeight: 500 }}>{zone.zoneName}</div>
                     <div className={styles.subText}>{zone.zoneCode}</div>
@@ -163,7 +160,7 @@ export const ShippingRates = () => {
                       {zone.status}
                     </span>
                   </td>
-                  <td>
+                  <td className="text-center" style={{ textAlign: 'center' }}>
                     <div className={styles.actionGroup}>
                       <button
                         type="button"
@@ -180,18 +177,19 @@ export const ShippingRates = () => {
             )}
           </tbody>
         </table>
-        <AddNewZoneModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-        />
-        {editingZone && (
-          <EditZoneModal
-            isOpen={!!editingZone}
-            zone={editingZone}
-            onClose={() => setEditingZone(null)}
-          />
-        )}
       </div>
+
+      <AddNewZoneModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+      {editingZone && (
+        <EditZoneModal
+          isOpen={!!editingZone}
+          zone={editingZone}
+          onClose={() => setEditingZone(null)}
+        />
+      )}
     </div>
   );
 };

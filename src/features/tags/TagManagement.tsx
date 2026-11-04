@@ -1,4 +1,3 @@
-import { BackButton } from '../../components/common/BackButton';
 import { useCallback, useEffect, useState } from "react";
 import { isAxiosError } from "axios";
 
@@ -9,7 +8,6 @@ import type {
   TagResponseDto,
 } from "../../types/tag";
 import {
-  FiTag,
   FiPlus,
   FiCheck,
   FiEdit2,
@@ -24,6 +22,7 @@ import {
 } from "react-icons/fi";
 
 import "./TagManagement.css";
+import { formatDateTime } from "../../utils/dateUtils";
 
 const PAGE_SIZE = 10;
 
@@ -45,15 +44,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 function formatDate(date?: string | null) {
-  if (!date) return "-";
-
-  return new Date(date).toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDateTime(date);
 }
 
 export default function TagManagement() {
@@ -244,22 +235,15 @@ export default function TagManagement() {
     <div className="tag-page">
       {/* 1. Header (Catalogue Eyebrow + Title + Subtitle + Add Tag Button) */}
       <div className="tag-page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <BackButton fallbackUrl="/admin/dashboard" />
-          <div className="tag-header-left">
-          <div className="tag-eyebrow">
-            CATALOGUE
-          </div>
-
-          <h1>
-            <FiTag style={{ marginRight: 8, verticalAlign: 'middle' }} /> Tag Management
+        <div className="tag-header-left">
+          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
+            Tag Management
           </h1>
 
-          <p>
+          <p className="text-xs text-slate-500">
             Create and manage product tags across your inventory.
           </p>
         </div>
-      </div>
 
       <button
           type="button"
@@ -386,14 +370,14 @@ export default function TagManagement() {
         </div>
 
         <div className="table-container">
-          <table className="tag-table">
+          <table className={`tag-table ${tags.length > 0 ? 'table-with-data' : 'table-empty'}`}>
             <thead>
               <tr>
-                <th className="id-column">ID</th>
-                <th>TAG</th>
-                <th>CREATED</th>
-                <th>LAST MODIFIED</th>
-                <th className="actions-column">ACTIONS</th>
+                <th className="id-column text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
+                <th style={{ minWidth: '180px', textAlign: 'left' }}>TAG</th>
+                <th style={{ minWidth: '160px', textAlign: 'left' }}>CREATED</th>
+                <th style={{ minWidth: '160px', textAlign: 'left' }}>LAST MODIFIED</th>
+                <th className="actions-column text-center" style={{ width: '180px', textAlign: 'center' }}>ACTIONS</th>
               </tr>
             </thead>
 
@@ -446,10 +430,10 @@ export default function TagManagement() {
                   </td>
                 </tr>
               ) : (
-                tags.map((tag) => (
+                tags.map((tag, index) => { const rowNumber = page * PAGE_SIZE + index + 1; return (
                   <tr key={tag.tagId}>
-                    <td className="id-cell">
-                      #{tag.tagId}
+                    <td className="id-cell" style={{ textAlign: 'center' }}>
+                      {rowNumber}
                     </td>
 
                     <td>
@@ -496,8 +480,8 @@ export default function TagManagement() {
                       </div>
                     </td>
 
-                    <td>
-                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                    <td className="text-center" style={{ textAlign: 'center' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
                         <button
                           type="button"
                           className="table-btn-edit"
@@ -529,7 +513,8 @@ export default function TagManagement() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

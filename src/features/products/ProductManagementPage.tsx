@@ -1,4 +1,3 @@
-import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
@@ -395,6 +394,11 @@ export const ProductManagementPage: React.FC = () => {
     setExportSuccessMessage(null);
 
     try {
+      if (searchQuery && searchQuery.trim().length > 100) {
+        alert('Search query cannot exceed 100 characters for export.');
+        return;
+      }
+
       const catObj = categories.find((c) => c.categoryName === selectedCategory);
       const catId = catObj ? catObj.categoryId : undefined;
 
@@ -607,30 +611,27 @@ export const ProductManagementPage: React.FC = () => {
 
       {/* 1. Header (Catalogue Tag + Title + Subtitle + Add Product Button) */}
       <div className={styles.managementHeaderRow}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <BackButton fallbackUrl="/admin/dashboard" />
-          <div className={styles.managementHeaderLeft}>
-            <div className={styles.catalogueSmallLabel}>CATALOGUE</div>
-            <h1>Product Management</h1>
-            <p>Manage inventory, pricing, and product attributes.</p>
-          </div>
+        <div className={styles.managementHeaderLeft}>
+          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Product Management</h1>
+          <p className="text-xs text-slate-500">Manage inventory, pricing, and product attributes.</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
             type="button"
             style={{
-              padding: '9px 16px',
-              fontSize: '13px',
-              fontWeight: 600,
+              padding: '8px 14px',
+              fontSize: '12px',
+              fontWeight: 500,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              border: '1px solid #c7d2fe',
-              background: '#eef2ff',
-              color: '#4338ca',
-              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              background: '#ffffff',
+              color: '#475569',
+              borderRadius: '10px',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              transition: 'all 0.18s ease-in-out',
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
             }}
             onClick={() => setShowExcelImportModal(true)}
             title="Upload products in bulk from Excel (.xlsx)"
@@ -675,6 +676,7 @@ export const ProductManagementPage: React.FC = () => {
             <input
               type="text"
               placeholder="Search name, brand"
+              maxLength={100}
               className={styles.fieldInputSearch}
               value={searchQuery}
               onChange={(e) => {
@@ -847,27 +849,30 @@ export const ProductManagementPage: React.FC = () => {
 
       {/* 4. Products Table */}
       <div className={styles.tableWrapper}>
-        <table className={styles.productTable}>
+        <table className={`${styles.productTable} ${paginatedProducts.length > 0 ? 'table-with-data' : 'table-empty'}`}>
           <thead>
             <tr>
+              <th className="w-14 py-3 px-4 text-center text-xs font-medium text-slate-400 uppercase tracking-wider" style={{ textAlign: 'center' }}>
+                No.
+              </th>
               <th>PRODUCT</th>
               <th>SKU</th>
               <th>PRICE</th>
               <th>STOCK</th>
               <th>STATUS</th>
-              <th style={{ textAlign: 'center' }}>ACTIONS</th>
+              <th className="text-center" style={{ textAlign: 'center' }}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '36px' }}>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '36px' }}>
                   Loading catalog products...
                 </td>
               </tr>
             ) : paginatedProducts.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: '0', border: 'none' }}>
+                <td colSpan={7} style={{ padding: '0', border: 'none' }}>
                   <div className={styles.emptyStateBox}>
                     <div className={styles.emptyStateSmallTag}>NOTHING HERE YET</div>
                     <h3 className={styles.emptyStateBigTitle}>No products found</h3>
@@ -876,9 +881,12 @@ export const ProductManagementPage: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              paginatedProducts.map((p) => {
+              paginatedProducts.map((p, index) => {
                 return (
                   <tr key={p.productId}>
+                    <td className="w-14 py-3 px-4 text-xs font-medium text-slate-500 whitespace-nowrap text-center" style={{ textAlign: 'center' }}>
+                      {(currentPage - 1) * itemsPerPage + index + 1}
+                    </td>
                     <td>
                       <div className={styles.productCell}>
                         {p.imageUrl ? (
@@ -899,7 +907,7 @@ export const ProductManagementPage: React.FC = () => {
                           <div style={{ fontWeight: 600, color: '#0f172a' }}>{p.productName}</div>
                           {p.categoryName && (
                             <div style={{ fontSize: '11px', color: '#64748b' }}>
-                              {p.categoryName} • {p.brandName || 'Standard'}
+                              {p.categoryName} â€¢ {p.brandName || 'Standard'}
                             </div>
                           )}
                         </div>
@@ -918,10 +926,10 @@ export const ProductManagementPage: React.FC = () => {
                     </td>
                     <td>
                       <span className={styles.statusPillActive}>
-                        ● {p.status?.toLowerCase() === 'active' ? 'Active' : p.status || 'Active'}
+                        â— {p.status?.toLowerCase() === 'active' ? 'Active' : p.status || 'Active'}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td className="text-center" style={{ textAlign: 'center' }}>
                       <div className="table-action-group">
                         <button
                           type="button"
@@ -1260,7 +1268,7 @@ export const ProductManagementPage: React.FC = () => {
               </div>
               <div>
                 <strong style={{ color: '#64748b' }}>Status:</strong>{' '}
-                <span className={styles.statusPillActive}>● {viewProduct.status}</span>
+                <span className={styles.statusPillActive}>â— {viewProduct.status}</span>
               </div>
               {viewProduct.description && (
                 <div>
@@ -1299,7 +1307,7 @@ export const ProductManagementPage: React.FC = () => {
                               {v.sku}
                             </span>
                             <span className={styles.statusPillActive} style={{ fontSize: '11px' }}>
-                              ● {v.status}
+                              â— {v.status}
                             </span>
                           </div>
                           {/* Attribute Badges (Size, Color, etc.) */}
@@ -1381,7 +1389,7 @@ export const ProductManagementPage: React.FC = () => {
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                                   }}
                                 >
-                                  ✕
+                                  âœ•
                                 </button>
                               </div>
                             ))

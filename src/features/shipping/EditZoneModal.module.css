@@ -39,13 +39,13 @@
 .formGroup input[type='text'],
 .formGroup input[type='number'],
 .formGroup select {
-  width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;
+  width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 12px;
 }
 
 .formRow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 .disabledBox {
-  background-color: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px; color: #64748b;
+  background-color: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 12px; color: #64748b;
 }
 
 .townshipChips {
@@ -57,20 +57,20 @@
 }
 
 .checkboxLabel {
-  display: flex; align-items: center; gap: 8px; font-size: 14px; color: #334155; cursor: pointer; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px; font-size: 12px; color: #334155; cursor: pointer; margin-bottom: 12px;
 }
 
 .defaultRateWrapper {
-  background-color: #f0fdfa; padding: 16px; border-radius: 6px; border: 1px dashed #5eead4; margin-top: 12px;
+  background-color: #f0fdfa; padding: 16px; border-radius: 10px; border: 1px dashed #5eead4; margin-top: 12px;
 }
 
 .modalActions {
   display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px;
 }
 
-.cancelBtn { background-color: white; border: 1px solid #cbd5e1; color: #475569; padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; }
-.submitBtn { background-color: #556ee6; color: white; border: none; padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
-.submitBtn:hover { background-color: #485ec4; }
+.cancelBtn { background-color: white; border: 1px solid #cbd5e1; color: #475569; padding: 8px 16px; border-radius: 10px; font-size: 12px; cursor: pointer; }
+.submitBtn { background-color: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 500; cursor: pointer; }
+.submitBtn:hover { background-color: #1d4ed8; }
 .submitBtn:disabled { background-color: #94a3b8; cursor: not-allowed; }
 
-.errorBanner { background-color: #fee2e2; color: #b91c1c; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 14px; }
+.errorBanner { background-color: #fee2e2; color: #b91c1c; padding: 12px; border-radius: 10px; margin-bottom: 16px; font-size: 12px; }

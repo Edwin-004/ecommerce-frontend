@@ -9,12 +9,12 @@ import {
   useGetOrderStatusHistoryQuery,
 } from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
 import styles from './AllOrders.module.css';
+import { DatePicker } from '../../components/common/DatePicker';
+import { formatDate, formatDateTime } from '../../utils/dateUtils';
 import { useEffect, useState, useRef } from 'react';
 import {
-  FiShoppingCart,
   FiChevronLeft,
   FiChevronRight,
-  FiX,
   FiSearch,
 } from 'react-icons/fi';
 
@@ -118,6 +118,11 @@ export const AllOrders = () => {
     try {
       setExportingFormat(format);
       setShowExportMenu(false);
+
+      if (searchTerm && searchTerm.trim().length > 100) {
+        alert('Search query cannot exceed 100 characters for export.');
+        return;
+      }
 
       const token = localStorage.getItem('token');
       const params = new URLSearchParams();
@@ -368,12 +373,11 @@ export const AllOrders = () => {
     <div className={styles.pageContainer}>
       <div className={styles.pageHeader}>
         <div className={styles.headerLeft}>
-          <BackButton fallbackUrl="/admin/dashboard" />
           <div className={styles.titleArea}>
-            <h1>
-              <FiShoppingCart /> All Orders
+            <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
+              All Orders
             </h1>
-            <p>
+            <p className="text-xs text-slate-500">
               Track customer purchases, fulfillment stages, shipments, and
               payment statuses
             </p>
@@ -418,20 +422,21 @@ export const AllOrders = () => {
         </div>
         <div className={styles.rightFilterGroup}>
           <div className={styles.datePickerContainer}>
-            <input
-              type="date"
+            <DatePicker
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className={styles.dateInput}
               title="Start Date"
+              style={{ width: '135px' }}
+              inputStyle={{ border: 'none', padding: '4px 22px 4px 0', fontSize: '12px', background: 'transparent' }}
             />
             <span className={styles.dateSeparator}>-</span>
-            <input
-              type="date"
+            <DatePicker
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className={styles.dateInput}
               title="End Date"
+              align="right"
+              style={{ width: '135px' }}
+              inputStyle={{ border: 'none', padding: '4px 22px 4px 0', fontSize: '12px', background: 'transparent' }}
             />
           </div>
         </div>
@@ -448,6 +453,7 @@ export const AllOrders = () => {
             <input
               type="text"
               placeholder="Search Order No or Customer..."
+              maxLength={100}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={styles.searchInput}
@@ -576,9 +582,10 @@ export const AllOrders = () => {
       {!selectedOrderNo ? (
         /* ==================== View ၁။ Table View (ဘာမှမရွေးထားချိန်) ==================== */
         <div className={styles.tableContainer}>
-          <table className={styles.orderTable}>
+          <table className={`${styles.orderTable} ${filteredOrders.length > 0 ? 'table-with-data' : 'table-empty'}`}>
             <thead>
               <tr>
+                <th className="text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
                 <th>Order No</th>
                 <th>Date</th>
                 <th>Customer</th>
@@ -607,14 +614,17 @@ export const AllOrders = () => {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order: any) => (
+                filteredOrders.map((order: any, index: number) => {
+                  const rowNumber = (currentPage - 1) * pageSize + index + 1;
+                  return (
                   <tr
                     key={order.orderId}
                     onClick={() => setSelectedOrderNo(order.orderNo)}
                     className={styles.tableRow}
                   >
+                    <td className="text-center" style={{ fontWeight: 600, color: '#64748b', textAlign: 'center' }}>{rowNumber}</td>
                     <td style={{ fontWeight: 'bold' }}>{order.orderNo}</td>
-                    <td>{order.createdAt?.split(' ')[0]}</td>
+                    <td>{formatDate(order.createdAt)}</td>
                     <td>{order.customerName}</td>
                     <td>{order.totalAmount?.toLocaleString()} MMK</td>
                     <td>
@@ -650,7 +660,8 @@ export const AllOrders = () => {
                       </span>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -703,7 +714,7 @@ export const AllOrders = () => {
                   </span>
                 </div>
                 <div className={styles.listSubtext}>
-                  {order.orderNo} • {order.createdAt?.split(' ')[0]}
+                  {order.orderNo} • {formatDate(order.createdAt)}
                 </div>
                 <div>
                   Order Status :
@@ -723,16 +734,10 @@ export const AllOrders = () => {
               <p>Loading details...</p>
             ) : orderDetails ? (
               <div>
-                <div className={styles.detailHeader}>
-                  <h3>Order Details: #{orderDetails.orderNo}</h3>
-                  {/* Close Button ထည့်သွင်းခြင်း */}
-                  <button
-                    className={styles.closeBtn}
-                    onClick={() => setSelectedOrderNo(null)}
-                    aria-label="Close details"
-                  >
-                    <FiX size={18} />
-                  </button>
+                <div className={styles.detailHeader} style={{ justifyContent: 'flex-start', gap: '14px' }}>
+                  <BackButton onClick={() => setSelectedOrderNo(null)} label="Back" />
+                  {/* Order Details Header */}
+                  <h3 style={{ margin: 0 }}>Order Details: #{orderDetails.orderNo}</h3>
                 </div>
 
                 {/* --- ဒီနေရာမှစ၍ OrderManagement ၏ Card UI ဖြင့် အစားထိုးထားသည် --- */}
@@ -761,7 +766,7 @@ export const AllOrders = () => {
                       </p>
                       <p className={styles.infoText}>
                         <strong>Date: </strong>
-                        {orderDetails.createdAt}
+                        {formatDateTime(orderDetails.createdAt)}
                       </p>
                     </div>
 
@@ -833,7 +838,7 @@ export const AllOrders = () => {
                                       </span>
                                     </td>
                                     <td className={styles.historyTimeCell}>
-                                      {history.changedAt?.split('T').join(' ')}
+                                      {formatDateTime(history.changedAt)}
                                     </td>
                                     <td className={styles.historyUserCell}>
                                       {history.changedBy || 'System Admin'}
@@ -947,9 +952,7 @@ export const AllOrders = () => {
                               Paid At:
                             </span>
                             <strong className={styles.paymentValue}>
-                              {paymentInfo.paidAt
-                                ? paymentInfo.paidAt.split('T').join(' ')
-                                : '-'}
+                              {paymentInfo.paidAt ? formatDateTime(paymentInfo.paidAt) : '-'}
                             </strong>
                           </div>
                         </div>
@@ -993,11 +996,7 @@ export const AllOrders = () => {
                               Shipped At:
                             </span>
                             <strong className={styles.paymentValue}>
-                              {orderDetails.shipment.shippedAt
-                                ? orderDetails.shipment.shippedAt
-                                    .split('T')
-                                    .join(' ')
-                                : '-'}
+                              {orderDetails.shipment.shippedAt ? formatDateTime(orderDetails.shipment.shippedAt) : '-'}
                             </strong>
                           </div>
                         </div>

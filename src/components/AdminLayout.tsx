@@ -19,7 +19,8 @@ export const AdminLayout = () => {
   };
 
   return (
-    <div className={styles.layout}>
+    /* Root Layout: flex h-screen w-screen overflow-hidden bg-slate-50/50 */
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50/50">
       {/* Mobile Drawer Overlay */}
       {mobileMenuOpen && (
         <div
@@ -28,6 +29,7 @@ export const AdminLayout = () => {
         />
       )}
 
+      {/* Sidebar: Fixed width / collapsible, independent internal scroll */}
       <div
         className={`${styles.sidebarWrapper} ${
           isSidebarCollapsed ? styles.sidebarWrapperCollapsed : ""
@@ -40,19 +42,20 @@ export const AdminLayout = () => {
         />
       </div>
 
-      <div
-        className={`${styles.main} ${
-          isSidebarCollapsed ? styles.mainCollapsed : ""
-        }`}
-      >
-        <Topbar
-          onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
-          isMobileMenuOpen={mobileMenuOpen}
-        />
+      {/* Main Area Wrapper: flex-1 flex flex-col h-screen overflow-hidden min-w-0 */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 bg-[#f8fafc]">
+        {/* Top Header Component: h-14 bg-white border-b border-slate-100 px-6 flex items-center justify-between sticky top-0 z-30 */}
+        <header className="h-14 bg-white border-b border-slate-100 px-6 flex items-center justify-between sticky top-0 z-30 flex-shrink-0">
+          <Topbar
+            onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+            isMobileMenuOpen={mobileMenuOpen}
+          />
+        </header>
 
-        <div className={styles.content}>
+        {/* Page Content Scroll Container: flex-1 overflow-y-auto overflow-x-hidden p-6 */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">
           <Outlet />
-        </div>
+        </main>
       </div>
     </div>
   );

@@ -68,6 +68,9 @@ export const inventoryApi = {
       columns?: string[];
     }
   ): Promise<Blob> => {
+    if (params.search && params.search.trim().length > 100) {
+      throw new Error('Search query cannot exceed 100 characters.');
+    }
     const token = localStorage.getItem('token');
     const query = new URLSearchParams();
     if (params.tabFilter) {
