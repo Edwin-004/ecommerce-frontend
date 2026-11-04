@@ -117,8 +117,8 @@ export const EditStaff: React.FC = () => {
                 roleName: formData.roleName === 'ORDER_STAFF' ? 'SALES_STAFF' : formData.roleName
             };
 
-            // Only send password if admin entered one
-            if (formData.password && formData.password.trim()) {
+            // Only send password if admin entered one (and not for super admin)
+            if (!isTargetSuperAdmin && formData.password && formData.password.trim()) {
                 updatePayload.password = formData.password.trim();
             }
 
@@ -257,23 +257,40 @@ export const EditStaff: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="form-group">
-                        <label>Reset Password (Optional)</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            disabled={isEditingRestricted}
-                            placeholder={isEditingRestricted ? "Password modification restricted" : "Leave blank to keep current password"}
-                            autoComplete="new-password"
-                        />
-                        <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                            {isEditingRestricted 
-                                ? "Password reset is restricted for this administrator."
-                                : "Only enter a new password if you want to reset this staff member's password. They will be required to change it on their next login."}
-                        </small>
-                    </div>
+                    {/* Reset Password is only for subordinate staff members. Super Admin manages password via Profile > Change Password */}
+                    {!isTargetSuperAdmin ? (
+                        <div className="form-group">
+                            <label>Reset Password (Optional)</label>
+                            <input
+                                type="password"
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                disabled={isEditingRestricted}
+                                placeholder={isEditingRestricted ? "Password modification restricted" : "Leave blank to keep current password"}
+                                autoComplete="new-password"
+                            />
+                            <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                                {isEditingRestricted 
+                                    ? "Password reset is restricted for this administrator."
+                                    : "Only enter a new password if you want to reset this staff member's password. They will be required to change it on their next login."}
+                            </small>
+                        </div>
+                    ) : (
+                        <div className="form-group">
+                            <label>Password Management</label>
+                            <div style={{
+                                padding: '10px 14px',
+                                backgroundColor: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                color: '#475569'
+                            }}>
+                                🔒 <strong>Super Administrator Security:</strong> The primary Super Administrator's password cannot be reset from this staff management form. Please use the <strong>Profile &gt; Change Password</strong> settings to update your password securely.
+                            </div>
+                        </div>
+                    )}
 
                     <div className="form-actions">
                         <button type="button" className="btn-cancel" onClick={() => navigate('/admin/staff')}>

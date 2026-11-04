@@ -49,9 +49,34 @@ export const StaffList: React.FC = () => {
         }
     };
 
+    const [, setAvatarVersion] = useState(0);
+
     useEffect(() => {
         fetchStaff();
+
+        // Listen for avatar updates from Profile or other tabs
+        const onAvatarUpdate = () => setAvatarVersion(v => v + 1);
+        window.addEventListener('avatarChange', onAvatarUpdate);
+        window.addEventListener('storage', onAvatarUpdate);
+        return () => {
+            window.removeEventListener('avatarChange', onAvatarUpdate);
+            window.removeEventListener('storage', onAvatarUpdate);
+        };
     }, []);
+
+    const getStaffAvatar = (staff: StaffResponseDTO): string | null => {
+        const isSelf = currentUser.email?.toLowerCase() === staff.email?.toLowerCase() || 
+                       currentUser.username?.toLowerCase() === staff.userName?.toLowerCase();
+        return (
+            localStorage.getItem(`avatar_${staff.email?.toLowerCase()}`) ||
+            localStorage.getItem(`avatar_${staff.email}`) ||
+            localStorage.getItem(`avatar_${staff.userName?.toLowerCase()}`) ||
+            localStorage.getItem(`avatar_${staff.userName}`) ||
+            localStorage.getItem(`avatar_${staff.userId}`) ||
+            (isSelf ? localStorage.getItem('currentUserAvatar') : null) ||
+            null
+        );
+    };
 
     useEffect(() => {
         setCurrentPage(1);
@@ -269,8 +294,7 @@ export const StaffList: React.FC = () => {
                         <thead>
                             <tr>
                                 <th style={{ width: '60px', textAlign: 'center' }}>No.</th>
-                                <th>User Name</th>
-                                <th>Email</th>
+                                <th>Staff / Administrator</th>
                                 <th>Role</th>
                                 <th style={{ textAlign: 'center' }}>Status</th>
                                 <th style={{ textAlign: 'center' }}>Created Date</th>
@@ -289,71 +313,127 @@ export const StaffList: React.FC = () => {
                                     const canManageTarget = isCurrentSuperAdmin || !isAdminRole;
 
                                     return (
-                                    <tr key={staff.userId}>
-                                        {/* Row Number Cell */}
-                                        <td className="text-center" style={{ textAlign: 'center', fontWeight: 600, color: '#64748b' }}>{rowNumber}</td>
-                                        <td style={{ fontWeight: '500' }}>{staff.userName}</td>
-                                        <td>{staff.email}</td>
-                                        <td>
-                                            {renderRoleBadge(staff.roleName, staff.email)}
-                                        </td>
-                                        <td className="text-center" style={{ textAlign: 'center' }}>
-                                            <span className={`staff-badge ${staff.status === 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'}`}>
-                                                {staff.status === 'ACTIVE' ? 'Active' : 'Inactive'}
-                                            </span>
-                                        </td>
-                                        <td className="text-center" style={{ textAlign: 'center' }}>{formatDateTimeDMY(staff.createdAt)}</td>
-                                        <td className="text-center" style={{ textAlign: 'center' }}>
-                                            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'nowrap' }}>
-                                                <button
-                                                    type="button"
-                                                    className="btn-action-edit"
-                                                    onClick={() => handleEdit(staff.userId)}
-                                                    title="Edit account details"
-                                                >
-                                                    <FiEdit2 size={13} style={{ flexShrink: 0 }} />
-                                                    <span>Edit</span>
-                                                </button>
+                                        <tr 
+                                            key={staff.userId}
+                                            style={isSuperAdminUser ? { 
+                                                background: 'rgba(254, 243, 199, 0.28)',
+                                                borderLeft: '3px solid #f59e0b'
+                                            } : undefined}
+                                        >
+                                            {/* Row Number Cell */}
+                                            <td className="text-center" style={{ textAlign: 'center', fontWeight: 600, color: '#64748b' }}>
+                                                {rowNumber}
+                                            </td>
 
-                                                {staff.status === 'ACTIVE' ? (
+                                            {/* Staff Name & Email with Avatar */}
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    {getStaffAvatar(staff) ? (
+                                                        <div className="avatar-mini avatar-mini-has-img" title={staff.userName}>
+                                                            <img src={getStaffAvatar(staff)!} alt={staff.userName} className="avatar-mini-img" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className={`avatar-mini ${isSuperAdminUser ? 'avatar-super' : isAdminRole ? 'avatar-admin' : staff.roleName === 'INVENTORY_STAFF' ? 'avatar-inventory' : 'avatar-sales'}`}>
+                                                            {isSuperAdminUser ? '👑' : isAdminRole ? '🛡️' : staff.userName ? staff.userName.charAt(0).toUpperCase() : 'U'}
+                                                        </div>
+                                                    )}
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <span style={{ fontWeight: '600', color: '#0f172a', fontSize: '13.5px' }}>
+                                                                {staff.userName}
+                                                            </span>
+                                                            {isSuperAdminUser && (
+                                                                <span style={{ 
+                                                                    fontSize: '11px', 
+                                                                    background: '#fef3c7', 
+                                                                    color: '#92400e', 
+                                                                    border: '1px solid #fde68a', 
+                                                                    padding: '1px 6px', 
+                                                                    borderRadius: '4px', 
+                                                                    fontWeight: '700' 
+                                                                }}>
+                                                                    Root Super Admin
+                                                                </span>
+                                                            )}
+                                                            {isSelf && (
+                                                                <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: '500' }}>
+                                                                    (You)
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <span style={{ fontSize: '12px', color: '#64748b' }}>{staff.email}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* Role Badge */}
+                                            <td>{renderRoleBadge(staff.roleName, staff.email)}</td>
+
+                                            {/* Status Badge */}
+                                            <td className="text-center" style={{ textAlign: 'center' }}>
+                                                <span className={`staff-badge ${staff.status === 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'}`}>
+                                                    {staff.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+
+                                            {/* Created Date */}
+                                            <td className="text-center" style={{ color: '#475569', fontSize: '12.5px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                                {formatDateTimeDMY(staff.createdAt)}
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'nowrap' }}>
                                                     <button
                                                         type="button"
-                                                        className="btn-action-suspend"
-                                                        disabled={!canManageTarget || isSelf || isSuperAdminUser}
-                                                        style={{ 
-                                                            opacity: (!canManageTarget || isSelf || isSuperAdminUser) ? 0.45 : 1, 
-                                                            cursor: (!canManageTarget || isSelf || isSuperAdminUser) ? 'not-allowed' : 'pointer' 
-                                                        }}
-                                                        onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status, staff.roleName, staff.email)}
-                                                        title={isSuperAdminUser ? "Super Admin account cannot be suspended" : !canManageTarget ? "Admin accounts require Super Admin privileges" : isSelf ? "Cannot suspend own account" : "Suspend account"}
+                                                        className="btn-action-edit"
+                                                        onClick={() => handleEdit(staff.userId)}
+                                                        title="Edit account details"
                                                     >
-                                                        <FiSlash size={13} style={{ flexShrink: 0 }} />
-                                                        <span>Suspend</span>
+                                                        <FiEdit2 size={13} style={{ flexShrink: 0 }} />
+                                                        <span>Edit</span>
                                                     </button>
-                                                ) : (
-                                                    <button
-                                                        type="button"
-                                                        className="btn-action-activate"
-                                                        disabled={!canManageTarget || isSelf}
-                                                        style={{ 
-                                                            opacity: (!canManageTarget || isSelf) ? 0.45 : 1, 
-                                                            cursor: (!canManageTarget || isSelf) ? 'not-allowed' : 'pointer' 
-                                                        }}
-                                                        onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status, staff.roleName, staff.email)}
-                                                        title={!canManageTarget ? "Admin accounts require Super Admin privileges" : isSelf ? "Cannot activate own account" : "Activate account"}
-                                                    >
-                                                        <FiCheck size={13} style={{ flexShrink: 0 }} />
-                                                        <span>Activate</span>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
+
+                                                    {staff.status === 'ACTIVE' ? (
+                                                        <button
+                                                            type="button"
+                                                            className="btn-action-suspend"
+                                                            disabled={!canManageTarget || isSelf || isSuperAdminUser}
+                                                            style={{ 
+                                                                opacity: (!canManageTarget || isSelf || isSuperAdminUser) ? 0.45 : 1, 
+                                                                cursor: (!canManageTarget || isSelf || isSuperAdminUser) ? 'not-allowed' : 'pointer' 
+                                                            }}
+                                                            onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status, staff.roleName, staff.email)}
+                                                            title={isSuperAdminUser ? "Super Admin account cannot be suspended" : !canManageTarget ? "Admin accounts require Super Admin privileges" : isSelf ? "Cannot suspend own account" : "Suspend account"}
+                                                        >
+                                                            <FiSlash size={13} style={{ flexShrink: 0 }} />
+                                                            <span>Suspend</span>
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            className="btn-action-activate"
+                                                            disabled={!canManageTarget || isSelf}
+                                                            style={{ 
+                                                                opacity: (!canManageTarget || isSelf) ? 0.45 : 1, 
+                                                                cursor: (!canManageTarget || isSelf) ? 'not-allowed' : 'pointer' 
+                                                            }}
+                                                            onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status, staff.roleName, staff.email)}
+                                                            title={!canManageTarget ? "Admin accounts require Super Admin privileges" : isSelf ? "Cannot activate own account" : "Activate account"}
+                                                        >
+                                                            <FiCheck size={13} style={{ flexShrink: 0 }} />
+                                                            <span>Activate</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
                                         </tr>
                                     );
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
                                         No staff accounts found matching your filter criteria.
                                     </td>
                                 </tr>

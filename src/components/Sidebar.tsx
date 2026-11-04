@@ -47,6 +47,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
   const firstLetter = username ? username.charAt(0).toUpperCase() : 'A';
 
+  const [userAvatar, setUserAvatar] = useState<string | null>(() => {
+    return (
+      localStorage.getItem(`avatar_${email?.toLowerCase()}`) ||
+      localStorage.getItem(`avatar_${email}`) ||
+      localStorage.getItem(`avatar_${username?.toLowerCase()}`) ||
+      localStorage.getItem(`avatar_${username}`) ||
+      localStorage.getItem('currentUserAvatar') ||
+      null
+    );
+  });
+
+  useEffect(() => {
+    const handleAvatarUpdate = () => {
+      const updated =
+        localStorage.getItem(`avatar_${email?.toLowerCase()}`) ||
+        localStorage.getItem(`avatar_${email}`) ||
+        localStorage.getItem(`avatar_${username?.toLowerCase()}`) ||
+        localStorage.getItem(`avatar_${username}`) ||
+        localStorage.getItem('currentUserAvatar') ||
+        null;
+      setUserAvatar(updated);
+    };
+    window.addEventListener('avatarChange', handleAvatarUpdate);
+    window.addEventListener('storage', handleAvatarUpdate);
+    return () => {
+      window.removeEventListener('avatarChange', handleAvatarUpdate);
+      window.removeEventListener('storage', handleAvatarUpdate);
+    };
+  }, [email, username]);
+
   const formatRole = (roleStr: string | null): string => {
     if (roleStr === 'ADMIN') return 'System Admin';
     if (roleStr === 'INVENTORY_STAFF') return 'Inventory Staff';
@@ -432,10 +462,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => navigate('/admin/profile')}
             title="My Profile"
           >
-            <div className={styles.avatarBox}>{firstLetter}</div>
-            <div className={styles.userMeta}>
-              <span className={styles.userName}>{username || 'System Admin'}</span>
-              <span className={styles.userRole}>{email || getProfileSubtitle()}</span>
+            <div className={styles.avatarLeft}>
+              <div className={styles.avatarBox}>
+                {userAvatar ? (
+                  <img src={userAvatar} alt="Profile" className={styles.avatarImg} />
+                ) : (
+                  firstLetter
+                )}
+              </div>
+              <div className={styles.userMeta}>
+                <span className={styles.userName}>{username || 'System Admin'}</span>
+                <span className={styles.userRole}>{getProfileSubtitle()}</span>
+              </div>
             </div>
           </div>
 
@@ -457,7 +495,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => navigate('/admin/profile')}
             title={`${username || 'Admin'} (${getProfileSubtitle()})`}
           >
-            {firstLetter}
+            {userAvatar ? (
+              <img src={userAvatar} alt="Profile" className={styles.avatarImg} />
+            ) : (
+              firstLetter
+            )}
             <span className={styles.onlineDotCollapsed} />
           </div>
           <button
