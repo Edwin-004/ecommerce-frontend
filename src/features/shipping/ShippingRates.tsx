@@ -14,6 +14,7 @@ import {
   FiSearch,
   FiChevronLeft,
   FiChevronRight,
+  FiTruck,
 } from 'react-icons/fi';
 import { AddNewZoneModal } from './AddNewZoneModal';
 import { EditZoneModal } from './EditZoneModal';

@@ -541,7 +541,7 @@ export const AllOrders = () => {
       {!selectedOrderNo ? (
         /* ==================== View ၁။ Table View (ဘာမှမရွေးထားချိန်) ==================== */
         <div className={styles.tableContainer}>
-          <table className={`${styles.orderTable} ${filteredOrders.length > 0 ? 'table-with-data' : 'table-empty'}`}>
+          <table className={`${styles.orderTable} ${orders.length > 0 ? 'table-with-data' : 'table-empty'}`}>
             <thead>
               <tr>
                 <th className="text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
@@ -574,7 +574,7 @@ export const AllOrders = () => {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order: any, index: number) => {
+                orders.map((order: any, index: number) => {
                   const rowNumber = (currentPage - 1) * pageSize + index + 1;
                   return (
                   <tr
