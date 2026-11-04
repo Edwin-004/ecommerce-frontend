@@ -293,18 +293,20 @@ export const StaffList: React.FC = () => {
                     <table className="staff-table">
                         <thead>
                             <tr>
-                                <th>Name &amp; Email</th>
+                                <th style={{ width: '60px', textAlign: 'center' }}>No.</th>
+                                <th>Staff / Administrator</th>
                                 <th>Role</th>
-                                <th>Status</th>
-                                <th>Created Date</th>
-                                <th style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap', width: '180px', minWidth: '180px' }}>
+                                <th style={{ textAlign: 'center' }}>Status</th>
+                                <th style={{ textAlign: 'center' }}>Created Date</th>
+                                <th style={{ textAlign: 'center', width: '180px', minWidth: '180px' }}>
                                     Actions
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             {currentStaffData.length > 0 ? (
-                                currentStaffData.map((staff) => {
+                                currentStaffData.map((staff, index) => {
+                                    const rowNumber = startIndex + index + 1;
                                     const isSuperAdminUser = staff.email?.toLowerCase() === 'admin@ecommerce.com';
                                     const isAdminRole = staff.roleName?.toUpperCase() === 'ADMIN';
                                     const isSelf = currentUser.email === staff.email || currentUser.username === staff.userName;
@@ -318,9 +320,14 @@ export const StaffList: React.FC = () => {
                                                 borderLeft: '3px solid #f59e0b'
                                             } : undefined}
                                         >
+                                            {/* Row Number Cell */}
+                                            <td className="text-center" style={{ textAlign: 'center', fontWeight: 600, color: '#64748b' }}>
+                                                {rowNumber}
+                                            </td>
+
+                                            {/* Staff Name & Email with Avatar */}
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    {/* Mini Avatar Pill (Shows photo if uploaded in Profile, else fallback) */}
                                                     {getStaffAvatar(staff) ? (
                                                         <div className="avatar-mini avatar-mini-has-img" title={staff.userName}>
                                                             <img src={getStaffAvatar(staff)!} alt={staff.userName} className="avatar-mini-img" />
@@ -360,20 +367,24 @@ export const StaffList: React.FC = () => {
                                                 </div>
                                             </td>
 
+                                            {/* Role Badge */}
                                             <td>{renderRoleBadge(staff.roleName, staff.email)}</td>
 
-                                            <td>
+                                            {/* Status Badge */}
+                                            <td className="text-center" style={{ textAlign: 'center' }}>
                                                 <span className={`staff-badge ${staff.status === 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'}`}>
                                                     {staff.status === 'ACTIVE' ? 'Active' : 'Inactive'}
                                                 </span>
                                             </td>
 
-                                            <td style={{ color: '#475569', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                                            {/* Created Date */}
+                                            <td className="text-center" style={{ color: '#475569', fontSize: '12.5px', whiteSpace: 'nowrap', textAlign: 'center' }}>
                                                 {formatDateTimeDMY(staff.createdAt)}
                                             </td>
 
-                                            <td style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
-                                                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', flexWrap: 'nowrap' }}>
+                                            {/* Actions */}
+                                            <td style={{ textAlign: 'center' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'nowrap' }}>
                                                     <button
                                                         type="button"
                                                         className="btn-action-edit"
@@ -383,7 +394,7 @@ export const StaffList: React.FC = () => {
                                                         <FiEdit2 size={13} style={{ flexShrink: 0 }} />
                                                         <span>Edit</span>
                                                     </button>
-                                                    
+
                                                     {staff.status === 'ACTIVE' ? (
                                                         <button
                                                             type="button"
@@ -422,7 +433,7 @@ export const StaffList: React.FC = () => {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={5} style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
                                         No staff accounts found matching your filter criteria.
                                     </td>
                                 </tr>

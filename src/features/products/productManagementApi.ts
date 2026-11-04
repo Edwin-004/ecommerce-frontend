@@ -140,7 +140,7 @@ export const productManagementApi = {
     formData.append('productId', String(productId));
     formData.append('file', file);
     formData.append('isPrimary', String(isPrimary));
-    formData.append('userId', '1');
+    formData.append('userId', '5'); // Active admin ID fallback
 
     const token = localStorage.getItem('token');
     const headers: Record<string, string> = {};
@@ -231,7 +231,7 @@ export const productManagementApi = {
     formData.append('variantId', String(variantId));
     formData.append('file', file);
     formData.append('isPrimary', String(isPrimary));
-    formData.append('userId', '1');
+    formData.append('userId', '5'); // Active admin ID fallback
 
     const token = localStorage.getItem('token');
     const headers: Record<string, string> = {};

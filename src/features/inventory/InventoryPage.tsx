@@ -755,17 +755,49 @@ export const InventoryPage: React.FC = () => {
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                           <span className={styles.skuTag}>{item.sku}</span>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>#{item.variantId}</span>
                         </div>
                       </td>
                       <td>
-                        <div className={styles.productCell}>
-                          <div className={styles.productThumb}>
-                            <FiPackage />
+                        <div className={styles.productCell} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div className={styles.productThumb} style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                            {item.imageUrl ? (
+                              <img
+                                src={item.imageUrl.startsWith('http') ? item.imageUrl : `http://localhost:8080${item.imageUrl}`}
+                                alt={item.productName || 'Product'}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <FiPackage size={18} color="#94a3b8" />
+                            )}
                           </div>
                           <div style={{ overflow: 'hidden', minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.productName || 'Unnamed'}>{item.productName || 'Unnamed'}</div>
-                            <div style={{ fontSize: '11px', color: '#64748b' }}>Variant ID #{item.variantId}</div>
+                            <div style={{ fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.productName || 'Unnamed'}>
+                              {item.productName || 'Unnamed'}
+                            </div>
+                            <div style={{ fontSize: '11.5px', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              {item.attributeSummary ? (
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '1px 6px',
+                                  background: '#eff6ff',
+                                  color: '#1d4ed8',
+                                  borderRadius: '4px',
+                                  fontWeight: 500,
+                                  fontSize: '11px',
+                                  maxWidth: '180px',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }} title={item.attributeSummary}>
+                                  {item.attributeSummary}
+                                </span>
+                              ) : (
+                                <span style={{ color: '#94a3b8', fontSize: '11px' }}>Standard</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>

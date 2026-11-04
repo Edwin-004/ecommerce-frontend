@@ -15,6 +15,7 @@ export interface InventoryItem {
   daysUntilExpiry?: number | null;
   expiryStatus?: 'GOOD' | 'EXPIRING_SOON' | 'EXPIRED' | 'NON_PERISHABLE';
   attributeSummary?: string | null;
+  imageUrl?: string | null;
   createdAt: string;
   modifiedAt: string;
 }

@@ -60,6 +60,7 @@ export default function TagManagement() {
 
   // Debounced search value
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy] = useState<string>("tagId,desc");
 
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -90,7 +91,7 @@ export default function TagManagement() {
    */
   useEffect(() => {
     setPage(0);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, sortBy]);
 
   /**
    * Load tags from backend.
@@ -103,7 +104,7 @@ export default function TagManagement() {
       const result = await tagApi.getAllTags(
         page,
         PAGE_SIZE,
-        "tagName,asc",
+        sortBy,
         debouncedSearch
       );
 
@@ -115,7 +116,28 @@ export default function TagManagement() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, sortBy]);
+
+  const handleSortToggle = (field: string) => {
+    const [currentField, currentDir] = sortBy.split(',');
+    if (currentField === field) {
+      setSortBy(`${field},${currentDir === 'asc' ? 'desc' : 'asc'}`);
+    } else {
+      setSortBy(`${field},${field === 'tagName' ? 'asc' : 'desc'}`);
+    }
+  };
+
+  const renderSortIndicator = (field: string) => {
+    const [currentField, currentDir] = sortBy.split(',');
+    if (currentField !== field) {
+      return <span style={{ opacity: 0.35, marginLeft: '4px', fontSize: '11px' }}>⇅</span>;
+    }
+    return (
+      <span style={{ marginLeft: '4px', color: '#2563eb', fontWeight: 'bold' }}>
+        {currentDir === 'asc' ? '▲' : '▼'}
+      </span>
+    );
+  };
 
   /**
    * Load whenever page or search changes.
@@ -332,6 +354,35 @@ export default function TagManagement() {
           </div>
 
           <div className="table-toolbar-right">
+            {/* Sort Dropdown */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                SORT:
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{
+                  height: '36px',
+                  padding: '0 10px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#1e293b',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              >
+                <option value="tagId,desc">✨ Newest First (Default)</option>
+                <option value="tagId,asc">Oldest First</option>
+                <option value="tagName,asc">Tag Name (A - Z)</option>
+                <option value="tagName,desc">Tag Name (Z - A)</option>
+                <option value="modifiedAt,desc">Recently Modified</option>
+              </select>
+            </div>
+
             <div className="search-wrapper">
               <FiSearch className="search-icon" size={15} />
 
@@ -373,10 +424,35 @@ export default function TagManagement() {
           <table className={`tag-table ${tags.length > 0 ? 'table-with-data' : 'table-empty'}`}>
             <thead>
               <tr>
-                <th className="id-column text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
-                <th style={{ minWidth: '180px', textAlign: 'left' }}>TAG</th>
-                <th style={{ minWidth: '160px', textAlign: 'left' }}>CREATED</th>
-                <th style={{ minWidth: '160px', textAlign: 'left' }}>LAST MODIFIED</th>
+                <th 
+                  className="id-column text-center" 
+                  style={{ width: '70px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                  onClick={() => handleSortToggle('tagId')}
+                  title="Click to sort by ID"
+                >
+                  No. {renderSortIndicator('tagId')}
+                </th>
+                <th 
+                  style={{ minWidth: '180px', textAlign: 'left', cursor: 'pointer', userSelect: 'none' }}
+                  onClick={() => handleSortToggle('tagName')}
+                  title="Click to sort by Tag Name"
+                >
+                  TAG {renderSortIndicator('tagName')}
+                </th>
+                <th 
+                  style={{ minWidth: '160px', textAlign: 'left', cursor: 'pointer', userSelect: 'none' }}
+                  onClick={() => handleSortToggle('createdAt')}
+                  title="Click to sort by Created Date"
+                >
+                  CREATED {renderSortIndicator('createdAt')}
+                </th>
+                <th 
+                  style={{ minWidth: '160px', textAlign: 'left', cursor: 'pointer', userSelect: 'none' }}
+                  onClick={() => handleSortToggle('modifiedAt')}
+                  title="Click to sort by Modified Date"
+                >
+                  LAST MODIFIED {renderSortIndicator('modifiedAt')}
+                </th>
                 <th className="actions-column text-center" style={{ width: '180px', textAlign: 'center' }}>ACTIONS</th>
               </tr>
             </thead>

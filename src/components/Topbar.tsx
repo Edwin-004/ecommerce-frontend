@@ -160,7 +160,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
       return { isDashboard: false, parentSection: "Catalogue", subSection: "", currentPageTitle: "Tags" };
     }
     if (p.startsWith("/admin/variants") || p.startsWith("/admin/variations")) {
-      return { isDashboard: false, parentSection: "Catalogue", subSection: "", currentPageTitle: "Variants & Options" };
+      return { isDashboard: false, parentSection: "Catalogue", subSection: "", currentPageTitle: "SKU & Attributes" };
     }
     if (p.startsWith("/admin/orders/new")) {
       return { isDashboard: false, parentSection: "Operations", subSection: "Orders", currentPageTitle: "Create Order" };
