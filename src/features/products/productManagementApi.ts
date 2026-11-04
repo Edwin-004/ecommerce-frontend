@@ -40,17 +40,26 @@ export const getAssetUrl = (url?: string): string => {
 
 export const productManagementApi = {
   // Get all products (with pagination or full list, latest first)
+    // Get all products (latest first)
   getProducts: async (): Promise<ProductItem[]> => {
     try {
-      const response = await apiFetch<any>('/api/backoffice/products?sort=productId,desc');
+      const response = await apiFetch<any>(
+        '/api/backoffice/products?sort=productId,desc&size=10000&page=0'
+      );
+
+      // Spring Boot Page response
       if (response && Array.isArray(response.content)) {
         return response.content;
       }
+
+      // Direct array response
       if (Array.isArray(response)) {
         return response;
       }
+
       return [];
-    } catch {
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
       return [];
     }
   },
