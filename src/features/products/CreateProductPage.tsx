@@ -3,6 +3,7 @@ import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
+import { DatePicker } from '../../components/common/DatePicker';
 import {
   productManagementApi,
   type CategoryItem,
@@ -813,22 +814,10 @@ export const CreateProductPage: React.FC = () => {
                   status: 'ACTIVE',
                   optionIds: validOptionIds,
                   initialStock: varStock,
+                  expiryDate: isPerishable && expiryDate ? expiryDate : undefined,
+                  batchNumber: isPerishable && batchNumber ? batchNumber.trim() : undefined,
+                  isPerishable: isPerishable,
                 });
-
-              // Link expiry details to inventory if product is perishable
-              if (isPerishable && expiryDate && createdVariant?.variantId) {
-                try {
-                  await inventoryApi.restockVariant({
-                    variantId: createdVariant.variantId,
-                    quantity: 0,
-                    expiryDate: expiryDate,
-                    batchNumber: batchNumber.trim() || undefined,
-                    remark: 'Initial batch expiry setup',
-                  });
-                } catch (invErr) {
-                  console.warn('Initial expiry setup for variant skipped:', invErr);
-                }
-              }
             } catch (createVarErr) {
               console.warn(`Failed to create variant ${gv.sku}:`, createVarErr);
             }
@@ -875,22 +864,10 @@ export const CreateProductPage: React.FC = () => {
             status: 'ACTIVE',
             optionIds: [],
             initialStock: initQty,
+            expiryDate: isPerishable && expiryDate ? expiryDate : undefined,
+            batchNumber: isPerishable && batchNumber ? batchNumber.trim() : undefined,
+            isPerishable: isPerishable,
           });
-
-          // Link expiry details to inventory if product is perishable
-          if (isPerishable && expiryDate && createdSimpleVar?.variantId) {
-            try {
-              await inventoryApi.restockVariant({
-                variantId: createdSimpleVar.variantId,
-                quantity: 0,
-                expiryDate: expiryDate,
-                batchNumber: batchNumber.trim() || undefined,
-                remark: 'Initial batch expiry setup',
-              });
-            } catch (invErr) {
-              console.warn('Initial expiry setup for simple variant skipped:', invErr);
-            }
-          }
         } catch (singleVarErr: any) {
           console.warn('Default variant creation skipped:', singleVarErr);
           throw new Error('Base product was created, but stock inventory setup failed: ' + (singleVarErr.message || ''));
@@ -1331,19 +1308,17 @@ export const CreateProductPage: React.FC = () => {
             >
               <div className={styles.inputGroup} style={{ margin: 0 }}>
                 <label>Expiration Date *</label>
-                <input
-                  type="date"
+                <DatePicker
                   required={isPerishable}
-                  className={styles.inputField}
-                  style={{
-                    borderColor: expiryTouched && !expiryDate ? '#ef4444' : undefined,
-                  }}
                   value={expiryDate}
                   onChange={(e) => {
                     setExpiryDate(e.target.value);
                     if (!expiryTouched) setExpiryTouched(true);
                   }}
                   onBlur={() => setExpiryTouched(true)}
+                  inputStyle={{
+                    borderColor: expiryTouched && !expiryDate ? '#ef4444' : undefined,
+                  }}
                 />
                 {expiryTouched && !expiryDate && (
                   <span style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1354,9 +1329,7 @@ export const CreateProductPage: React.FC = () => {
 
               <div className={styles.inputGroup} style={{ margin: 0 }}>
                 <label>Manufacture Date (Optional)</label>
-                <input
-                  type="date"
-                  className={styles.inputField}
+                <DatePicker
                   value={manufactureDate}
                   onChange={(e) => setManufactureDate(e.target.value)}
                 />

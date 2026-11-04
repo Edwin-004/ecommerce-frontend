@@ -1,4 +1,3 @@
-import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -20,6 +19,7 @@ import {
   FiFileText,
 } from 'react-icons/fi';
 import styles from './Inventory.module.css';
+import { formatDateTime } from '../../utils/dateUtils';
 import { inventoryApi } from './inventoryApi';
 import type { InventoryItem, InventoryTransaction } from '../../types/inventory';
 import {
@@ -221,6 +221,10 @@ export const InventoryPage: React.FC = () => {
       alert('Please select at least one column to export.');
       return;
     }
+    if (searchQuery && searchQuery.trim().length > 100) {
+      alert('Search query cannot exceed 100 characters for export.');
+      return;
+    }
     try {
       setExportingFormat(format);
       const blob = await inventoryApi.exportInventoryReport(format, {
@@ -382,16 +386,10 @@ export const InventoryPage: React.FC = () => {
       {/* Page Top Header */}
       <div className={styles.pageTopHeader}>
         <div className={styles.headerLeft}>
-          <BackButton fallbackUrl="/admin/dashboard" />
-          <div className={styles.iconBadge}>
-            <FiBox />
-          </div>
-          <div>
-            <h1 className={styles.mainTitle}>Inventory Management</h1>
-            <p className={styles.mainSubtitle}>
+          <h1 className={`${styles.mainTitle} text-xl font-semibold text-slate-900 tracking-tight`}>Inventory Management</h1>
+          <p className={`${styles.mainSubtitle} text-xs text-slate-500`}>
               Monitor real-time physical inventory, process restocks, write-offs, and audit trails
             </p>
-          </div>
         </div>
 
         <div className={styles.headerActions}>
@@ -514,6 +512,7 @@ export const InventoryPage: React.FC = () => {
               <input
                 type="text"
                 placeholder="Search by SKU or Product..."
+                maxLength={100}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -662,53 +661,55 @@ export const InventoryPage: React.FC = () => {
 
       {/* Data Views - Card with Slide Bar & Drag-to-Scroll */}
       <div className={styles.tableCard}>
-        {/* Modern Interactive Slide Toggle Bar */}
-        <div className={styles.scrollNoticeBar}>
-          <div className={styles.scrollNoticeLeft}>
-            <FiSliders size={13} style={{ color: '#2563eb' }} />
-            <span className={styles.scrollNoticeTitle}>Table Slide Bar:</span>
-            <span className={styles.scrollNoticeTag}>
-              {scrollPercent <= 5
-                ? (activeTab === 'TRANSACTIONS' ? 'Start (Date & Time)' : 'Start (Variant & SKU)')
-                : scrollPercent >= 95
-                ? (activeTab === 'TRANSACTIONS' ? 'End (Remark)' : 'End (Actions)')
-                : `${scrollPercent}%`}
-            </span>
-          </div>
-
-          <div className={styles.slideToggleWrapper}>
-            <button
-              type="button"
-              className={styles.sliderEndpointBtn}
-              onClick={() => scrollToEndpoint('start')}
-              title={activeTab === 'TRANSACTIONS' ? 'Jump to Date & Time' : 'Jump to Variant & SKU'}
-            >
-              <FiChevronLeft size={13} /> {activeTab === 'TRANSACTIONS' ? 'Left (Date)' : 'Left (SKU)'}
-            </button>
-            <div className={styles.sliderTrackContainer}>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={scrollPercent}
-                onChange={handleSliderChange}
-                className={styles.modernSlideRange}
-                title="Slide cursor across this bar to scroll table sideways"
-                style={{
-                  background: `linear-gradient(to right, #2563eb 0%, #2563eb ${scrollPercent}%, #e2e8f0 ${scrollPercent}%, #e2e8f0 100%)`
-                }}
-              />
+        {/* Modern Interactive Slide Toggle Bar (Only shown when data is loaded) */}
+        {(activeTab !== 'TRANSACTIONS' ? filteredItems.length > 0 : transactions.length > 0) && (
+          <div className={styles.scrollNoticeBar}>
+            <div className={styles.scrollNoticeLeft}>
+              <FiSliders size={13} style={{ color: '#2563eb' }} />
+              <span className={styles.scrollNoticeTitle}>Table Slide Bar:</span>
+              <span className={styles.scrollNoticeTag}>
+                {scrollPercent <= 5
+                  ? (activeTab === 'TRANSACTIONS' ? 'Start (Date & Time)' : 'Start (Variant & SKU)')
+                  : scrollPercent >= 95
+                  ? (activeTab === 'TRANSACTIONS' ? 'End (Remark)' : 'End (Actions)')
+                  : `${scrollPercent}%`}
+              </span>
             </div>
-            <button
-              type="button"
-              className={styles.sliderEndpointBtn}
-              onClick={() => scrollToEndpoint('end')}
-              title={activeTab === 'TRANSACTIONS' ? 'Jump to Remark' : 'Jump to Actions'}
-            >
-              {activeTab === 'TRANSACTIONS' ? 'Right (Remark)' : 'Right (Actions)'} <FiChevronRight size={13} />
-            </button>
+
+            <div className={styles.slideToggleWrapper}>
+              <button
+                type="button"
+                className={styles.sliderEndpointBtn}
+                onClick={() => scrollToEndpoint('start')}
+                title={activeTab === 'TRANSACTIONS' ? 'Jump to Date & Time' : 'Jump to Variant & SKU'}
+              >
+                <FiChevronLeft size={13} /> {activeTab === 'TRANSACTIONS' ? 'Left (Date)' : 'Left (SKU)'}
+              </button>
+              <div className={styles.sliderTrackContainer}>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={scrollPercent}
+                  onChange={handleSliderChange}
+                  className={styles.modernSlideRange}
+                  title="Slide cursor across this bar to scroll table sideways"
+                  style={{
+                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${scrollPercent}%, #e2e8f0 ${scrollPercent}%, #e2e8f0 100%)`
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                className={styles.sliderEndpointBtn}
+                onClick={() => scrollToEndpoint('end')}
+                title={activeTab === 'TRANSACTIONS' ? 'Jump to Remark' : 'Jump to Actions'}
+              >
+                {activeTab === 'TRANSACTIONS' ? 'Right (Remark)' : 'Right (Actions)'} <FiChevronRight size={13} />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Scrollable & Draggable Table Area */}
         <div
@@ -718,25 +719,26 @@ export const InventoryPage: React.FC = () => {
           onScroll={handleTableScroll}
         >
           {activeTab !== 'TRANSACTIONS' ? (
-            <table className={styles.table}>
+            <table className={`${styles.table} ${filteredItems.length > 0 ? styles.tableWithData : styles.tableEmpty}`}>
               <thead>
                 <tr>
-                  <th style={{ minWidth: '150px' }}>VARIANT &amp; SKU</th>
-                  <th style={{ minWidth: '220px' }}>PRODUCT</th>
-                  <th style={{ minWidth: '130px' }}>SELLING PRICE</th>
-                  <th style={{ minWidth: '160px' }}>PHYSICAL STOCK</th>
-                  <th style={{ minWidth: '110px' }}>RESERVED</th>
-                  <th style={{ minWidth: '110px' }}>AVAILABLE</th>
-                  <th style={{ minWidth: '130px' }}>REORDER LEVEL</th>
-                  <th style={{ minWidth: '190px' }}>EXPIRY &amp; BATCH</th>
-                  <th style={{ minWidth: '130px' }}>STATUS</th>
-                  <th style={{ textAlign: 'center', minWidth: '320px' }}>ACTIONS</th>
+                  <th className="text-center" style={{ width: '50px' }}>No.</th>
+                  <th>VARIANT &amp; SKU</th>
+                  <th>PRODUCT</th>
+                  <th>SELLING PRICE</th>
+                  <th>PHYSICAL STOCK</th>
+                  <th className="text-center">RESERVED</th>
+                  <th className="text-center">AVAILABLE</th>
+                  <th className="text-center">REORDER LEVEL</th>
+                  <th>EXPIRY &amp; BATCH</th>
+                  <th className="text-center">STATUS</th>
+                  <th className="text-center">ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className={styles.emptyState}>
+                    <td colSpan={11} className={styles.emptyState}>
                       <FiBox />
                       <p style={{ margin: '8px 0 16px 0', fontWeight: 500 }}>No inventory records found matching your filters.</p>
                       <button className={styles.btnPrimary} onClick={loadData}>
@@ -745,8 +747,11 @@ export const InventoryPage: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  paginatedItems.map((item) => (
+                  paginatedItems.map((item, index) => {
+                    const rowNumber = (itemsPage - 1) * itemsPerPage + index + 1;
+                    return (
                     <tr key={item.inventoryId || item.variantId}>
+                      <td className="text-center" style={{ fontWeight: 600, color: '#64748b' }}>{rowNumber}</td>
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                           <span className={styles.skuTag}>{item.sku}</span>
@@ -758,8 +763,8 @@ export const InventoryPage: React.FC = () => {
                           <div className={styles.productThumb}>
                             <FiPackage />
                           </div>
-                          <div>
-                            <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.productName || 'Unnamed'}</div>
+                          <div style={{ overflow: 'hidden', minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.productName || 'Unnamed'}>{item.productName || 'Unnamed'}</div>
                             <div style={{ fontSize: '11px', color: '#64748b' }}>Variant ID #{item.variantId}</div>
                           </div>
                         </div>
@@ -789,16 +794,16 @@ export const InventoryPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td style={{ color: '#64748b' }}>{item.reservedQuantity ?? 0}</td>
-                      <td>
+                      <td className="text-center" style={{ color: '#64748b' }}>{item.reservedQuantity ?? 0}</td>
+                      <td className="text-center">
                         <span style={{ color: '#16a34a', fontWeight: 600 }}>
                           {item.availableQuantity ?? Math.max(0, (item.quantity || 0) - (item.reservedQuantity || 0))}
                         </span>
                       </td>
-                      <td style={{ color: '#64748b' }}>{item.reorderLevel ?? 10} units</td>
+                      <td className="text-center" style={{ color: '#64748b' }}>{item.reorderLevel ?? 10} units</td>
                       <td>
                         {!item.isPerishable ? (
-                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
+                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>-</span>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                             {item.expiryStatus === 'EXPIRED' && (
@@ -866,7 +871,7 @@ export const InventoryPage: React.FC = () => {
                           </div>
                         )}
                       </td>
-                      <td>
+                      <td className="text-center">
                         <span className={`${styles.badge} ${
                           item.status === 'NORMAL' ? styles.badgeNormal :
                           item.status === 'LOW_STOCK' ? styles.badgeLowStock : styles.badgeOutOfStock
@@ -877,7 +882,7 @@ export const InventoryPage: React.FC = () => {
                           {item.status === 'NORMAL' ? 'In Stock' : item.status === 'LOW_STOCK' ? 'Low Stock' : 'Out of Stock'}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="text-center">
                         <div className={styles.actionGroup}>
                           <button
                             className={`${styles.btnAction} ${styles.btnRestock}`}
@@ -913,42 +918,47 @@ export const InventoryPage: React.FC = () => {
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
           ) : (
-            <table className={styles.table}>
+            <table className={`${styles.table} ${transactions.length > 0 ? styles.tableWithData : styles.tableEmpty}`}>
               <thead>
                 <tr>
-                  <th style={{ minWidth: '170px' }}>Date &amp; Time</th>
-                  <th style={{ minWidth: '130px' }}>SKU</th>
-                  <th style={{ minWidth: '200px' }}>Product</th>
-                  <th style={{ minWidth: '120px' }}>Type</th>
-                  <th style={{ minWidth: '100px' }}>Change</th>
-                  <th style={{ minWidth: '140px' }}>Before &rarr; After</th>
-                  <th style={{ minWidth: '140px' }}>Initiated By</th>
-                  <th style={{ minWidth: '140px' }}>Reference</th>
-                  <th style={{ minWidth: '200px' }}>Remark</th>
+                  <th className="text-center" style={{ width: '50px' }}>No.</th>
+                  <th>Date &amp; Time</th>
+                  <th>SKU</th>
+                  <th>Product</th>
+                  <th className="text-center">Type</th>
+                  <th className="text-center">Change</th>
+                  <th className="text-center">Before &rarr; After</th>
+                  <th>Initiated By</th>
+                  <th>Reference</th>
+                  <th>Remark</th>
                 </tr>
               </thead>
               <tbody>
                 {transactions.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className={styles.emptyState}>
+                    <td colSpan={10} className={styles.emptyState}>
                       <FiClock />
                       <p>No inventory transactions recorded yet.</p>
                     </td>
                   </tr>
                 ) : (
-                  paginatedTxns.map((t) => (
+                  paginatedTxns.map((t, index) => {
+                    const rowNumber = (txnsPage - 1) * txnsPerPage + index + 1;
+                    return (
                     <tr key={t.txnId}>
+                      <td className="text-center" style={{ fontWeight: 600, color: '#64748b' }}>{rowNumber}</td>
                       <td style={{ fontSize: '13px', color: '#64748b' }}>
-                        {new Date(t.createdAt).toLocaleString()}
+                        {formatDateTime(t.createdAt)}
                       </td>
                       <td><span className={styles.skuTag}>{t.sku}</span></td>
-                      <td style={{ fontWeight: 600 }}>{t.productName}</td>
-                      <td>
+                      <td style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.productName}>{t.productName}</td>
+                      <td className="text-center">
                         <span className={`${styles.badge} ${
                           t.txnType === 'RESTOCK' ? styles.badgeNormal :
                           (t.txnType === 'WRITE_OFF' || t.txnType === 'SALE') ? styles.badgeOutOfStock : styles.badgeLowStock
@@ -956,17 +966,18 @@ export const InventoryPage: React.FC = () => {
                           {t.txnType}
                         </span>
                       </td>
-                      <td style={{ fontWeight: 700, color: t.qty > 0 ? '#16a34a' : '#dc2626' }}>
+                      <td className="text-center" style={{ fontWeight: 700, color: t.qty > 0 ? '#16a34a' : '#dc2626' }}>
                         {t.qty > 0 ? `+${t.qty}` : t.qty}
                       </td>
-                      <td>{t.beforeQty} &rarr; {t.afterQty}</td>
+                      <td className="text-center">{t.beforeQty} &rarr; {t.afterQty}</td>
                       <td>{t.createdByName || 'System'}</td>
                       <td style={{ fontSize: '12px', color: '#64748b' }}>
                         {t.referenceType ? `${t.referenceType} ${t.referenceId ? `#${t.referenceId}` : ''}` : '-'}
                       </td>
-                      <td style={{ fontSize: '13px' }}>{t.remark || '-'}</td>
+                      <td style={{ fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={t.remark || ''}>{t.remark || '-'}</td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>

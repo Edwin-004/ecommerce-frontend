@@ -3,6 +3,7 @@ import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
+import { DatePicker } from '../../components/common/DatePicker';
 import {
   productManagementApi,
   getAssetUrl,
@@ -743,17 +744,12 @@ export const EditProductPage: React.FC = () => {
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#92400e', marginBottom: '6px' }}>
                       Expiration Date <span style={{ color: '#ef4444' }}>*</span>
                     </label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={expiryDate}
                       onChange={(e) => setExpiryDate(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '9px 12px',
-                        borderRadius: '8px',
+                      inputStyle={{
                         border: '1px solid #fcd34d',
                         background: '#ffffff',
-                        fontSize: '13px',
                       }}
                     />
                   </div>

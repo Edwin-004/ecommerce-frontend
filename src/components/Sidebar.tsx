@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { type RootState } from '../store';
+import { logout } from '../features/auth/authSlice';
 import styles from './Sidebar.module.css';
 
 import {
@@ -22,7 +23,7 @@ import {
   FiBarChart2,
   FiFileText,
   FiRotateCcw,
-  FiSearch,
+  FiLogOut,
   FiX,
 } from 'react-icons/fi';
 
@@ -37,10 +38,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed = false,
   onToggleCollapse,
 }) => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const { username, role, permissions, email } = useSelector(
     (state: RootState) => state.auth
@@ -91,6 +91,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return 'Administrator';
     }
     return formatted;
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
   };
 
   const isAdmin = role === 'ADMIN';
@@ -151,53 +156,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const subNavClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.subLink} ${styles.subActive}` : styles.subLink;
 
-  // Real-time live search logic with keyword & synonym matching
-  const q = searchQuery.trim().toLowerCase();
-  const isSearching = q.length > 0;
-
-  const matches = (label: string, synonyms: string[] = []) => {
-    if (!isSearching) return true;
-    if (label.toLowerCase().includes(q)) return true;
-    return synonyms.some((syn) => syn.toLowerCase().includes(q));
-  };
-
-  const matchDashboard = matches('Dashboard', ['overview', 'home', 'stats', 'analytics']);
-  const matchProducts = matches('Product List', ['items', 'products', 'inventory']);
-  const matchCategories = matches('Categories', ['taxonomy', 'types', 'category']);
-  const matchBrands = matches('Brands', ['labels', 'makers', 'manufacturers', 'brand']);
-  const matchTags = matches('Tags', ['labels', 'badges', 'tag']);
-  const matchVariants = matches('Variants & Options', ['sizes', 'colors', 'attributes', 'variations', 'variant']);
-  const matchStock = matches('Stock Management', ['inventory', 'units', 'warehouse', 'stock']);
-  const matchOrders = matches('Orders', ['sales', 'purchases', 'transactions', 'order']);
-  const matchRefunds = matches('Refunds', ['returns', 'claims', 'reversals', 'refund']);
-  const matchShipping = matches('Shipping Rates', ['delivery', 'zones', 'shipping', 'courier', 'rates']);
-  const matchStaffList = matches('All Accounts', ['all staff', 'users', 'employees', 'team', 'accounts', 'staff', 'admins']);
-  const matchCreateStaff = matches('Add New Account', ['add new staff', 'create user', 'invite', 'new employee', 'add staff', 'new account']);
-  const matchReports = matches('Reports & Analytics', ['reports', 'sales report', 'export', 'charts', 'data', 'analytics']);
-  const matchAuditLogs = matches('Audit Logs', ['logs', 'audit', 'activity', 'history', 'security']);
-
-  const hasCatalogMatches = canAccessCatalog && (matchProducts || matchCategories || matchBrands || matchTags || matchVariants);
-  const hasInventoryMatches = canAccessInventory && matchStock;
-  const hasOperationsMatches = canAccessOperations && (matchOrders || matchRefunds || matchShipping);
-  const hasStaffMatches = canAccessStaff && (matchStaffList || matchCreateStaff);
-  const hasAnalyticsMatches = canAccessReports && matchReports;
-  const hasSystemMatches = isAdmin && matchAuditLogs;
-
-  const totalMatchesCount =
-    (matchDashboard ? 1 : 0) +
-    (hasCatalogMatches ? 1 : 0) +
-    (hasInventoryMatches ? 1 : 0) +
-    (hasOperationsMatches ? 1 : 0) +
-    (hasStaffMatches ? 1 : 0) +
-    (hasAnalyticsMatches ? 1 : 0) +
-    (hasSystemMatches ? 1 : 0);
-
   return (
     <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}>
       {/* Upper Navigation Block */}
       <div className={styles.topSection}>
         {/* ==========================================================================
-            1. Brand Header Row (38px height, 32px modern logo badge)
+            1. Brand Header Row (38px height, modern logo badge)
             ========================================================================== */}
         <div className={styles.header}>
           <div
@@ -273,56 +237,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* ==========================================================================
-            2. Live Search Box (No ⌘K shortcut badge, real-time live filtering)
-            ========================================================================== */}
-        {!isCollapsed ? (
-          <div className={styles.searchBox}>
-            <div className={styles.searchLeft}>
-              <FiSearch className={styles.searchIcon} size={15} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search menu..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') setSearchQuery('');
-                }}
-                className={styles.searchInput}
-              />
-            </div>
-            {searchQuery && (
-              <button
-                type="button"
-                className={styles.searchClearBtn}
-                onClick={() => {
-                  setSearchQuery('');
-                  searchInputRef.current?.focus();
-                }}
-                title="Clear search"
-                aria-label="Clear search"
-              >
-                <FiX size={13} />
-              </button>
-            )}
-          </div>
-        ) : (
-          <button
-            type="button"
-            className={styles.searchBoxCollapsed}
-            onClick={() => {
-              if (onToggleCollapse) onToggleCollapse();
-              setTimeout(() => searchInputRef.current?.focus(), 150);
-            }}
-            title="Search menu"
-            aria-label="Search menu"
-          >
-            <FiSearch size={15} />
-          </button>
-        )}
-
-        {/* ==========================================================================
-            3. Navigation Menu Items (Live filtered)
+            2. Navigation Menu Items
             ========================================================================== */}
         <nav
           className={styles.navContainer}
@@ -332,43 +247,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }
           }}
         >
-          {/* Live Search: Empty State when nothing matches */}
-          {isSearching && totalMatchesCount === 0 && (
-            <div className={styles.noSearchResults}>
-              <FiSearch size={20} className={styles.noSearchIcon} />
-              <p className={styles.noSearchText}>No menu matches for "{searchQuery}"</p>
-              <button
-                type="button"
-                className={styles.noSearchResetBtn}
-                onClick={() => setSearchQuery('')}
-              >
-                Clear search
-              </button>
-            </div>
-          )}
-
           {/* Section: Overview */}
-          {matchDashboard ? (
-            <>
-              <div className={styles.navSectionTitle}>Navigation</div>
-              <NavLink to="/admin/dashboard" className={navClass} title="Dashboard">
-                <div className={styles.linkLeftGroup}>
-                  <FiHome className={styles.linkIcon} />
-                  <span className={styles.linkLabel}>Dashboard</span>
-                </div>
-              </NavLink>
-            </>
-          ) : null}
+          <div className={styles.navSectionTitle}>Navigation</div>
+          <NavLink to="/admin/dashboard" className={navClass} title="Dashboard">
+            <div className={styles.linkLeftGroup}>
+              <FiHome className={styles.linkIcon} />
+              <span className={styles.linkLabel}>Dashboard</span>
+            </div>
+          </NavLink>
 
           {/* Section: Catalog & Stock */}
           {(canAccessCatalog || canAccessInventory) && (
             <>
-              {(hasCatalogMatches || hasInventoryMatches) && (
-                <div className={styles.navSectionTitle}>Catalog &amp; Stock</div>
-              )}
+              <div className={styles.navSectionTitle}>Catalog &amp; Stock</div>
 
               {/* Product Catalog Dropdown */}
-              {canAccessCatalog && hasCatalogMatches && (
+              {canAccessCatalog && (
                 <div className={styles.dropdownGroup}>
                   <button
                     type="button"
@@ -377,6 +271,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }`}
                     onClick={() => handleDropdownToggle('catalog')}
                     title="Product Catalog"
+                    aria-expanded={catalogOpen}
                   >
                     <div className={styles.linkLeftGroup}>
                       <FiPackage className={styles.linkIcon} />
@@ -384,50 +279,65 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                     <FiChevronDown
                       className={`${styles.chevron} ${
-                        catalogOpen || isSearching ? styles.chevronRotated : ''
+                        catalogOpen ? styles.chevronOpen : ''
                       }`}
                     />
                   </button>
 
-                  {(!isCollapsed ? (catalogOpen || isSearching) : false) && (
+                  {catalogOpen && !isCollapsed && (
                     <div className={styles.submenu}>
-                      {matchProducts && (
-                        <NavLink to="/admin/products" end className={subNavClass} title="Product List">
-                          <FiPackage size={13} className={styles.subIcon} />
-                          <span>Product List</span>
-                        </NavLink>
-                      )}
-                      {matchCategories && (
-                        <NavLink to="/admin/categories" className={subNavClass} title="Categories">
-                          <FiFolder size={13} className={styles.subIcon} />
-                          <span>Categories</span>
-                        </NavLink>
-                      )}
-                      {matchBrands && (
-                        <NavLink to="/admin/brands" className={subNavClass} title="Brands">
-                          <FiGrid size={13} className={styles.subIcon} />
-                          <span>Brands</span>
-                        </NavLink>
-                      )}
-                      {matchTags && (
-                        <NavLink to="/admin/tags" className={subNavClass} title="Tags">
-                          <FiTag size={13} className={styles.subIcon} />
-                          <span>Tags</span>
-                        </NavLink>
-                      )}
-                      {matchVariants && (
-                        <NavLink to="/admin/variants" className={subNavClass} title="Variants & Options">
-                          <FiLayers size={13} className={styles.subIcon} />
-                          <span>Variants &amp; Options</span>
-                        </NavLink>
-                      )}
+                      <NavLink
+                        to="/admin/products"
+                        end
+                        className={subNavClass}
+                        title="Product List"
+                      >
+                        <FiPackage className={styles.subIcon} />
+                        <span className={styles.subLabel}>Product List</span>
+                      </NavLink>
+
+                      <NavLink
+                        to="/admin/categories"
+                        className={subNavClass}
+                        title="Categories"
+                      >
+                        <FiFolder className={styles.subIcon} />
+                        <span className={styles.subLabel}>Categories</span>
+                      </NavLink>
+
+                      <NavLink
+                        to="/admin/brands"
+                        className={subNavClass}
+                        title="Brands"
+                      >
+                        <FiTag className={styles.subIcon} />
+                        <span className={styles.subLabel}>Brands</span>
+                      </NavLink>
+
+                      <NavLink
+                        to="/admin/tags"
+                        className={subNavClass}
+                        title="Tags"
+                      >
+                        <FiGrid className={styles.subIcon} />
+                        <span className={styles.subLabel}>Tags</span>
+                      </NavLink>
+
+                      <NavLink
+                        to="/admin/variants"
+                        className={subNavClass}
+                        title="Variants & Options"
+                      >
+                        <FiLayers className={styles.subIcon} />
+                        <span className={styles.subLabel}>Variants &amp; Options</span>
+                      </NavLink>
                     </div>
                   )}
                 </div>
               )}
 
               {/* Stock Management */}
-              {canAccessInventory && hasInventoryMatches && (
+              {canAccessInventory && (
                 <NavLink to="/admin/inventory" className={navClass} title="Stock Management">
                   <div className={styles.linkLeftGroup}>
                     <FiBox className={styles.linkIcon} />
@@ -439,43 +349,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Section: Operations */}
-          {canAccessOperations && hasOperationsMatches && (
+          {canAccessOperations && (
             <>
               <div className={styles.navSectionTitle}>Operations</div>
 
-              {matchOrders && (
-                <NavLink to="/admin/orders" className={navClass} title="Orders">
-                  <div className={styles.linkLeftGroup}>
-                    <FiShoppingCart className={styles.linkIcon} />
-                    <span className={styles.linkLabel}>Orders</span>
-                  </div>
-                </NavLink>
-              )}
+              <NavLink to="/admin/orders" className={navClass} title="Orders">
+                <div className={styles.linkLeftGroup}>
+                  <FiShoppingCart className={styles.linkIcon} />
+                  <span className={styles.linkLabel}>Orders</span>
+                </div>
+              </NavLink>
 
-              {matchRefunds && (
-                <NavLink to="/admin/refunds" className={navClass} title="Refunds">
-                  <div className={styles.linkLeftGroup}>
-                    <FiRotateCcw className={styles.linkIcon} />
-                    <span className={styles.linkLabel}>Refunds</span>
-                  </div>
-                </NavLink>
-              )}
+              <NavLink to="/admin/refunds" className={navClass} title="Refunds">
+                <div className={styles.linkLeftGroup}>
+                  <FiRotateCcw className={styles.linkIcon} />
+                  <span className={styles.linkLabel}>Refunds</span>
+                </div>
+              </NavLink>
 
-              {matchShipping && (
-                <NavLink to="/admin/shipping-rates" className={navClass} title="Shipping Rates">
-                  <div className={styles.linkLeftGroup}>
-                    <FiTruck className={styles.linkIcon} />
-                    <span className={styles.linkLabel}>Shipping Rates</span>
-                  </div>
-                </NavLink>
-              )}
+              <NavLink
+                to="/admin/shipping-rates"
+                className={navClass}
+                title="Shipping Rates"
+              >
+                <div className={styles.linkLeftGroup}>
+                  <FiTruck className={styles.linkIcon} />
+                  <span className={styles.linkLabel}>Shipping Rates</span>
+                </div>
+              </NavLink>
             </>
           )}
 
           {/* Section: Staff & Admin Management */}
-          {canAccessStaff && hasStaffMatches && (
+          {canAccessStaff && (
             <>
-              <div className={styles.navSectionTitle}>Management</div>
+              <div className={styles.navSectionTitle}>Team</div>
 
               <div className={styles.dropdownGroup}>
                 <button
@@ -492,25 +400,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <FiChevronDown
                     className={`${styles.chevron} ${
-                      staffOpen || isSearching ? styles.chevronRotated : ''
+                      staffOpen ? styles.chevronOpen : ''
                     }`}
                   />
                 </button>
 
-                {(!isCollapsed ? (staffOpen || isSearching) : false) && (
+                {staffOpen && !isCollapsed && (
                   <div className={styles.submenu}>
-                    {matchStaffList && (
-                      <NavLink to="/admin/staff" end className={subNavClass} title="All Accounts">
-                        <FiUsers size={13} className={styles.subIcon} />
-                        <span>All Accounts</span>
-                      </NavLink>
-                    )}
-                    {matchCreateStaff && (
-                      <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Account">
-                        <FiUserPlus size={13} className={styles.subIcon} />
-                        <span>Add New Account</span>
-                      </NavLink>
-                    )}
+                    <NavLink to="/admin/staff" end className={subNavClass} title="All Accounts">
+                      <FiUsers size={13} className={styles.subIcon} />
+                      <span>All Accounts</span>
+                    </NavLink>
+                    <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Account">
+                      <FiUserPlus size={13} className={styles.subIcon} />
+                      <span>Add New Account</span>
+                    </NavLink>
                   </div>
                 )}
               </div>
@@ -518,7 +422,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Section: Reports & Analytics */}
-          {canAccessReports && hasAnalyticsMatches && (
+          {canAccessReports && (
             <>
               <div className={styles.navSectionTitle}>Analytics</div>
               <NavLink to="/admin/reports" className={navClass} title="Reports & Analytics">
@@ -531,7 +435,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Section: System (Audit Logs) */}
-          {isAdmin && hasSystemMatches && (
+          {isAdmin && (
             <>
               <div className={styles.navSectionTitle}>System</div>
               <NavLink to="/admin/audit-logs" className={navClass} title="Audit Logs">
@@ -542,14 +446,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </NavLink>
             </>
           )}
+
+
         </nav>
       </div>
 
       {/* ==========================================================================
-          4. User Profile Footer (Exact 28px Alignment Axis)
+          3. User Profile Footer with Clean Log Out Action
           ========================================================================== */}
       {!isCollapsed ? (
         <div className={styles.sidebarFooter}>
+          {/* User Profile Card */}
           <div
             className={styles.userProfileCard}
             onClick={() => navigate('/admin/profile')}
@@ -568,8 +475,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className={styles.userRole}>{getProfileSubtitle()}</span>
               </div>
             </div>
-            <span className={styles.onlineDot} title="Online" />
           </div>
+
+          {/* Expanded Log Out Button with Icon and Text */}
+          <button
+            type="button"
+            className={styles.expandedLogoutBtn}
+            onClick={handleLogout}
+            title="Log Out"
+          >
+            <FiLogOut size={15} />
+            <span>Log Out</span>
+          </button>
         </div>
       ) : (
         <div className={styles.sidebarFooterCollapsed}>
@@ -585,6 +502,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
             <span className={styles.onlineDotCollapsed} />
           </div>
+          <button
+            type="button"
+            className={styles.footerLogoutBtnCollapsed}
+            onClick={handleLogout}
+            title="Log Out"
+            aria-label="Log Out"
+          >
+            <FiLogOut size={16} />
+          </button>
         </div>
       )}
     </aside>

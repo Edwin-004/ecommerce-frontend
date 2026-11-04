@@ -314,11 +314,10 @@
 
 /* Info Banner for Existing Default Rate */
 .infoBanner {
-  background-color: #eff6ff;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
-  padding: 12px 14px;
-  border-radius: 8px;
+  background-color: #e0e7ff;
+  color: #3730a3;
+  padding: 12px;
+  border-radius: 10px;
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -337,4 +336,15 @@
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   margin-top: 10px;
+}
+
+
+.formError {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  border: 1px solid #f87171;
 }

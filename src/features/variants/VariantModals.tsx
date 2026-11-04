@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { FiX, FiCheck, FiZap, FiAlertCircle } from 'react-icons/fi';
+import { FiCheck, FiZap, FiAlertCircle } from 'react-icons/fi';
+import { BackButton } from '../../components/common/BackButton';
 import styles from './Variants.module.css';
 import { variantApi } from './variantApi';
 import type {
@@ -101,9 +102,9 @@ export const CreateVariantModal: React.FC<CreateVariantModalProps> = ({
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3>Create Product Variant</h3>
-          <button className={styles.modalClose} onClick={onClose}><FiX /></button>
+        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
+          <BackButton onClick={onClose} disabled={loading} />
+          <h3 style={{ margin: 0 }}>Create Product Variant</h3>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -329,9 +330,9 @@ export const EditVariantModal: React.FC<EditVariantModalProps> = ({ variant, onC
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3>Edit Product Variant #{variant.variantId}</h3>
-          <button className={styles.modalClose} onClick={onClose}><FiX /></button>
+        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
+          <BackButton onClick={onClose} disabled={loading} />
+          <h3 style={{ margin: 0 }}>Edit Product Variant #{variant.variantId}</h3>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -426,9 +427,9 @@ export const AddVariationModal: React.FC<AddVariationModalProps> = ({ onClose, o
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
-        <div className={styles.modalHeader}>
-          <h3>New Variation Attribute</h3>
-          <button className={styles.modalClose} onClick={onClose}><FiX /></button>
+        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
+          <BackButton onClick={onClose} disabled={loading} />
+          <h3 style={{ margin: 0 }}>New Variation Attribute</h3>
         </div>
 
         <form onSubmit={handleSubmit}>

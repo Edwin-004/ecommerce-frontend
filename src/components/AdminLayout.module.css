@@ -1,76 +1,24 @@
 /* ==========================================================================
    Vibecoding UI Admin Layout System
-   Mathematical Grid: Main Content (flex-1 bg-[#F8FAFC] min-h-screen px-8 py-5)
+   Fixed/Sticky Top Header Architecture
    ========================================================================== */
-
-.layout {
-  display: flex;
-  min-height: 100vh;
-  background-color: #f8fafc;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.03) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(244, 63, 94, 0.02) 0px, transparent 50%);
-  background-attachment: fixed;
-  position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #0f172a;
-}
 
 .sidebarWrapper {
   width: 260px; /* w-[260px] */
   flex-shrink: 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
   height: 100vh;
   z-index: 50;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.26s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
 }
 
 .sidebarWrapperCollapsed {
   width: 72px; /* w-[72px] */
 }
 
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 100vh;
-  background-color: #f8fafc; /* bg-[#F8FAFC] */
-  padding: 20px 32px; /* px-8 py-5 */
-  width: calc(100% - 260px);
-  margin-left: 260px;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  box-sizing: border-box;
-}
-
-.mainCollapsed {
-  width: calc(100% - 72px);
-  margin-left: 72px;
-}
-
-.content {
-  flex: 1;
-  width: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
-  box-sizing: border-box;
-}
-
 .overlay {
   display: none;
-}
-
-@media (max-width: 1024px) {
-  .main {
-    padding: 16px 20px;
-  }
 }
 
 @media (max-width: 768px) {
@@ -87,13 +35,6 @@
 
   .sidebarOpen {
     transform: translateX(0);
-  }
-
-  .main,
-  .mainCollapsed {
-    width: 100%;
-    margin-left: 0;
-    padding: 16px;
   }
 
   .overlay {

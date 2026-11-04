@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BackButton } from '../../components/common/BackButton';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../utils/axiosConfig';
@@ -147,54 +148,13 @@ export const EditStaff: React.FC = () => {
     return (
         <div className="edit-staff-container">
             <div className="edit-staff-card">
-                <h2 className="edit-staff-title">Edit Account</h2>
-                <p className="edit-staff-subtitle">Update user and role information for ID: #{id}</p>
-
-                {/* Banner: Restricted access for subordinate admins */}
-                {isTargetSuperAdmin && !isCurrentSuperAdmin && (
-                    <div style={{
-                        padding: '12px 16px',
-                        backgroundColor: '#fef2f2',
-                        border: '1px solid #fecaca',
-                        borderRadius: '8px',
-                        color: '#991b1b',
-                        fontSize: '13px',
-                        marginBottom: '18px',
-                        lineHeight: '1.5'
-                    }}>
-                        🛡️ <strong>Access Restricted:</strong> The primary Super Administrator account (<code>admin@ecommerce.com</code>) is protected and cannot be modified by subordinate administrators.
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+                    <BackButton fallbackUrl="/admin/staff" />
+                    <div>
+                        <h2 className="edit-staff-title" style={{ margin: 0 }}>Edit Staff Member</h2>
+                        <p className="edit-staff-subtitle" style={{ margin: 0 }}>Update information for staff ID: {id}</p>
                     </div>
-                )}
-
-                {!isTargetSuperAdmin && isTargetAdmin && !isCurrentSuperAdmin && !isCurrentLoggedInUser && (
-                    <div style={{
-                        padding: '12px 16px',
-                        backgroundColor: '#fef2f2',
-                        border: '1px solid #fecaca',
-                        borderRadius: '8px',
-                        color: '#991b1b',
-                        fontSize: '13px',
-                        marginBottom: '18px',
-                        lineHeight: '1.5'
-                    }}>
-                        🛡️ <strong>Access Restricted:</strong> Subordinate administrators cannot modify or reassign accounts belonging to fellow administrators. Only the Super Administrator has this authority.
-                    </div>
-                )}
-
-                {/* Banner: Editing own logged-in account */}
-                {isCurrentLoggedInUser && (
-                    <div style={{
-                        padding: '10px 14px',
-                        backgroundColor: '#eff6ff',
-                        border: '1px solid #bfdbfe',
-                        borderRadius: '8px',
-                        color: '#1e40af',
-                        fontSize: '13px',
-                        marginBottom: '18px'
-                    }}>
-                        ℹ️ <strong>You are editing your own account.</strong> Account deactivation and role demotion away from Administrator are restricted.
-                    </div>
-                )}
+                </div>
 
                 <form onSubmit={handleSubmit} className="edit-staff-form">
                     <div className="form-group">

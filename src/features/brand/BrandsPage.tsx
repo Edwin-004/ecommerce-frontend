@@ -1,4 +1,3 @@
-import { BackButton } from '../../components/common/BackButton';
 
 import { useEffect, useState, useRef } from 'react';
 
@@ -66,7 +65,7 @@ const getLogoUrl = (
 };
 
 // =====================================================
-// CATEGORY API (apiFetch ကို အသုံးပြုရန် ပြင်ဆင်ထားသည်)
+// CATEGORY API
 // =====================================================
 
 const getCategories = async (): Promise<Category[]> => {
@@ -304,6 +303,12 @@ export function BrandsPage() {
     setExportSuccessMessage(null);
 
     try {
+      if (search && search.trim().length > 100) {
+        alert('Search query cannot exceed 100 characters for export.');
+        setExportingFormat(null);
+        return;
+      }
+
       const params: Record<string, any> = {
         columns: selectedExportColumns.join(','),
         status: status || 'ALL',
@@ -409,7 +414,7 @@ export function BrandsPage() {
   };
 
   // =====================================================
-  // SAVE / CREATE / UPDATE
+  // SAVE / CREATE / UPDATE 
   // =====================================================
 
   const handleSave = async (
@@ -432,7 +437,7 @@ export function BrandsPage() {
       setShowModal(false);
       setEditingBrand(null);
 
-      // Refresh current page after create or edit.
+
       let result = await getBrands(
         page,
         PAGE_SIZE,
@@ -442,8 +447,6 @@ export function BrandsPage() {
         sortDir
       );
 
-      // If the current page became empty after editing,
-      // go back to the first page.
       if (result.content.length === 0 && page > 0) {
         setPage(0);
         return;
@@ -454,12 +457,8 @@ export function BrandsPage() {
       setTotalElements(result.totalElements);
     } catch (error) {
       console.error('Failed to save brand:', error);
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : 'Failed to save brand'
-      );
+      
+      throw error;
     } finally {
       setSaving(false);
     }
@@ -560,10 +559,9 @@ export function BrandsPage() {
       {/* HEADER */}
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
-          <BackButton fallbackUrl="/admin/dashboard" />
           <div>
-            <h1 className={styles.pageTitle}>Brand Management</h1>
-            <p className={styles.pageSubtitle}>
+            <h1 className={`${styles.pageTitle} text-xl font-semibold text-slate-900 tracking-tight`}>Brand Management</h1>
+            <p className={`${styles.pageSubtitle} text-xs text-slate-500`}>
               Manage your product brands and brand logos.
             </p>
           </div>
@@ -620,6 +618,7 @@ export function BrandsPage() {
             type="text"
             className={styles.searchInput}
             placeholder="Search brand, category or description..."
+            maxLength={100}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -756,10 +755,10 @@ export function BrandsPage() {
       {/* TABLE CARD */}
       <div className={styles.tableCard}>
         <div className={styles.tableWrapper}>
-          <table className={styles.brandsTable}>
+          <table className={`${styles.brandsTable} ${brands.length > 0 ? 'table-with-data' : 'table-empty'}`}>
             <thead>
               <tr>
-                <th style={{ width: '60px', paddingLeft: '20px' }}>#</th>
+                <th className="text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
                 <th
                   style={{ cursor: 'pointer', userSelect: 'none' }}
                   onClick={() => handleSort('brandName')}
@@ -780,7 +779,7 @@ export function BrandsPage() {
                     {renderSortIcon('status')}
                   </div>
                 </th>
-                <th style={{ textAlign: 'right', paddingRight: '20px' }}>Actions</th>
+                <th className="text-right" style={{ textAlign: 'right', paddingRight: '20px' }}>Actions</th>
               </tr>
             </thead>
 
@@ -828,7 +827,7 @@ export function BrandsPage() {
 
                   return (
                     <tr key={brand.brandId}>
-                      <td style={{ paddingLeft: '20px', fontWeight: 600, color: '#64748b' }}>
+                      <td className="text-center" style={{ fontWeight: 600, color: '#64748b', textAlign: 'center' }}>
                         {rowNumber}
                       </td>
 
@@ -890,7 +889,7 @@ export function BrandsPage() {
                         )}
                       </td>
 
-                      <td style={{ textAlign: 'right', paddingRight: '20px' }}>
+                      <td className="text-right" style={{ textAlign: 'right', paddingRight: '20px' }}>
                         <button
                           type="button"
                           className="table-btn-edit"
@@ -943,9 +942,7 @@ export function BrandsPage() {
         )}
       </div>
 
-
       {/* CREATE / EDIT MODAL */}
-
       <BrandModal
         show={showModal}
         brand={editingBrand}

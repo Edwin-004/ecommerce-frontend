@@ -506,8 +506,8 @@
 }
 
 .actions-column {
-  width: 120px;
-  text-align: right;
+  width: 180px;
+  text-align: center;
 }
 
 .id-cell {
@@ -902,25 +902,26 @@
 }
 
 .tag-btn-add-primary {
-  background: #5b5dfa;
-  color: white;
+  background: #2563eb;
+  color: #ffffff;
   border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 2px 8px rgba(91, 93, 250, 0.25);
-  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
 
 .tag-btn-add-primary:hover {
-  background: #494bee;
+  background: #1d4ed8;
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
 }
 
 .tag-metrics-grid {

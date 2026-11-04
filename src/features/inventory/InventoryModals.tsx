@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiCheck, FiAlertCircle } from 'react-icons/fi';
+import { FiCheck, FiAlertCircle } from 'react-icons/fi';
+import { BackButton } from '../../components/common/BackButton';
 import styles from './Inventory.module.css';
+import { DatePicker } from '../../components/common/DatePicker';
+import { formatDateTime } from '../../utils/dateUtils';
 import { inventoryApi } from './inventoryApi';
 import type { InventoryItem, InventoryTransaction } from '../../types/inventory';
 
@@ -53,9 +56,9 @@ export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuc
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3>Restock Variant</h3>
-          <button className={styles.modalClose} onClick={onClose}><FiX /></button>
+        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
+          <BackButton onClick={onClose} disabled={loading} />
+          <h3 style={{ margin: 0 }}>Restock Variant</h3>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -116,8 +119,7 @@ export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuc
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <div className={styles.formGroup} style={{ margin: 0 }}>
                     <label style={{ fontSize: '11px' }}>New Expiry Date</label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={expiryDate}
                       onChange={(e) => setExpiryDate(e.target.value)}
                     />
@@ -203,9 +205,9 @@ export const WriteOffModal: React.FC<WriteOffModalProps> = ({ item, onClose, onS
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3>Write-Off Damaged / Expired Stock</h3>
-          <button className={styles.modalClose} onClick={onClose}><FiX /></button>
+        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
+          <BackButton onClick={onClose} disabled={loading} />
+          <h3 style={{ margin: 0 }}>Write-Off Damaged / Expired Stock</h3>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -298,9 +300,9 @@ export const AdjustModal: React.FC<AdjustModalProps> = ({ item, onClose, onSucce
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3>Adjust Physical Stock Count</h3>
-          <button className={styles.modalClose} onClick={onClose}><FiX /></button>
+        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
+          <BackButton onClick={onClose} disabled={loading} />
+          <h3 style={{ margin: 0 }}>Adjust Physical Stock Count</h3>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -374,9 +376,9 @@ export const VariantHistoryModal: React.FC<HistoryModalProps> = ({ item, onClose
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={`${styles.modalContent} ${styles.historyModal}`} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h3>Audit Trail: {item.sku}</h3>
-          <button className={styles.modalClose} onClick={onClose}><FiX /></button>
+        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
+          <BackButton onClick={onClose} />
+          <h3 style={{ margin: 0 }}>Audit Trail: {item.sku}</h3>
         </div>
 
         <div className={styles.modalBody}>
@@ -405,7 +407,7 @@ export const VariantHistoryModal: React.FC<HistoryModalProps> = ({ item, onClose
                   {transactions.map((t) => (
                     <tr key={t.txnId}>
                       <td style={{ fontSize: '12px', color: '#64748b' }}>
-                        {new Date(t.createdAt).toLocaleString()}
+                        {formatDateTime(t.createdAt)}
                       </td>
                       <td>
                         <span className={`${styles.badge} ${

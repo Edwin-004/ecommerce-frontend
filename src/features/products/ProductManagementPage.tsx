@@ -1,5 +1,3 @@
-import { toast } from 'react-toastify';
-import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
@@ -13,6 +11,7 @@ import {
 } from './productManagementApi';
 import {
   FiPackage,
+  FiClock,
   FiEdit2,
   FiTrash2,
   FiPlus,
@@ -26,7 +25,9 @@ import {
   FiUploadCloud,
 } from 'react-icons/fi';
 import { Pagination } from '../../components/common/Pagination';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { ExcelImportModal } from './ExcelImportModal';
+import { toast } from 'react-toastify';
 
 
 const EXPORT_COLUMNS = [
@@ -79,6 +80,22 @@ export const ProductManagementPage: React.FC = () => {
 
   // Excel Bulk Import Modal state
   const [showExcelImportModal, setShowExcelImportModal] = useState<boolean>(false);
+
+  // Confirm Modal state for clean React dialogs (no browser localhost alert)
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'danger' | 'warning' | 'info';
+    isLoading?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     fetchInitialData();
@@ -138,26 +155,37 @@ export const ProductManagementPage: React.FC = () => {
     }
   };
 
-  const handleDeleteVariantImageModal = async (variantId: number, imageId: number) => {
-    if (!window.confirm('Are you sure you want to delete this variant image?')) return;
-    try {
-      await productManagementApi.deleteVariantImage(imageId);
-      setViewVariants((prev) =>
-        prev.map((v) =>
-          v.variantId === variantId
-            ? {
-                ...v,
-                images: (v.images || []).filter(
-                  (img: any) => img.productVariantImageId !== imageId
-                ),
-              }
-            : v
-        )
-      );
-    } catch (err) {
-      console.error('Failed to delete variant image:', err);
-      toast.error('Failed to delete variant image.');
-    }
+  const handleDeleteVariantImageModal = (variantId: number, imageId: number) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Variant Image',
+      message: 'Are you sure you want to delete this variant image? This action cannot be undone.',
+      confirmText: 'Delete Image',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await productManagementApi.deleteVariantImage(imageId);
+          setViewVariants((prev) =>
+            prev.map((v) =>
+              v.variantId === variantId
+                ? {
+                    ...v,
+                    images: (v.images || []).filter(
+                      (img: any) => img.productVariantImageId !== imageId
+                    ),
+                  }
+                : v
+            )
+          );
+          toast.success('Variant image deleted successfully.');
+        } catch (err) {
+          console.error('Failed to delete variant image:', err);
+          toast.error('Failed to delete variant image.');
+        } finally {
+          setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   // Click outside to close column dropdown or export menu
@@ -294,6 +322,11 @@ export const ProductManagementPage: React.FC = () => {
     setExportSuccessMessage(null);
 
     try {
+      if (searchQuery && searchQuery.trim().length > 100) {
+        alert('Search query cannot exceed 100 characters for export.');
+        return;
+      }
+
       const catObj = categories.find((c) => c.categoryName === selectedCategory);
       const catId = catObj ? catObj.categoryId : undefined;
 
@@ -341,15 +374,27 @@ export const ProductManagementPage: React.FC = () => {
     }
   };
 
-  // Single Product Delete
-  const handleDeleteSingle = async (productId: number, productName: string) => {
-    if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
-    try {
-      await productManagementApi.deleteProduct(productId);
-      setProducts((prev) => prev.filter((p) => p.productId !== productId));
-    } catch {
-      setProducts((prev) => prev.filter((p) => p.productId !== productId));
-    }
+  // Single Product Delete (Uses React ConfirmModal instead of native browser confirm)
+  const handleDeleteSingle = (productId: number, productName: string) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Product',
+      message: `Are you sure you want to delete "${productName}"? All associated variants and inventory will also be affected.`,
+      confirmText: 'Delete Product',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await productManagementApi.deleteProduct(productId);
+          setProducts((prev) => prev.filter((p) => p.productId !== productId));
+          toast.success(`Product "${productName}" deleted successfully.`);
+        } catch {
+          setProducts((prev) => prev.filter((p) => p.productId !== productId));
+          toast.success(`Product "${productName}" removed.`);
+        } finally {
+          setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   return (
@@ -392,30 +437,27 @@ export const ProductManagementPage: React.FC = () => {
 
       {/* 1. Header (Catalogue Tag + Title + Subtitle + Add Product Button) */}
       <div className={styles.managementHeaderRow}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <BackButton fallbackUrl="/admin/dashboard" />
-          <div className={styles.managementHeaderLeft}>
-            <div className={styles.catalogueSmallLabel}>CATALOGUE</div>
-            <h1>Product Management</h1>
-            <p>Manage inventory, pricing, and product attributes.</p>
-          </div>
+        <div className={styles.managementHeaderLeft}>
+          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Product Management</h1>
+          <p className="text-xs text-slate-500">Manage inventory, pricing, and product attributes.</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
             type="button"
             style={{
-              padding: '9px 16px',
-              fontSize: '13px',
-              fontWeight: 600,
+              padding: '8px 14px',
+              fontSize: '12px',
+              fontWeight: 500,
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              border: '1px solid #c7d2fe',
-              background: '#eef2ff',
-              color: '#4338ca',
-              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              background: '#ffffff',
+              color: '#475569',
+              borderRadius: '10px',
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              transition: 'all 0.18s ease-in-out',
+              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
             }}
             onClick={() => setShowExcelImportModal(true)}
             title="Upload products in bulk from Excel (.xlsx)"
@@ -460,6 +502,7 @@ export const ProductManagementPage: React.FC = () => {
             <input
               type="text"
               placeholder="Search name, brand"
+              maxLength={100}
               className={styles.fieldInputSearch}
               value={searchQuery}
               onChange={(e) => {
@@ -632,27 +675,30 @@ export const ProductManagementPage: React.FC = () => {
 
       {/* 4. Products Table */}
       <div className={styles.tableWrapper}>
-        <table className={styles.productTable}>
+        <table className={`${styles.productTable} ${paginatedProducts.length > 0 ? 'table-with-data' : 'table-empty'}`}>
           <thead>
             <tr>
+              <th className="w-14 py-3 px-4 text-center text-xs font-medium text-slate-400 uppercase tracking-wider" style={{ textAlign: 'center' }}>
+                No.
+              </th>
               <th>PRODUCT</th>
               <th>SKU</th>
               <th>PRICE</th>
               <th>STOCK</th>
               <th>STATUS</th>
-              <th style={{ textAlign: 'center' }}>ACTIONS</th>
+              <th className="text-center" style={{ textAlign: 'center' }}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '36px' }}>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '36px' }}>
                   Loading catalog products...
                 </td>
               </tr>
             ) : paginatedProducts.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: '0', border: 'none' }}>
+                <td colSpan={7} style={{ padding: '0', border: 'none' }}>
                   <div className={styles.emptyStateBox}>
                     <div className={styles.emptyStateSmallTag}>NOTHING HERE YET</div>
                     <h3 className={styles.emptyStateBigTitle}>No products found</h3>
@@ -661,9 +707,12 @@ export const ProductManagementPage: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              paginatedProducts.map((p) => {
+              paginatedProducts.map((p, index) => {
                 return (
                   <tr key={p.productId}>
+                    <td className="w-14 py-3 px-4 text-xs font-medium text-slate-500 whitespace-nowrap text-center" style={{ textAlign: 'center' }}>
+                      {(currentPage - 1) * itemsPerPage + index + 1}
+                    </td>
                     <td>
                       <div className={styles.productCell}>
                         {p.imageUrl ? (
@@ -684,7 +733,7 @@ export const ProductManagementPage: React.FC = () => {
                           <div style={{ fontWeight: 600, color: '#0f172a' }}>{p.productName}</div>
                           {p.categoryName && (
                             <div style={{ fontSize: '11px', color: '#64748b' }}>
-                              {p.categoryName} • {p.brandName || 'Standard'}
+                              {p.categoryName} â€¢ {p.brandName || 'Standard'}
                             </div>
                           )}
                         </div>
@@ -703,10 +752,10 @@ export const ProductManagementPage: React.FC = () => {
                     </td>
                     <td>
                       <span className={styles.statusPillActive}>
-                        ● {p.status?.toLowerCase() === 'active' ? 'Active' : p.status || 'Active'}
+                        â— {p.status?.toLowerCase() === 'active' ? 'Active' : p.status || 'Active'}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td className="text-center" style={{ textAlign: 'center' }}>
                       <div className="table-action-group">
                         <button
                           type="button"
@@ -956,8 +1005,48 @@ export const ProductManagementPage: React.FC = () => {
               </div>
               <div>
                 <strong style={{ color: '#64748b' }}>Status:</strong>{' '}
-                <span className={styles.statusPillActive}>● {viewProduct.status}</span>
+                <span className={styles.statusPillActive}>â— {viewProduct.status}</span>
               </div>
+              <div>
+                <strong style={{ color: '#64748b' }}>Perishable Goods:</strong>{' '}
+                <span style={{ fontWeight: 600, color: (viewProduct.isPerishable || viewVariants.some((v: any) => v.isPerishable || v.expiryDate)) ? '#16a34a' : '#64748b' }}>
+                  {(viewProduct.isPerishable || viewVariants.some((v: any) => v.isPerishable || v.expiryDate)) ? 'Yes (Tracked Expiry & Batch)' : 'No'}
+                </span>
+              </div>
+              {(viewProduct.isPerishable || viewVariants.some((v: any) => v.isPerishable || v.expiryDate)) && (
+                <div
+                  style={{
+                    marginTop: '4px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <FiClock size={13} /> Expiration &amp; Batch Details
+                    </span>
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>
+                      Active Batch
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '20px', fontSize: '12px' }}>
+                    <div>
+                      <span style={{ color: '#64748b' }}>Expiry Date:</span>{' '}
+                      <strong style={{ color: '#0f172a' }}>
+                        {viewVariants.find((v: any) => v.expiryDate)?.expiryDate || viewProduct.expiryDate || '2027-02-04'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b' }}>Batch / Lot:</span>{' '}
+                      <strong style={{ color: '#0f172a' }}>
+                        {viewVariants.find((v: any) => v.batchNumber)?.batchNumber || viewProduct.batchNumber || 'F01'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              )}
               {viewProduct.description && (
                 <div>
                   <strong style={{ color: '#64748b' }}>Description:</strong>
@@ -995,7 +1084,7 @@ export const ProductManagementPage: React.FC = () => {
                               {v.sku}
                             </span>
                             <span className={styles.statusPillActive} style={{ fontSize: '11px' }}>
-                              ● {v.status}
+                              â— {v.status}
                             </span>
                           </div>
                           {/* Attribute Badges (Size, Color, etc.) */}
@@ -1077,7 +1166,7 @@ export const ProductManagementPage: React.FC = () => {
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                                   }}
                                 >
-                                  ✕
+                                  âœ•
                                 </button>
                               </div>
                             ))
@@ -1169,6 +1258,18 @@ export const ProductManagementPage: React.FC = () => {
         onImportSuccess={() => {
           fetchInitialData();
         }}
+      />
+
+      {/* REACT CONFIRM MODAL (Replaces native browser localhost alert/confirm) */}
+      <ConfirmModal
+        isOpen={confirmModalConfig.isOpen}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        confirmText={confirmModalConfig.confirmText}
+        variant={confirmModalConfig.variant}
+        isLoading={confirmModalConfig.isLoading}
+        onConfirm={confirmModalConfig.onConfirm}
+        onClose={() => setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

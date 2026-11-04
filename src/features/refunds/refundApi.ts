@@ -79,6 +79,16 @@ export async function exportRefundReport(
     columns: string[];
   }
 ): Promise<Blob> {
+  if (params.search && params.search.trim().length > 100) {
+    throw new Error('Search query cannot exceed 100 characters.');
+  }
+  if (params.startDate && params.endDate) {
+    const diffDays = (new Date(params.endDate).getTime() - new Date(params.startDate).getTime()) / (1000 * 3600 * 24);
+    if (diffDays > 365) {
+      throw new Error('Date range cannot exceed 1 year (365 days) for report generation.');
+    }
+  }
+
   const token = localStorage.getItem('token');
   const query = new URLSearchParams();
   if (params.search?.trim()) query.append('search', params.search.trim());

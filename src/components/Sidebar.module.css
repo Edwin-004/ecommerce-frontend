@@ -20,8 +20,10 @@
   flex-direction: column;
   justify-content: space-between;
   user-select: none;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    padding 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.26s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+  transform: translateZ(0);
   box-sizing: border-box;
   z-index: 50;
   overflow: hidden;
@@ -471,12 +473,13 @@
 }
 
 .userProfileCard {
-  height: 40px; /* h-10 */
-  padding: 0 12px; /* px-3: starts on the 28px left-axis */
-  border-radius: 8px; /* rounded-lg */
+  height: 44px;
+  padding: 6px 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
   box-sizing: border-box;
@@ -484,7 +487,7 @@
 }
 
 .userProfileCard:hover {
-  background-color: rgba(241, 245, 249, 0.8); /* hover:bg-slate-100/80 */
+  background-color: #f1f5f9;
 }
 
 .avatarLeft {
@@ -495,15 +498,15 @@
 }
 
 .avatarBox {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background-color: #0f172a; /* bg-slate-900 */
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: #0f172a;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   flex-shrink: 0;
 }
@@ -512,7 +515,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  line-height: 1.2;
+  line-height: 1.25;
+  justify-content: center;
+  flex: 1;
 }
 
 .userName {
@@ -525,18 +530,48 @@
 }
 
 .userRole {
-  font-size: 10px;
-  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 400;
+  color: #64748b;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.expandedLogoutBtn {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid #fee2e2;
+  background-color: #fff1f2;
+  color: #e11d48;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.expandedLogoutBtn:hover {
+  background-color: #ffe4e6;
+  border-color: #fca5a5;
+  color: #be123c;
+}
+
+.expandedLogoutBtn:active {
+  transform: scale(0.98);
 }
 
 .onlineDot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: #10b981; /* emerald-500 */
+  background-color: #10b981;
   flex-shrink: 0;
 }
 
@@ -637,11 +672,13 @@
   flex-shrink: 0;
 }
 
-.collapsed .sidebarFooterCollapsed {
-  border-top: 1px solid rgba(226, 232, 240, 0.8);
-  padding-top: 14px;
+.sidebarFooterCollapsed {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   margin-top: auto;
 }
 
@@ -659,6 +696,7 @@
   cursor: pointer;
   position: relative;
   transition: transform 0.15s ease;
+  margin: 0 auto;
 }
 
 .avatarBoxCollapsed:hover {
@@ -674,6 +712,28 @@
   bottom: -2px;
   right: -2px;
   border: 2px solid #ffffff;
+}
+
+.footerLogoutBtnCollapsed {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: #e11d48;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0 auto;
+}
+
+.footerLogoutBtnCollapsed:hover {
+  background-color: #fff1f2;
+  color: #be123c;
 }
 
 

@@ -2,39 +2,45 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 6px 12px;
   background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 12px;
   color: #475569;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   line-height: 1.4;
   user-select: none;
 }
 
 .backButton:hover {
-  background-color: #f8fafc;
+  background-color: rgba(241, 245, 249, 0.8);
   color: #0f172a;
   border-color: #cbd5e1;
-  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.08);
 }
 
 .backButton:active {
-  transform: scale(0.98);
+  transform: scale(0.95);
+}
+
+.backButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .backIcon {
   color: #64748b;
-  transition: transform 0.2s ease-out, color 0.2s ease-out;
+  transition: transform 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .backButton:hover .backIcon {
-  transform: translateX(-3px);
-  color: #2563eb;
+  transform: translateX(-2px);
+  color: #0f172a;
 }
 
 .backLabel {
