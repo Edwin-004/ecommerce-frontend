@@ -120,3 +120,174 @@
     color: #ef4444;
     font-size: 16px;
 }
+
+
+/* ==========================================================================
+   Role Change Confirmation Modal (Super Admin Authorization)
+   ========================================================================== */
+
+.role-confirm-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1100;
+    padding: 16px;
+}
+
+.role-confirm-card {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 520px;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
+    padding: 24px;
+    animation: fadeInModal 0.2s ease-out;
+}
+
+@keyframes fadeInModal {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.role-confirm-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 12px;
+}
+
+.role-confirm-badge {
+    display: inline-block;
+    background-color: #fef3c7;
+    color: #92400e;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    width: fit-content;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.role-confirm-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.role-confirm-text {
+    font-size: 13.5px;
+    color: #334155;
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+}
+
+.role-confirm-flow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    gap: 8px;
+}
+
+.role-flow-box {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+}
+
+.role-flow-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.role-flow-val {
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.role-flow-old .role-flow-val {
+    color: #b91c1c;
+}
+
+.role-flow-new .role-flow-val {
+    color: #15803d;
+}
+
+.role-flow-arrow {
+    font-size: 18px;
+    color: #94a3b8;
+    padding: 0 4px;
+}
+
+.role-confirm-notice {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: #1e40af;
+    font-size: 12.5px;
+    margin-bottom: 20px;
+    line-height: 1.45;
+}
+
+.role-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-confirm-cancel {
+    padding: 8px 16px;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-confirm-cancel:hover {
+    background-color: #f1f5f9;
+}
+
+.btn-confirm-proceed {
+    padding: 8px 18px;
+    background-color: #2563eb;
+    border: 1px solid #1d4ed8;
+    color: #ffffff;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-confirm-proceed:hover {
+    background-color: #1d4ed8;
+}

@@ -1,3 +1,4 @@
+import { toast } from 'react-toastify';
 import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -77,6 +78,7 @@ export interface GeneratedVariant {
   sku: string;
   combination: Array<{ attrName: string; value: string }>;
   price: string | number;
+  costPrice?: string | number;
   stock: string | number;
   images: File[];
   imagePreviews: string[];
@@ -112,6 +114,7 @@ export const CreateProductPage: React.FC = () => {
   // Form Fields
   const [productName, setProductName] = useState('');
   const [price, setPrice] = useState('');
+  const [costPrice, setCostPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [status, setStatus] = useState('ACTIVE');
   const [description, setDescription] = useState('');
@@ -283,7 +286,7 @@ export const CreateProductPage: React.FC = () => {
       setSelectedBrand(String(res.brandId));
       setShowBrandModal(false);
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Failed to create brand');
+      toast.error(err.response?.data?.message || err.message || 'Failed to create brand');
     } finally {
       setBrandLoading(false);
     }
@@ -301,7 +304,7 @@ export const CreateProductPage: React.FC = () => {
       setShowTagModal(false);
       setNewTagName('');
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Failed to create tag');
+      toast.error(err.response?.data?.message || err.message || 'Failed to create tag');
     } finally {
       setTagLoading(false);
     }
@@ -450,6 +453,7 @@ export const CreateProductPage: React.FC = () => {
           sku: generateVariantSku(idx, combo, activeName),
           combination: combo,
           price: activePrice,
+          costPrice: costPrice || '',
           stock: '',
           images: [],
           imagePreviews: [],
@@ -533,7 +537,7 @@ export const CreateProductPage: React.FC = () => {
   const handleAddExistingAttribute = () => {
     if (!selectedExistingAttr) return;
     if (attributes.some((a) => a.name.toLowerCase() === selectedExistingAttr.toLowerCase())) {
-      alert('This attribute is already added to the product.');
+      toast.warning('This attribute is already added to the product.');
       return;
     }
 
@@ -553,7 +557,7 @@ export const CreateProductPage: React.FC = () => {
   const handleAddCustomAttribute = () => {
     if (!customAttrName.trim()) return;
     if (attributes.some((a) => a.name.toLowerCase() === customAttrName.trim().toLowerCase())) {
-      alert('Attribute already exists.');
+      toast.warning('Attribute already exists.');
       return;
     }
 
@@ -574,7 +578,7 @@ export const CreateProductPage: React.FC = () => {
     setGeneratedVariants((prev) => prev.filter((v) => v.id !== id));
   };
 
-  const handleVariantFieldChange = (id: string, field: 'price' | 'stock', value: string) => {
+  const handleVariantFieldChange = (id: string, field: 'price' | 'costPrice' | 'stock', value: string) => {
     setGeneratedVariants((prev) =>
       prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
     );
@@ -684,11 +688,16 @@ export const CreateProductPage: React.FC = () => {
       let createdProduct: any = null;
       try {
         createdProduct = await productManagementApi.createProduct(productPayload);
-      } catch (err) {
-        console.warn('Backend product creation fallback:', err);
+      } catch (err: any) {
+        console.error('Backend product creation error:', err);
+        throw new Error(err.message || 'Failed to create base product in backend.');
       }
 
-      const prodId = createdProduct?.productId || Date.now();
+      if (!createdProduct || !createdProduct.productId) {
+        throw new Error('Failed to create product: No valid product ID was returned by the server.');
+      }
+
+      const prodId = createdProduct.productId;
 
       // 2. Upload Images if any
       if (selectedImages.length > 0 && createdProduct?.productId) {
@@ -785,8 +794,12 @@ export const CreateProductPage: React.FC = () => {
               )
               .filter((id): id is number => typeof id === 'number');
 
-            const varPrice =
+            const varSellingPrice =
               Number(gv.price) > 0 ? Number(gv.price) : Number(price);
+            const varCostPrice =
+              gv.costPrice !== undefined && gv.costPrice !== '' && Number(gv.costPrice) >= 0
+                ? Number(gv.costPrice)
+                : (costPrice ? Number(costPrice) : undefined);
             const varStock =
               Number(gv.stock) >= 0 ? Number(gv.stock) : (Number(quantity) || 0);
 
@@ -796,26 +809,15 @@ export const CreateProductPage: React.FC = () => {
                 await productManagementApi.createProductVariantWithOptions({
                   productId: prodId,
                   sku: gv.sku,
-                  sellingPrice: varPrice,
+                  sellingPrice: varSellingPrice,
+                  costPrice: varCostPrice,
                   status: 'ACTIVE',
                   optionIds: validOptionIds,
                   initialStock: varStock,
+                  expiryDate: isPerishable && expiryDate ? expiryDate : undefined,
+                  batchNumber: isPerishable && batchNumber ? batchNumber.trim() : undefined,
+                  isPerishable: isPerishable,
                 });
-
-              // Link expiry details to inventory if product is perishable
-              if (isPerishable && expiryDate && createdVariant?.variantId) {
-                try {
-                  await inventoryApi.restockVariant({
-                    variantId: createdVariant.variantId,
-                    quantity: 0,
-                    expiryDate: expiryDate,
-                    batchNumber: batchNumber.trim() || undefined,
-                    remark: 'Initial batch expiry setup',
-                  });
-                } catch (invErr) {
-                  console.warn('Initial expiry setup for variant skipped:', invErr);
-                }
-              }
             } catch (createVarErr) {
               console.warn(`Failed to create variant ${gv.sku}:`, createVarErr);
             }
@@ -858,33 +860,24 @@ export const CreateProductPage: React.FC = () => {
             productId: prodId,
             sku: skuCode,
             sellingPrice: Number(price),
+            costPrice: costPrice ? Number(costPrice) : undefined,
             status: 'ACTIVE',
             optionIds: [],
             initialStock: initQty,
+            expiryDate: isPerishable && expiryDate ? expiryDate : undefined,
+            batchNumber: isPerishable && batchNumber ? batchNumber.trim() : undefined,
+            isPerishable: isPerishable,
           });
-
-          // Link expiry details to inventory if product is perishable
-          if (isPerishable && expiryDate && createdSimpleVar?.variantId) {
-            try {
-              await inventoryApi.restockVariant({
-                variantId: createdSimpleVar.variantId,
-                quantity: 0,
-                expiryDate: expiryDate,
-                batchNumber: batchNumber.trim() || undefined,
-                remark: 'Initial batch expiry setup',
-              });
-            } catch (invErr) {
-              console.warn('Initial expiry setup for simple variant skipped:', invErr);
-            }
-          }
         } catch (singleVarErr: any) {
           console.warn('Default variant creation skipped:', singleVarErr);
           throw new Error('Base product was created, but stock inventory setup failed: ' + (singleVarErr.message || ''));
         }
       }
 
-      alert('Product created successfully with SKU and inventory stock!');
-      navigate('/admin/products');
+      toast.success('Product created successfully with SKU and inventory stock!');
+      setTimeout(() => {
+        navigate('/admin/products');
+      }, 600);
     } catch (err: any) {
       console.error(err);
       setErrorMessage(err.message || 'Failed to create product.');
@@ -973,14 +966,14 @@ export const CreateProductPage: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Price (MMK) *</label>
+              <label>Selling Price (MMK) *</label>
               <input
                 type="number"
                 required
                 min="0"
                 step="any"
                 className={styles.inputField}
-                placeholder="Enter price in MMK"
+                placeholder="Enter selling price in MMK"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
               />
@@ -988,6 +981,19 @@ export const CreateProductPage: React.FC = () => {
           </div>
 
           <div className={styles.formGrid2}>
+            <div className={styles.inputGroup}>
+              <label>Cost Price (MMK) (Optional)</label>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                className={styles.inputField}
+                placeholder="Enter cost price in MMK"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+              />
+            </div>
+
             <div className={styles.inputGroup}>
               <label>Quantity * (Min. 10)</label>
               <input
@@ -1846,18 +1852,31 @@ export const CreateProductPage: React.FC = () => {
                         {/* Price & Stock Inputs */}
                         <div className={styles.variantCardInputsRow}>
                           <div className={styles.variantCardInputCol}>
-                            <label>PRICE (MMK)</label>
+                            <label>Selling Price (MMK)</label>
                             <input
                               type="number"
                               min="0"
                               value={gv.price}
+                              placeholder="0"
                               onChange={(e) =>
                                 handleVariantFieldChange(gv.id, 'price', e.target.value)
                               }
                             />
                           </div>
                           <div className={styles.variantCardInputCol}>
-                            <label>STOCK</label>
+                            <label>Cost Price (MMK)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={gv.costPrice !== undefined ? gv.costPrice : ''}
+                              onChange={(e) =>
+                                handleVariantFieldChange(gv.id, 'costPrice', e.target.value)
+                              }
+                            />
+                          </div>
+                          <div className={styles.variantCardInputCol}>
+                            <label>Stock</label>
                             <input
                               type="number"
                               min="0"

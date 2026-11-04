@@ -35,8 +35,12 @@ export interface UpdateZoneRateRequest {
   status?: 'ACTIVE' | 'INACTIVE';
 }
 
+export interface LocationCity {
+  cityName: string;
+  townships: string[];
+}
+
 export interface LocationRegion {
   regionOrState: string;
-  city: string;
-  townships: string[];
+  cities: LocationCity[];
 }

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import React, { useState, useEffect } from 'react';
 import { BackButton } from '../../components/common/BackButton';
 import { useUpdateZoneRateMutation } from './shippingApi';
@@ -18,14 +19,18 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
 
   // Specific Zone State များ
   const [zoneName, setZoneName] = useState('');
-  const [shippingFee, setShippingFee] = useState<number>(0);
-  const [estimatedDays, setEstimatedDays] = useState<number>(1);
+  const [shippingFee, setShippingFee] = useState<number | string>();
+  const [estimatedDays, setEstimatedDays] = useState<number | string>();
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
 
   // Default Zone (ရှိခဲ့လျှင်) State များ
   const [isEditingDefault, setIsEditingDefault] = useState(false);
-  const [defaultShippingFee, setDefaultShippingFee] = useState<number>(0);
-  const [defaultEstimatedDays, setDefaultEstimatedDays] = useState<number>(1);
+  const [defaultShippingFee, setDefaultShippingFee] = useState<
+    number | string
+  >();
+  const [defaultEstimatedDays, setDefaultEstimatedDays] = useState<
+    number | string
+  >();
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -84,12 +89,14 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
     }
   };
 
-  return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
-        <div className={styles.modalHeader} style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start' }}>
-          <BackButton onClick={onClose} />
-          <h3 style={{ margin: 0 }}>Edit Zone & Rates</h3>
+  return createPortal(
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h3>Edit Zone & Rates</h3>
+          <button onClick={onClose} className={styles.closeBtn}>
+            &times;
+          </button>
         </div>
 
         {errorMessage && (
@@ -142,7 +149,11 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
               <input
                 type="number"
                 value={shippingFee}
-                onChange={(e) => setShippingFee(Number(e.target.value))}
+                onChange={(e) =>
+                  setShippingFee(
+                    e.target.value === '' ? '' : Number(e.target.value)
+                  )
+                }
                 min={0}
                 required
               />
@@ -152,7 +163,11 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
               <input
                 type="number"
                 value={estimatedDays}
-                onChange={(e) => setEstimatedDays(Number(e.target.value))}
+                onChange={(e) =>
+                  setEstimatedDays(
+                    e.target.value === '' ? '' : Number(e.target.value)
+                  )
+                }
                 min={1}
                 required
               />
@@ -181,7 +196,9 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
                       type="number"
                       value={defaultShippingFee}
                       onChange={(e) =>
-                        setDefaultShippingFee(Number(e.target.value))
+                        setDefaultShippingFee(
+                          e.target.value === '' ? '' : Number(e.target.value)
+                        )
                       }
                       min={0}
                       required={isEditingDefault}
@@ -193,7 +210,9 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
                       type="number"
                       value={defaultEstimatedDays}
                       onChange={(e) =>
-                        setDefaultEstimatedDays(Number(e.target.value))
+                        setDefaultEstimatedDays(
+                          e.target.value === '' ? '' : Number(e.target.value)
+                        )
                       }
                       min={1}
                       required={isEditingDefault}
@@ -222,6 +241,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

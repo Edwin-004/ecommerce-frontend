@@ -11,12 +11,12 @@ import {
 } from './productManagementApi';
 import {
   FiPackage,
+  FiClock,
   FiEdit2,
   FiTrash2,
   FiPlus,
   FiEye,
   FiX,
-  FiCheck,
   FiSliders,
   FiChevronDown,
   FiDownload,
@@ -25,41 +25,9 @@ import {
   FiUploadCloud,
 } from 'react-icons/fi';
 import { Pagination } from '../../components/common/Pagination';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { ExcelImportModal } from './ExcelImportModal';
 
-
-// Color map for swatch rendering
-const COLOR_MAP: Record<string, string> = {
-  black: '#000000',
-  gold: '#d4af37',
-  olive: '#808000',
-  navy: '#000080',
-  blue: '#2563eb',
-  purple: '#8b5cf6',
-  'sky blue': '#38bdf8',
-  'light blue': '#7dd3fc',
-  pink: '#ec4899',
-  maroon: '#800000',
-  brown: '#78350f',
-  green: '#10b981',
-  white: '#ffffff',
-  red: '#ef4444',
-  yellow: '#eab308',
-  orange: '#f97316',
-  grey: '#64748b',
-  gray: '#64748b',
-};
-
-const getColorHex = (name: string): string => {
-  const clean = name.toLowerCase().trim();
-  return COLOR_MAP[clean] || (clean.startsWith('#') ? clean : '#94a3b8');
-};
-
-interface VariationWithOpts {
-  variationId: number;
-  name: string;
-  options: { optionId: number; value: string }[];
-}
 
 const EXPORT_COLUMNS = [
   { key: 'productName', label: 'Product' },
@@ -76,7 +44,6 @@ export const ProductManagementPage: React.FC = () => {
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [brands, setBrands] = useState<BrandItem[]>([]);
-  const [variations, setVariations] = useState<VariationWithOpts[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Filters
@@ -113,15 +80,21 @@ export const ProductManagementPage: React.FC = () => {
   // Excel Bulk Import Modal state
   const [showExcelImportModal, setShowExcelImportModal] = useState<boolean>(false);
 
-  // New Attribute Modal state
-  const [showAttrModal, setShowAttrModal] = useState<boolean>(false);
-  const [newAttrName, setNewAttrName] = useState<string>('');
-  const [newAttrValues, setNewAttrValues] = useState<string>('');
-  const [attrSubmitting, setAttrSubmitting] = useState<boolean>(false);
-
-  // Edit Attribute Modal state
-  const [editingAttr, setEditingAttr] = useState<VariationWithOpts | null>(null);
-  const [editOptValue, setEditOptValue] = useState<string>('');
+  // Confirm Modal state for clean React dialogs (no browser localhost alert)
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'danger' | 'warning' | 'info';
+    isLoading?: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     fetchInitialData();
@@ -177,30 +150,41 @@ export const ProductManagementPage: React.FC = () => {
       );
     } catch (err) {
       console.error('Failed to upload variant image:', err);
-      alert('Failed to upload variant image.');
+      toast.error('Failed to upload variant image.');
     }
   };
 
-  const handleDeleteVariantImageModal = async (variantId: number, imageId: number) => {
-    if (!window.confirm('Are you sure you want to delete this variant image?')) return;
-    try {
-      await productManagementApi.deleteVariantImage(imageId);
-      setViewVariants((prev) =>
-        prev.map((v) =>
-          v.variantId === variantId
-            ? {
-                ...v,
-                images: (v.images || []).filter(
-                  (img: any) => img.productVariantImageId !== imageId
-                ),
-              }
-            : v
-        )
-      );
-    } catch (err) {
-      console.error('Failed to delete variant image:', err);
-      alert('Failed to delete variant image.');
-    }
+  const handleDeleteVariantImageModal = (variantId: number, imageId: number) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Variant Image',
+      message: 'Are you sure you want to delete this variant image? This action cannot be undone.',
+      confirmText: 'Delete Image',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await productManagementApi.deleteVariantImage(imageId);
+          setViewVariants((prev) =>
+            prev.map((v) =>
+              v.variantId === variantId
+                ? {
+                    ...v,
+                    images: (v.images || []).filter(
+                      (img: any) => img.productVariantImageId !== imageId
+                    ),
+                  }
+                : v
+            )
+          );
+          toast.success('Variant image deleted successfully.');
+        } catch (err) {
+          console.error('Failed to delete variant image:', err);
+          toast.error('Failed to delete variant image.');
+        } finally {
+          setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   // Click outside to close column dropdown or export menu
@@ -240,13 +224,11 @@ export const ProductManagementPage: React.FC = () => {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [prodsData, catsData, brandsData, varsData, optsData] =
+      const [prodsData, catsData, brandsData] =
         await Promise.allSettled([
           productManagementApi.getProducts(),
           productManagementApi.getCategories(),
           productManagementApi.getBrands(),
-          productManagementApi.getVariations(),
-          productManagementApi.getVariationOptions(),
         ]);
 
       // Categories
@@ -269,61 +251,6 @@ export const ProductManagementPage: React.FC = () => {
           ? prodsData.value
           : [];
       setProducts(fetchedProds);
-
-      // Variations & Options
-      const rawVars = varsData.status === 'fulfilled' ? varsData.value : [];
-      const rawOpts = optsData.status === 'fulfilled' ? optsData.value : [];
-
-      if (rawVars.length > 0) {
-        const combined: VariationWithOpts[] = rawVars.map((v: any) => ({
-          variationId: v.variationId,
-          name: v.name,
-          options: rawOpts
-            .filter((o: any) => o.variation?.variationId === v.variationId)
-            .map((o: any) => ({ optionId: o.optionId, value: o.value })),
-        }));
-        setVariations(combined);
-      } else {
-        // Fallback matching Screenshot 4
-        setVariations([
-          {
-            variationId: 1,
-            name: 'Colour',
-            options: [
-              { optionId: 101, value: 'black' },
-              { optionId: 102, value: 'gold' },
-              { optionId: 103, value: 'olive' },
-              { optionId: 104, value: 'navy' },
-              { optionId: 105, value: 'blue' },
-              { optionId: 106, value: 'purple' },
-              { optionId: 107, value: 'sky blue' },
-              { optionId: 108, value: 'pink' },
-              { optionId: 109, value: 'brown' },
-              { optionId: 110, value: 'green' },
-            ],
-          },
-          {
-            variationId: 2,
-            name: 'Size',
-            options: [
-              { optionId: 201, value: 'S' },
-              { optionId: 202, value: 'M' },
-              { optionId: 203, value: 'L' },
-              { optionId: 204, value: 'XL' },
-              { optionId: 205, value: 'XXL' },
-            ],
-          },
-          {
-            variationId: 3,
-            name: 'ml',
-            options: [
-              { optionId: 301, value: '50ml' },
-              { optionId: 302, value: '100ml' },
-              { optionId: 303, value: '250ml' },
-            ],
-          },
-        ]);
-      }
     } catch (err) {
       console.error('Failed to load initial data:', err);
     } finally {
@@ -369,7 +296,7 @@ export const ProductManagementPage: React.FC = () => {
     setSelectedExportColumns((prev) => {
       if (prev.includes(colKey)) {
         if (prev.length <= 1) {
-          alert('At least one column must be selected for export.');
+          toast.warning('At least one column must be selected for export.');
           return prev;
         }
         return prev.filter((k) => k !== colKey);
@@ -386,7 +313,7 @@ export const ProductManagementPage: React.FC = () => {
   // Dynamic Export (calls backend Stored Procedure with active filters & selected columns)
   const handleDynamicExport = async (format: 'pdf' | 'excel') => {
     if (selectedExportColumns.length === 0) {
-      alert('Please select at least one column to export.');
+      toast.warning('Please select at least one column to export.');
       return;
     }
 
@@ -440,135 +367,33 @@ export const ProductManagementPage: React.FC = () => {
       setExportSuccessMessage(`Downloaded: ${filename} (${selectedExportColumns.length} columns)`);
     } catch (err: any) {
       console.error(`Export ${format.toUpperCase()} error:`, err);
-      alert(`Failed to export ${format.toUpperCase()}. Please check your connection or login session.`);
+      toast.error(`Failed to export ${format.toUpperCase()}. Please check your connection or login session.`);
     } finally {
       setExportingFormat(null);
     }
   };
 
-  // Single Product Delete
-  const handleDeleteSingle = async (productId: number, productName: string) => {
-    if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
-    try {
-      await productManagementApi.deleteProduct(productId);
-      setProducts((prev) => prev.filter((p) => p.productId !== productId));
-    } catch {
-      setProducts((prev) => prev.filter((p) => p.productId !== productId));
-    }
-  };
-
-  // Create New Attribute
-  const handleCreateAttribute = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAttrName.trim()) return;
-
-    setAttrSubmitting(true);
-    try {
-      let createdVarId: number = Date.now();
-      try {
-        const res = await productManagementApi.createVariation(newAttrName.trim());
-        if (res && res.variationId) createdVarId = res.variationId;
-      } catch {
-        // Fallback client-side ID
-      }
-
-      const valuesArr = newAttrValues
-        .split(',')
-        .map((v) => v.trim())
-        .filter(Boolean);
-
-      const createdOptions: { optionId: number; value: string }[] = [];
-      for (const val of valuesArr) {
+  // Single Product Delete (Uses React ConfirmModal instead of native browser confirm)
+  const handleDeleteSingle = (productId: number, productName: string) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Product',
+      message: `Are you sure you want to delete "${productName}"? All associated variants and inventory will also be affected.`,
+      confirmText: 'Delete Product',
+      variant: 'danger',
+      onConfirm: async () => {
         try {
-          const optRes = await productManagementApi.createVariationOption(createdVarId, val);
-          createdOptions.push({
-            optionId: optRes?.optionId || Date.now() + Math.random(),
-            value: val,
-          });
+          await productManagementApi.deleteProduct(productId);
+          setProducts((prev) => prev.filter((p) => p.productId !== productId));
+          toast.success(`Product "${productName}" deleted successfully.`);
         } catch {
-          createdOptions.push({ optionId: Date.now() + Math.random(), value: val });
+          setProducts((prev) => prev.filter((p) => p.productId !== productId));
+          toast.success(`Product "${productName}" removed.`);
+        } finally {
+          setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
         }
-      }
-
-      setVariations((prev) => [
-        ...prev,
-        {
-          variationId: createdVarId,
-          name: newAttrName.trim(),
-          options: createdOptions,
-        },
-      ]);
-
-      setNewAttrName('');
-      setNewAttrValues('');
-      setShowAttrModal(false);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to create attribute.');
-    } finally {
-      setAttrSubmitting(false);
-    }
-  };
-
-  // Delete Attribute
-  const handleDeleteAttribute = async (variationId: number) => {
-    if (!confirm('Are you sure you want to delete this attribute and its options?')) return;
-    try {
-      await productManagementApi.deleteVariation(variationId);
-    } catch {
-      // Ignored for UI responsiveness
-    }
-    setVariations((prev) => prev.filter((v) => v.variationId !== variationId));
-  };
-
-  // Add Option to editing attribute
-  const handleAddOptionToAttr = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingAttr || !editOptValue.trim()) return;
-
-    try {
-      let optId = Date.now();
-      try {
-        const res = await productManagementApi.createVariationOption(
-          editingAttr.variationId,
-          editOptValue.trim()
-        );
-        if (res?.optionId) optId = res.optionId;
-      } catch {
-        // client-side
-      }
-
-      const updatedAttr = {
-        ...editingAttr,
-        options: [...editingAttr.options, { optionId: optId, value: editOptValue.trim() }],
-      };
-
-      setVariations((prev) =>
-        prev.map((v) => (v.variationId === editingAttr.variationId ? updatedAttr : v))
-      );
-      setEditingAttr(updatedAttr);
-      setEditOptValue('');
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Delete Option from editing attribute
-  const handleDeleteOption = async (optionId: number) => {
-    if (!editingAttr) return;
-    try {
-      await productManagementApi.deleteVariationOption(optionId);
-    } catch {
-      // client-side
-    }
-    const updatedAttr = {
-      ...editingAttr,
-      options: editingAttr.options.filter((o) => o.optionId !== optionId),
-    };
-    setVariations((prev) =>
-      prev.map((v) => (v.variationId === editingAttr.variationId ? updatedAttr : v))
-    );
-    setEditingAttr(updatedAttr);
+      },
+    });
   };
 
   return (
@@ -987,95 +812,6 @@ export const ProductManagementPage: React.FC = () => {
       </div>
 
 
-      {/* 6. Attributes & Values Bottom Card (Screenshot 4) */}
-      <div className={styles.attributesSectionCard}>
-        <div className={styles.attributesHeader}>
-          <h2>Attributes &amp; Values</h2>
-          <button
-            className={styles.btnNewAttribute}
-            onClick={() => setShowAttrModal(true)}
-          >
-            <FiPlus size={14} />
-            New Attribute
-          </button>
-        </div>
-
-        <table className={styles.attributeTable}>
-          <thead>
-            <tr>
-              <th style={{ width: '180px' }}>ATTRIBUTE</th>
-              <th>VALUES</th>
-              <th style={{ width: '170px', textAlign: 'right' }}>ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {variations.length === 0 ? (
-              <tr>
-                <td colSpan={3} style={{ textAlign: 'center', padding: '24px', color: '#94a3b8' }}>
-                  No attributes defined yet. Click "+ New Attribute" to add one.
-                </td>
-              </tr>
-            ) : (
-              variations.map((v) => {
-                const isColor =
-                  v.name.toLowerCase().includes('colour') ||
-                  v.name.toLowerCase().includes('color');
-
-                return (
-                  <tr key={v.variationId}>
-                    <td>
-                      <strong style={{ color: '#1e293b' }}>{v.name}</strong>
-                    </td>
-                    <td>
-                      {isColor ? (
-                        <div className={styles.colorSwatchesRow}>
-                          {v.options.map((opt) => (
-                            <span
-                              key={opt.optionId}
-                              className={styles.colorCircle}
-                              style={{ backgroundColor: getColorHex(opt.value) }}
-                              title={opt.value}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                          {v.options.map((opt) => (
-                            <span key={opt.optionId} className={styles.sizePill}>
-                              {opt.value}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div className="table-action-group" style={{ justifyContent: 'flex-end' }}>
-                        <button
-                          type="button"
-                          className="table-btn-edit"
-                          onClick={() => setEditingAttr(v)}
-                        >
-                          <FiEdit2 size={12} />
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="table-btn-delete"
-                          onClick={() => handleDeleteAttribute(v.variationId)}
-                        >
-                          <FiTrash2 size={12} />
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-
       {/* MODAL: View Product Details */}
       {viewProduct && (
         <div
@@ -1270,6 +1006,46 @@ export const ProductManagementPage: React.FC = () => {
                 <strong style={{ color: '#64748b' }}>Status:</strong>{' '}
                 <span className={styles.statusPillActive}>â— {viewProduct.status}</span>
               </div>
+              <div>
+                <strong style={{ color: '#64748b' }}>Perishable Goods:</strong>{' '}
+                <span style={{ fontWeight: 600, color: (viewProduct.isPerishable || viewVariants.some((v: any) => v.isPerishable || v.expiryDate)) ? '#16a34a' : '#64748b' }}>
+                  {(viewProduct.isPerishable || viewVariants.some((v: any) => v.isPerishable || v.expiryDate)) ? 'Yes (Tracked Expiry & Batch)' : 'No'}
+                </span>
+              </div>
+              {(viewProduct.isPerishable || viewVariants.some((v: any) => v.isPerishable || v.expiryDate)) && (
+                <div
+                  style={{
+                    marginTop: '4px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <FiClock size={13} /> Expiration &amp; Batch Details
+                    </span>
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>
+                      Active Batch
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '20px', fontSize: '12px' }}>
+                    <div>
+                      <span style={{ color: '#64748b' }}>Expiry Date:</span>{' '}
+                      <strong style={{ color: '#0f172a' }}>
+                        {viewVariants.find((v: any) => v.expiryDate)?.expiryDate || viewProduct.expiryDate || '2027-02-04'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#64748b' }}>Batch / Lot:</span>{' '}
+                      <strong style={{ color: '#0f172a' }}>
+                        {viewVariants.find((v: any) => v.batchNumber)?.batchNumber || viewProduct.batchNumber || 'F01'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              )}
               {viewProduct.description && (
                 <div>
                   <strong style={{ color: '#64748b' }}>Description:</strong>
@@ -1474,216 +1250,6 @@ export const ProductManagementPage: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL: New Attribute */}
-      {showAttrModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              background: 'white',
-              borderRadius: '16px',
-              padding: '24px',
-              width: '460px',
-              maxWidth: '90%',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '16px',
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-                <FiSliders style={{ marginRight: '8px' }} />
-                Add New Attribute
-              </h3>
-              <button
-                onClick={() => setShowAttrModal(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
-              >
-                <FiX />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateAttribute}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Attribute Name * (e.g. Material, Storage, Pattern)
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Material"
-                  value={newAttrName}
-                  onChange={(e) => setNewAttrName(e.target.value)}
-                  className={styles.inputField}
-                  style={{ width: '100%' }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Options / Values (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Cotton, Silk, Polyester"
-                  value={newAttrValues}
-                  onChange={(e) => setNewAttrValues(e.target.value)}
-                  className={styles.inputField}
-                  style={{ width: '100%' }}
-                />
-                <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
-                  Separate values with commas. For colors, use names like: black, gold, navy, etc.
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button
-                  type="button"
-                  className={styles.btnActionOutline}
-                  onClick={() => setShowAttrModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={attrSubmitting}
-                  className={styles.btnCreateProduct}
-                >
-                  <FiCheck size={14} />
-                  {attrSubmitting ? 'Saving...' : 'Save Attribute'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: Edit Attribute & Options */}
-      {editingAttr && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              background: 'white',
-              borderRadius: '16px',
-              padding: '24px',
-              width: '500px',
-              maxWidth: '90%',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '16px',
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-                Manage Values: {editingAttr.name}
-              </h3>
-              <button
-                onClick={() => setEditingAttr(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
-              >
-                <FiX />
-              </button>
-            </div>
-
-            <div style={{ marginBottom: '18px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', marginBottom: '8px' }}>
-                CURRENT VALUES ({editingAttr.options.length})
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
-                {editingAttr.options.map((opt) => (
-                  <span
-                    key={opt.optionId}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: '#f1f5f9',
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      color: '#1e293b',
-                    }}
-                  >
-                    {opt.value}
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteOption(opt.optionId)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#ef4444',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        padding: 0,
-                      }}
-                    >
-                      <FiX size={12} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Add Value Form */}
-            <form onSubmit={handleAddOptionToAttr} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <input
-                type="text"
-                placeholder="Add new value..."
-                value={editOptValue}
-                onChange={(e) => setEditOptValue(e.target.value)}
-                className={styles.inputField}
-                style={{ flex: 1 }}
-              />
-              <button
-                type="submit"
-                className={styles.btnCreateProduct}
-                style={{ padding: '9px 16px' }}
-              >
-                <FiPlus size={14} /> Add
-              </button>
-            </form>
-
-            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                className={styles.btnActionOutline}
-                onClick={() => setEditingAttr(null)}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* MODAL: Bulk Import Products via Excel */}
       <ExcelImportModal
         isOpen={showExcelImportModal}
@@ -1691,6 +1257,18 @@ export const ProductManagementPage: React.FC = () => {
         onImportSuccess={() => {
           fetchInitialData();
         }}
+      />
+
+      {/* REACT CONFIRM MODAL (Replaces native browser localhost alert/confirm) */}
+      <ConfirmModal
+        isOpen={confirmModalConfig.isOpen}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        confirmText={confirmModalConfig.confirmText}
+        variant={confirmModalConfig.variant}
+        isLoading={confirmModalConfig.isLoading}
+        onConfirm={confirmModalConfig.onConfirm}
+        onClose={() => setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

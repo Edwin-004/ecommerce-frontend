@@ -14,6 +14,9 @@ export interface ProductItem {
   stock?: number;
   sku?: string;
   imageUrl?: string;
+  isPerishable?: boolean;
+  expiryDate?: string;
+  batchNumber?: string;
 }
 
 export interface CategoryItem {
@@ -37,17 +40,26 @@ export const getAssetUrl = (url?: string): string => {
 
 export const productManagementApi = {
   // Get all products (with pagination or full list, latest first)
+    // Get all products (latest first)
   getProducts: async (): Promise<ProductItem[]> => {
     try {
-      const response = await apiFetch<any>('/api/backoffice/products?sort=productId,desc');
+      const response = await apiFetch<any>(
+        '/api/backoffice/products?sort=productId,desc&size=10000&page=0'
+      );
+
+      // Spring Boot Page response
       if (response && Array.isArray(response.content)) {
         return response.content;
       }
+
+      // Direct array response
       if (Array.isArray(response)) {
         return response;
       }
+
       return [];
-    } catch {
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
       return [];
     }
   },
@@ -227,7 +239,17 @@ export const productManagementApi = {
       headers,
       body: formData,
     });
-    if (!res.ok) throw new Error('Variant image upload failed');
+    if (!res.ok) {
+      let errorMsg = `Upload failed (${res.status})`;
+      try {
+        const errorJson = await res.json();
+        errorMsg = errorJson.message || errorJson.error || JSON.stringify(errorJson);
+      } catch {
+        const errorText = await res.text().catch(() => '');
+        if (errorText) errorMsg = errorText;
+      }
+      throw new Error(errorMsg);
+    }
     return res.json();
   },
 

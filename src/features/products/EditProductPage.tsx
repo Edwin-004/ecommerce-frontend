@@ -1,3 +1,4 @@
+import { toast } from 'react-toastify';
 import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -16,6 +17,7 @@ import { CategoryFormModal } from '../categories/CategoryFormModal';
 import { BrandModal } from '../brand/BrandModels';
 import type { CategoryRequestDto, CategoryResponseDto } from '../../types/category';
 import { inventoryApi } from '../inventory/inventoryApi';
+import { variantApi } from '../variants/variantApi';
 import {
   FiPackage,
   FiTag,
@@ -253,25 +255,125 @@ export const EditProductPage: React.FC = () => {
     replaceInputRef.current?.click();
   };
 
+  // Variant Editing States & Handlers
+  const [savingVariantId, setSavingVariantId] = useState<number | null>(null);
+  const [uploadingVariantId, setUploadingVariantId] = useState<number | null>(null);
+  const [replacingVariantImage, setReplacingVariantImage] = useState<{ variantId: number; imageId: number } | null>(null);
+  const variantReplaceInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleVariantFieldChange = (variantId: number, field: string, value: any) => {
+    setVariants((prev) =>
+      prev.map((v) => (v.variantId === variantId ? { ...v, [field]: value } : v))
+    );
+  };
+
+  const handleSaveVariant = async (v: any) => {
+    try {
+      setSavingVariantId(v.variantId);
+      await variantApi.updateProductVariant(v.variantId, {
+        sku: v.sku?.trim(),
+        sellingPrice: Number(v.sellingPrice) || 0,
+        costPrice: v.costPrice !== '' && v.costPrice !== undefined ? Number(v.costPrice) : undefined,
+        status: v.status || 'ACTIVE',
+      });
+
+      toast.success(`Variant ${v.sku || '#' + v.variantId} updated successfully!`);
+    } catch (err: any) {
+      console.error('Failed to update variant:', err);
+      toast.error(err.message || 'Failed to update variant');
+    } finally {
+      setSavingVariantId(null);
+    }
+  };
+
+  const handleDeleteVariant = async (variantId: number) => {
+    try {
+      await variantApi.deleteProductVariant(variantId);
+      setVariants((prev) =>
+        prev.map((v) => (v.variantId === variantId ? { ...v, status: 'INACTIVE' } : v))
+      );
+      toast.success('Variant deactivated successfully!');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to deactivate variant');
+    }
+  };
+
+  const handleOpenVariantImageReplace = (variantId: number, imageId: number) => {
+    setReplacingVariantImage({ variantId, imageId });
+    variantReplaceInputRef.current?.click();
+  };
+
+  const handleVariantImageReplaceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !replacingVariantImage) return;
+
+    const { variantId, imageId } = replacingVariantImage;
+    try {
+      setUploadingVariantId(variantId);
+      const uploaded = await productManagementApi.uploadProductVariantImage(variantId, file);
+      try {
+        await productManagementApi.deleteVariantImage(imageId);
+      } catch (delErr) {
+        console.warn('Old variant image deletion skipped:', delErr);
+      }
+      setVariants((prev) =>
+        prev.map((v) =>
+          v.variantId === variantId
+            ? {
+                ...v,
+                images: (v.images || [])
+                  .filter((img: any) => img.productVariantImageId !== imageId)
+                  .concat({
+                    productVariantImageId: uploaded.productVariantImageId,
+                    imageUrl: uploaded.imageUrl,
+                    isPrimary: Boolean(uploaded.isPrimary),
+                  }),
+              }
+            : v
+        )
+      );
+      toast.success('Variant photo replaced successfully!');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Failed to replace variant photo');
+    } finally {
+      setUploadingVariantId(null);
+      setReplacingVariantImage(null);
+      if (variantReplaceInputRef.current) variantReplaceInputRef.current.value = '';
+    }
+  };
+
   // Variant Image Handlers
   const handleUploadVariantImage = async (variantId: number, file: File) => {
     try {
-      await productManagementApi.uploadProductVariantImage(variantId, file);
-      const updatedImgs = await productManagementApi.getVariantImages(variantId);
+      setUploadingVariantId(variantId);
+      const uploaded = await productManagementApi.uploadProductVariantImage(variantId, file);
+      const newImgObj = {
+        productVariantImageId: uploaded.productVariantImageId,
+        imageUrl: uploaded.imageUrl,
+        isPrimary: Boolean(uploaded.isPrimary),
+      };
       setVariants((prev) =>
-        prev.map((v) => (v.variantId === variantId ? { ...v, images: updatedImgs } : v))
+        prev.map((v) =>
+          v.variantId === variantId
+            ? {
+                ...v,
+                images: [...(v.images || []), newImgObj],
+              }
+            : v
+        )
       );
-      setSuccessMessage('Variant image uploaded successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      toast.success('Variant photo added successfully!');
     } catch (err: any) {
       console.error('Failed to upload variant image:', err);
-      setErrorMessage(err.message || 'Failed to upload variant image');
-      setTimeout(() => setErrorMessage(''), 4000);
+      toast.error(err.message || 'Failed to upload variant photo');
+    } finally {
+      setUploadingVariantId(null);
     }
   };
 
   const handleDeleteVariantImage = async (variantId: number, imageId: number) => {
-    if (!window.confirm('Are you sure you want to delete this variant image?')) return;
     try {
       await productManagementApi.deleteVariantImage(imageId);
       setVariants((prev) =>
@@ -286,12 +388,10 @@ export const EditProductPage: React.FC = () => {
             : v
         )
       );
-      setSuccessMessage('Variant image deleted successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      toast.success('Variant photo deleted successfully!');
     } catch (err: any) {
       console.error('Failed to delete variant image:', err);
-      setErrorMessage(err.message || 'Failed to delete variant image');
-      setTimeout(() => setErrorMessage(''), 4000);
+      toast.error(err.message || 'Failed to delete variant photo');
     }
   };
 
@@ -404,7 +504,7 @@ export const EditProductPage: React.FC = () => {
       setSelectedBrand(String(res.brandId));
       setShowBrandModal(false);
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || 'Failed to create brand');
+      toast.error(err.response?.data?.message || err.message || 'Failed to create brand');
     } finally {
       setBrandLoading(false);
     }
@@ -422,7 +522,7 @@ export const EditProductPage: React.FC = () => {
       setShowTagModal(false);
       setNewTagName('');
     } catch (err: any) {
-      alert(err.message || 'Failed to create tag');
+      toast.error(err.message || 'Failed to create tag');
     } finally {
       setTagLoading(false);
     }
@@ -987,12 +1087,17 @@ export const EditProductPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Existing Variants Overview Card */}
+            {/* Existing Variants Management Card */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <h2 style={{ fontSize: '14px', fontWeight: 600, margin: 0, color: '#0f172a' }}>
-                  Associated Variants ({variants.length})
-                </h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div>
+                  <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
+                    Associated Variants ({variants.length})
+                  </h2>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                    Edit price, cost, stock, status, and photos directly for each variant
+                  </p>
+                </div>
                 <button
                   type="button"
                   className={styles.btnActionOutline}
@@ -1002,39 +1107,47 @@ export const EditProductPage: React.FC = () => {
                 </button>
               </div>
 
+              {/* Hidden file input for Variant Photo Replace */}
+              <input
+                ref={variantReplaceInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleVariantImageReplaceFileChange}
+              />
+
               {variants.length === 0 ? (
                 <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>No variants registered for this product.</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {variants.map((v) => (
                     <div
                       key={v.variantId}
                       style={{
                         border: '1px solid #e2e8f0',
-                        borderRadius: '10px',
-                        padding: '14px 16px',
+                        borderRadius: '12px',
+                        padding: '16px 18px',
                         background: '#f8fafc',
+                        transition: 'all 0.2s ease',
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#2563eb', fontSize: '13px' }}>
-                              {v.sku}
-                            </span>
-                            <span style={{
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              background: v.status === 'ACTIVE' ? '#ecfdf5' : '#f1f5f9',
-                              color: v.status === 'ACTIVE' ? '#059669' : '#64748b'
-                            }}>
-                              ● {v.status}
-                            </span>
-                          </div>
-                          {/* Attribute Badges (Size, Color, etc.) */}
-                          <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                      {/* Variant Card Header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            padding: '3px 10px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: v.status === 'ACTIVE' ? '#ecfdf5' : '#f1f5f9',
+                            color: v.status === 'ACTIVE' ? '#059669' : '#64748b',
+                            border: `1px solid ${v.status === 'ACTIVE' ? '#a7f3d0' : '#cbd5e1'}`
+                          }}>
+                            ● {v.status || 'ACTIVE'}
+                          </span>
+
+                          {/* Attribute Badges */}
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                             {v.attributeSummary ? (
                               v.attributeSummary.split('|').map((part: string, idx: number) => (
                                 <span
@@ -1042,10 +1155,11 @@ export const EditProductPage: React.FC = () => {
                                   style={{
                                     fontSize: '11px',
                                     fontWeight: 600,
-                                    padding: '2px 8px',
+                                    padding: '3px 8px',
                                     background: '#e0e7ff',
                                     color: '#4338ca',
                                     borderRadius: '6px',
+                                    border: '1px solid #c7d2fe',
                                   }}
                                 >
                                   {part.trim()}
@@ -1056,59 +1170,277 @@ export const EditProductPage: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '13px' }}>
-                            {Number(v.sellingPrice || 0).toLocaleString()} MMK
-                          </span>
+
+                        {/* Quick Action Buttons */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button
+                            type="button"
+                            disabled={savingVariantId === v.variantId}
+                            onClick={() => handleSaveVariant(v)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              background: '#2563eb',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '7px',
+                              padding: '5px 12px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              boxShadow: '0 1px 2px rgba(37,99,235,0.2)',
+                            }}
+                          >
+                            {savingVariantId === v.variantId ? (
+                              <>
+                                <FiRefreshCw size={11} className={styles.exportSpinner} /> Saving...
+                              </>
+                            ) : (
+                              <>
+                                <FiSave size={11} /> Save Variant
+                              </>
+                            )}
+                          </button>
+
+                          {v.status === 'ACTIVE' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVariant(v.variantId)}
+                              title="Deactivate variant"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                background: '#fff',
+                                color: '#ef4444',
+                                border: '1px solid #fecaca',
+                                borderRadius: '7px',
+                                padding: '5px 10px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <FiTrash2 size={11} /> Deactivate
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleVariantFieldChange(v.variantId, 'status', 'ACTIVE')}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                background: '#ecfdf5',
+                                color: '#059669',
+                                border: '1px solid #a7f3d0',
+                                borderRadius: '7px',
+                                padding: '5px 10px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <FiCheck size={11} /> Activate
+                            </button>
+                          )}
                         </div>
                       </div>
 
-                      {/* Variant Images and Actions */}
-                      <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '8px', marginTop: '6px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>
-                          Variant Photos ({v.images?.length || 0})
+                      {/* Variant Inputs Grid */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                        gap: '10px',
+                        background: '#ffffff',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        border: '1px solid #e2e8f0',
+                        marginBottom: '12px'
+                      }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                            SKU
+                          </label>
+                          <input
+                            type="text"
+                            value={v.sku || ''}
+                            onChange={(e) => handleVariantFieldChange(v.variantId, 'sku', e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              fontFamily: 'monospace',
+                              color: '#1e293b',
+                              outline: 'none',
+                            }}
+                          />
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                            Selling Price (MMK) *
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={v.sellingPrice ?? ''}
+                            onChange={(e) => handleVariantFieldChange(v.variantId, 'sellingPrice', e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              color: '#0f172a',
+                              outline: 'none',
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                            Cost Price (MMK)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            placeholder="Optional"
+                            value={v.costPrice ?? ''}
+                            onChange={(e) => handleVariantFieldChange(v.variantId, 'costPrice', e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '12px',
+                              color: '#334155',
+                              outline: 'none',
+                            }}
+                          />
+                        </div>
+
+
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                            Status
+                          </label>
+                          <select
+                            value={v.status || 'ACTIVE'}
+                            onChange={(e) => handleVariantFieldChange(v.variantId, 'status', e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              color: '#334155',
+                              background: '#fff',
+                              outline: 'none',
+                            }}
+                          >
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Variant Photos and Edit/Replace Toolbar */}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b' }}>
+                            Variant Photos ({v.images?.length || 0})
+                          </span>
+                          {uploadingVariantId === v.variantId && (
+                            <span style={{ fontSize: '11px', color: '#2563eb', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <FiRefreshCw size={11} className={styles.exportSpinner} /> Updating photo...
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                           {v.images && v.images.length > 0 ? (
                             v.images.map((img: any) => (
                               <div
                                 key={img.productVariantImageId}
-                                style={{ position: 'relative', display: 'inline-block' }}
+                                style={{
+                                  position: 'relative',
+                                  width: '56px',
+                                  height: '56px',
+                                  borderRadius: '8px',
+                                  border: '1px solid #cbd5e1',
+                                  background: '#fff',
+                                  overflow: 'hidden',
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                                }}
                               >
                                 <img
                                   src={getAssetUrl(img.imageUrl)}
                                   alt="variant"
                                   style={{
-                                    width: '44px',
-                                    height: '44px',
+                                    width: '100%',
+                                    height: '100%',
                                     objectFit: 'cover',
-                                    borderRadius: '6px',
-                                    border: '1px solid #cbd5e1',
                                     display: 'block',
                                   }}
                                 />
+
+                                {/* Replace Button Overlay */}
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteVariantImage(v.variantId, img.productVariantImageId)}
-                                  title="Delete this variant photo"
+                                  onClick={() => handleOpenVariantImageReplace(v.variantId, img.productVariantImageId)}
+                                  title="Replace this photo"
                                   style={{
                                     position: 'absolute',
-                                    top: '-5px',
-                                    right: '-5px',
-                                    width: '16px',
-                                    height: '16px',
-                                    borderRadius: '50%',
-                                    background: '#ef4444',
+                                    bottom: '2px',
+                                    left: '2px',
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '4px',
+                                    background: 'rgba(15, 23, 42, 0.75)',
                                     color: '#fff',
-                                    border: '2px solid #fff',
+                                    border: 'none',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '9px',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                  }}
+                                >
+                                  <FiRefreshCw size={10} />
+                                </button>
+
+                                {/* Delete Button Overlay */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteVariantImage(v.variantId, img.productVariantImageId)}
+                                  title="Delete this photo"
+                                  style={{
+                                    position: 'absolute',
+                                    top: '2px',
+                                    right: '2px',
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    background: '#ef4444',
+                                    color: '#fff',
+                                    border: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '10px',
                                     fontWeight: 'bold',
                                     cursor: 'pointer',
                                     padding: 0,
-                                    lineHeight: 1,
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                                   }}
                                 >
@@ -1122,37 +1454,39 @@ export const EditProductPage: React.FC = () => {
                             </span>
                           )}
 
-                          {/* Upload photo button for this variant */}
-                          <label
+                          {/* Upload Photo Button for this variant */}
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById(`variant-photo-input-${v.variantId}`)?.click()}
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '4px',
-                              padding: '5px 10px',
-                              borderRadius: '6px',
+                              gap: '5px',
+                              padding: '7px 12px',
+                              borderRadius: '8px',
                               border: '1px dashed #6366f1',
                               color: '#6366f1',
                               fontSize: '11px',
-                              fontWeight: 600,
+                              fontWeight: 700,
                               cursor: 'pointer',
                               background: '#ffffff',
                               transition: 'all 0.15s ease',
-                              marginLeft: '4px',
                             }}
                           >
-                            <FiPlus size={12} /> Add Photo
-                            <input
-                              type="file"
-                              accept="image/*"
-                              style={{ display: 'none' }}
-                              onChange={(e) => {
-                                if (e.target.files?.[0]) {
-                                  handleUploadVariantImage(v.variantId, e.target.files[0]);
-                                  e.target.value = '';
-                                }
-                              }}
-                            />
-                          </label>
+                            <FiPlus size={13} /> Add Photo
+                          </button>
+                          <input
+                            id={`variant-photo-input-${v.variantId}`}
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleUploadVariantImage(v.variantId, e.target.files[0]);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
                         </div>
                       </div>
                     </div>

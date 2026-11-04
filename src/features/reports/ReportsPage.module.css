@@ -567,3 +567,57 @@
   color: #94a3b8;
   margin-top: 4px;
 }
+
+/* Month-on-Month Card Styling */
+:root {
+  --color-mom: #8b5cf6;
+  --color-mom-bg: #ede9fe;
+}
+
+.reportCard.cardMom:hover::before { 
+  background: var(--color-mom); 
+  opacity: 1; 
+  height: 6px; 
+}
+
+.cardMom .iconWrapper { 
+  background: var(--color-mom-bg); 
+  color: var(--color-mom); 
+}
+
+.cardMom:hover .iconWrapper { 
+  background: var(--color-mom); 
+  color: #ffffff; 
+}
+
+.momActionRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.viewAnalysisBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  color: #7c3aed;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.viewAnalysisBtn:hover {
+  background: #ede9fe;
+  color: #6d28d9;
+  border-color: #c4b5fd;
+  transform: translateY(-1px);
+}

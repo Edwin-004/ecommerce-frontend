@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiSearch,
@@ -58,7 +57,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
-  // Export dropdown အပြင်ဘက်ကို click လုပ်လျှင် menu ပိတ်ရန်
+  // Close export dropdown when clicking outside of it
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
       if (
@@ -76,7 +75,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
     };
   }, []);
 
-  // CSV cell တစ်ခုချင်းစီကို Excel ဖတ်နိုင်အောင် escape လုပ်ခြင်း
+  // Escape CSV cell values to make them Excel compatible
   const escapeCsv = (value: unknown): string => {
     const text = String(value ?? "");
     return `"${text.replace(/"/g, '""')}"`;
@@ -107,7 +106,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
           category.parentId == null ? "Main Category" : "Subcategory",
         ]);
 
-        // UTF-8 BOM ထည့်ထားသောကြောင့် Excel တွင် မြန်မာစာဖတ်ရလွယ်ကူမည်
+        // UTF-8 BOM is included so that Excel can properly read Myanmar/Unicode characters
         const csvContent = [
           headers.map(escapeCsv).join(","),
           ...rows.map((row) => row.map(escapeCsv).join(",")),
@@ -165,18 +164,8 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
   const sortedFlatCategories = useMemo(() => {
     return [...filteredCategories].sort((a, b) => {
-      const parentA = a.parentId ?? a.categoryId;
-      const parentB = b.parentId ?? b.categoryId;
-
-      if (parentA !== parentB) {
-        return parentA - parentB;
-      }
-
-      // Parent category ကို ၎င်း၏ subcategory များထက် အပေါ်တွင်ထားရန်
-      if (a.parentId == null && b.parentId != null) return -1;
-      if (a.parentId != null && b.parentId == null) return 1;
-
-      return a.categoryName.localeCompare(b.categoryName);
+      // Sort in descending order by categoryId so newly created categories appear at the top
+      return b.categoryId - a.categoryId;
     });
   }, [filteredCategories]);
 

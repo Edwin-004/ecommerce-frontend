@@ -16,24 +16,33 @@ interface StaffResponseDTO {
 
 export const StaffList: React.FC = () => {
     const navigate = useNavigate();
+    const currentUser = useSelector((state: RootState) => state.auth);
+    const isCurrentSuperAdmin = currentUser?.email?.toLowerCase() === 'admin@ecommerce.com';
+
     const [staffList, setStaffList] = useState<StaffResponseDTO[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     const [activeTab, setActiveTab] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+    const [selectedRole, setSelectedRole] = useState<string>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
 
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 8;
+
+    const [showModal, setShowModal] = useState(false);
+    const [selectedStaff, setSelectedStaff] = useState<{ id: number; name: string; status: string; roleName: string } | null>(null);
 
     const fetchStaff = async () => {
         try {
+            setLoading(true);
             const response = await api.get('/staff');
             setStaffList(response.data);
-            setLoading(false);
-        } catch (err) {
+            setError(null);
+        } catch (err: any) {
             console.error("Error fetching staff data:", err);
-            setError("this is error");
+            setError(err.response?.data?.message || "Failed to load staff accounts.");
+        } finally {
             setLoading(false);
         }
     };
@@ -44,30 +53,61 @@ export const StaffList: React.FC = () => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [activeTab, searchQuery]);
+    }, [activeTab, selectedRole, searchQuery]);
 
-    const filteredStaff = staffList.filter((staff) => {
-        const matchesTab = activeTab === 'ALL' || staff.status === activeTab;
-        const matchesSearch = staff.userName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              staff.email.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesTab && matchesSearch;
-    });
-
-    const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentStaffData = filteredStaff.slice(startIndex, startIndex + itemsPerPage);
-
-    const getRoleBadgeClass = (role: string) => {
-        switch (role) {
-            case 'ADMIN': return 'badge-role-admin';
-            case 'INVENTORY_STAFF': return 'badge-role-inventory';
-            case 'SALES_STAFF': return 'badge-role-sales';
-            case 'ORDER_STAFF': return 'badge-role-order';
-            default: return 'badge-role-default';
+    const formatDateTimeDMY = (dateString?: string): string => {
+        if (!dateString) return '—';
+        try {
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return dateString;
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        } catch {
+            return dateString;
         }
     };
 
-    const handleEdit = (id: number, _name?: string) => {
+    const filteredStaff = staffList.filter((staff) => {
+        const matchesTab = activeTab === 'ALL' || staff.status === activeTab;
+        
+        const matchesRole = selectedRole === 'ALL' || 
+            (selectedRole === 'SALES_STAFF' 
+                ? (staff.roleName === 'SALES_STAFF' || staff.roleName === 'ORDER_STAFF') 
+                : staff.roleName === selectedRole);
+
+        const q = searchQuery.toLowerCase().trim();
+        const matchesSearch = !q || 
+            staff.userName.toLowerCase().includes(q) || 
+            staff.email.toLowerCase().includes(q);
+
+        return matchesTab && matchesRole && matchesSearch;
+    });
+
+    const totalPages = Math.ceil(filteredStaff.length / itemsPerPage) || 1;
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const currentStaffData = filteredStaff.slice(startIndex, startIndex + itemsPerPage);
+
+    const renderRoleBadge = (role: string, email: string) => {
+        const isSuper = email?.toLowerCase() === 'admin@ecommerce.com';
+        if (isSuper) {
+            return <span className="staff-badge badge-super-admin">👑 SUPER ADMIN</span>;
+        }
+        switch (role) {
+            case 'ADMIN': 
+                return <span className="staff-badge badge-role-admin">🛡️ SYSTEM ADMIN</span>;
+            case 'INVENTORY_STAFF': 
+                return <span className="staff-badge badge-role-inventory">INVENTORY STAFF</span>;
+            case 'SALES_STAFF': 
+            case 'ORDER_STAFF': 
+                return <span className="staff-badge badge-role-sales">ORDER / SALES STAFF</span>;
+            default: 
+                return <span className="staff-badge badge-role-default">{role.replace('_', ' ')}</span>;
+        }
+    };
+
+    const handleEdit = (id: number) => {
         navigate(`/admin/staff/edit/${id}`);
     };
 
@@ -88,14 +128,40 @@ export const StaffList: React.FC = () => {
                 alert(`${actionText} á€œá€¯á€•á€ºá€›á€¬á€á€½á€„á€º á€¡á€™á€¾á€¬á€¸á€¡á€šá€½á€„á€ºá€¸á€–á€¼á€…á€ºá€•á€±á€«á€ºá€á€²á€·á€•á€«á€žá€Šá€ºá‹`);
             }
         }
-    }
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading staff data...</div>;
-    if (error) return <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>{error}</div>;
+        // Subordinate Admin cannot suspend fellow Admin
+        if (roleName === 'ADMIN' && !isCurrentSuperAdmin) {
+            alert("Administrator accounts can only be managed by Super Administrator.");
+            return;
+        }
+
+        setSelectedStaff({ id, name, status, roleName });
+        setShowModal(true);
+    };
+
+    const handleConfirmAction = async () => {
+        if (!selectedStaff) return;
+
+        const { id, status } = selectedStaff;
+        const newStatus = status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+        try {
+            await api.put(`/staff/${id}/status`, null, {
+                params: { status: newStatus }
+            });
+
+            setStaffList(prevList => prevList.map(staff => staff.userId === id ? { ...staff, status: newStatus } : staff));
+            setShowModal(false);
+            setSelectedStaff(null);
+        } catch (err: any) {
+            console.error("Error updating account status:", err);
+            alert(err.response?.data?.message || "Failed to update account status.");
+            setShowModal(false);
+        }
+    };
 
     return (
         <div className="staff-container">
-            {/* Header Section */}
             <div className="header-section">
                 <div>
                     <h1 className="header-title text-xl font-semibold text-slate-900 tracking-tight">Staff Management</h1>
@@ -106,28 +172,17 @@ export const StaffList: React.FC = () => {
                 </button>
             </div>
 
-            {/* Summary Cards */}
             <div className="summary-cards">
                 <div className="card">
                     <div className="icon-box icon-blue"><FiUsers size={20} /></div>
                     <div>
                         <p className="card-value">{staffList.length}</p>
-                        <p className="card-label">Total Staff</p>
+                        <p className="card-label">Total Accounts</p>
                     </div>
                 </div>
                 
                 <div className="card">
                     <div className="icon-box icon-green"><FiCheckCircle size={20} /></div>
-                    <div>
-                        <p className="card-value">
-                            {staffList.filter(s => s.status === 'ACTIVE').length}
-                        </p>
-                        <p className="card-label">Active Accounts</p>
-                    </div>
-                </div>
-
-                <div className="card">
-                    <div className="icon-box icon-purple"><FiShield size={20} /></div>
                     <div>
                         <p className="card-value">
                             {staffList.filter(s => s.roleName === 'ADMIN').length}
@@ -137,17 +192,26 @@ export const StaffList: React.FC = () => {
                 </div>
 
                 <div className="card">
+                    <div className="icon-box icon-purple"><FiShield size={20} /></div>
+                    <div>
+                        <p className="card-value">
+                            {staffList.filter(s => s.roleName === 'INVENTORY_STAFF').length}
+                        </p>
+                        <p className="card-label">Inventory Staff</p>
+                    </div>
+                </div>
+
+                <div className="card">
                     <div className="icon-box icon-red"><FiUserX size={20} /></div>
                     <div>
                         <p className="card-value">
-                            {staffList.filter(s => s.status !== 'ACTIVE').length}
+                            {staffList.filter(s => s.roleName === 'SALES_STAFF' || s.roleName === 'ORDER_STAFF').length}
                         </p>
-                        <p className="card-label">Inactive Staff</p>
+                        <p className="card-label">Order / Sales Staff</p>
                     </div>
                 </div>
             </div>
 
-            {/* Table Area */}
             <div className="table-section">
                 <div className="table-controls">
                     <div className="tabs">
@@ -156,21 +220,21 @@ export const StaffList: React.FC = () => {
                             className={`tab-btn ${activeTab === 'ALL' ? 'active' : ''}`}
                             onClick={() => setActiveTab('ALL')}
                         >
-                            All Staff
+                            All ({staffList.length})
                         </button>
                         <button
                             type="button"
                             className={`tab-btn ${activeTab === 'ACTIVE' ? 'active' : ''}`}
                             onClick={() => setActiveTab('ACTIVE')}
                         >
-                            Active
+                            Active ({staffList.filter(s => s.status === 'ACTIVE').length})
                         </button>
                         <button
                             type="button"
                             className={`tab-btn ${activeTab === 'INACTIVE' ? 'active' : ''}`}
                             onClick={() => setActiveTab('INACTIVE')}
                         >
-                            Inactive
+                            Inactive ({staffList.filter(s => s.status !== 'ACTIVE').length})
                         </button>
                     </div>
                     
@@ -245,11 +309,12 @@ export const StaffList: React.FC = () => {
                                                 ) : (
                                                     <button
                                                         type="button"
-                                                        className="table-btn-activate"
-                                                        onClick={() => handleStatusToggle(staff.userId, staff.userName, staff.status)}
-                                                        title="Activate staff account"
+                                                        className="btn-action-edit"
+                                                        onClick={() => handleEdit(staff.userId)}
+                                                        title="Edit account details"
                                                     >
-                                                        <FiCheck size={12} /> Activate
+                                                        <FiEdit2 size={13} style={{ flexShrink: 0 }} />
+                                                        <span>Edit</span>
                                                     </button>
                                                 )}
                                             </div>
@@ -268,10 +333,9 @@ export const StaffList: React.FC = () => {
                     </table>
                 </div>
 
-                {/* Table Footer with Adjusted Compact Pagination */}
                 <div className="pagination-container">
                     <span className="pagination-info">
-                        Showing {filteredStaff.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredStaff.length)} of {filteredStaff.length} Entries
+                        Showing {filteredStaff.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredStaff.length)} of {filteredStaff.length} Accounts
                     </span>
                     <div className="pagination-controls">
                         <button 
@@ -305,6 +369,78 @@ export const StaffList: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {showModal && selectedStaff && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                    backdropFilter: 'blur(4px)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000
+                }}>
+                    <div style={{
+                        backgroundColor: '#ffffff',
+                        padding: '28px',
+                        borderRadius: '14px',
+                        width: '420px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{ marginBottom: '10px', fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
+                            {selectedStaff.status === 'ACTIVE' ? 'Confirm Account Suspension' : 'Confirm Account Activation'}
+                        </h3>
+                        <p style={{ marginBottom: '22px', color: '#475569', fontSize: '13.5px', lineHeight: '1.5' }}>
+                            Are you sure you want to <b>{selectedStaff.status === 'ACTIVE' ? 'suspend' : 'activate'}</b> the account for <b>{selectedStaff.name}</b>?
+                            {selectedStaff.status === 'ACTIVE' && (
+                                <span style={{ display: 'block', marginTop: '6px', color: '#dc2626', fontSize: '12px' }}>
+                                    Suspended users will lose access to the system immediately.
+                                </span>
+                            )}
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                            <button 
+                                type="button"
+                                onClick={() => setShowModal(false)}
+                                style={{
+                                    padding: '9px 18px',
+                                    backgroundColor: '#f1f5f9',
+                                    color: '#475569',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '13px'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={handleConfirmAction}
+                                style={{
+                                    padding: '9px 20px',
+                                    backgroundColor: selectedStaff.status === 'ACTIVE' ? '#dc2626' : '#16a34a',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: '600',
+                                    fontSize: '13px',
+                                    boxShadow: selectedStaff.status === 'ACTIVE' ? '0 2px 8px rgba(220, 38, 38, 0.3)' : '0 2px 8px rgba(22, 163, 74, 0.3)'
+                                }}
+                            >
+                                Confirm {selectedStaff.status === 'ACTIVE' ? 'Suspension' : 'Activation'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

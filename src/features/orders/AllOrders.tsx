@@ -17,6 +17,7 @@ import {
   FiChevronRight,
   FiSearch,
 } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 
 const ORDER_EXPORT_COLUMNS = [
   { key: 'orderNo', label: 'Order No' },
@@ -29,10 +30,25 @@ const ORDER_EXPORT_COLUMNS = [
 
 export const AllOrders = () => {
   const [currentPage, setCurrentPage] = useState(0);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('PENDING');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // ➕ ထည့်ရမည့်အပိုင်း (Filter ပြောင်းတိုင်း Page 0 သို့ ပြန်သွားရန်)
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [statusFilter, searchTerm, startDate, endDate]);
+
   const pageSize = 10;
+
   const { data, isLoading, isError } = useGetOrdersQuery({
     page: currentPage,
     size: pageSize,
+    status: statusFilter,
+    search: searchTerm,
+    startDate: startDate,
+    endDate: endDate,
   });
   // data ထဲတွင် ယခုအခါ data.content အဖြစ် ပြောင်းသွားပါမည်
   const orders = data?.content || [];
@@ -47,11 +63,6 @@ export const AllOrders = () => {
     useGetOrderByOrderNoQuery(selectedOrderNo || '', {
       skip: !selectedOrderNo,
     });
-
-  const [statusFilter, setStatusFilter] = useState<string>('PENDING');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
 
   // Dynamic Export State
   const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>(
@@ -97,7 +108,7 @@ export const AllOrders = () => {
     setSelectedExportColumns((prev) => {
       if (prev.includes(colKey)) {
         if (prev.length === 1) {
-          alert('At least one column must be selected for export.');
+          toast.error('At least one column must be selected for export.');
           return prev;
         }
         return prev.filter((k) => k !== colKey);
@@ -112,7 +123,7 @@ export const AllOrders = () => {
 
   const handleDynamicExport = async (format: 'pdf' | 'excel') => {
     if (selectedExportColumns.length === 0) {
-      alert('Please select at least one column to export.');
+      toast.error('Please select at least one column to export.');
       return;
     }
     try {
@@ -164,55 +175,12 @@ export const AllOrders = () => {
       setTimeout(() => setExportSuccessMessage(null), 4000);
     } catch (err: any) {
       console.error('Failed to export orders report:', err);
-      alert(
+      toast.error(
         'Failed to export orders report: ' + (err.message || 'Unknown error')
       );
     } finally {
       setExportingFormat(null);
     }
-  };
-
-  const filteredOrders = orders.filter((order: any) => {
-    const matchStatus =
-      statusFilter === 'ALL' || order.orderStatus === statusFilter;
-    const matchSearch =
-      order.orderNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase());
-    let matchDate = true;
-    if (startDate || endDate) {
-      if (!order.createdAt) {
-        matchDate = false; // Date မရှိရင် ဖျောက်မည်
-      } else {
-        // "2026-10-29 08:07 PM" ကဲ့သို့သော String ကို Date Object ပြောင်းခြင်း
-        // (API က ဘယ်လိုပုံစံနဲ့ပဲ လာလာ Date Object အဖြစ် အရင်ပြောင်းပါမည်)
-        const orderDateObj = new Date(order.createdAt);
-
-        // Invalid Date ဖြစ်နေလျှင် (Parsing Error တက်လျှင်) ဖျောက်မည်
-        if (isNaN(orderDateObj.getTime())) {
-          matchDate = false;
-        } else {
-          // Date Object မှနေ၍ YYYY-MM-DD ပုံစံ String ပြန်ထုတ်ခြင်း (Timezone ပြဿနာကို ဖြေရှင်းပြီး)
-          // ဥပမာ: "2026-10-29"
-          const year = orderDateObj.getFullYear();
-          const month = String(orderDateObj.getMonth() + 1).padStart(2, '0');
-          const day = String(orderDateObj.getDate()).padStart(2, '0');
-          const formattedOrderDate = `${year}-${month}-${day}`;
-
-          if (startDate && formattedOrderDate < startDate) {
-            matchDate = false; // Start Date ထက် စောနေလျှင် ဖျောက်မည်
-          }
-          if (endDate && formattedOrderDate > endDate) {
-            matchDate = false; // End Date ထက် နောက်ကျနေလျှင် ဖျောက်မည်
-          }
-        }
-      }
-    }
-    return matchStatus && matchSearch && matchDate;
-  });
-
-  const getOrderCountByStatus = (status: string) => {
-    if (status === 'ALL') return orders.length;
-    return orders.filter((order: any) => order.orderStatus === status).length;
   };
 
   const { data: statusHistory = [], isLoading: isLoadingHistory } =
@@ -333,12 +301,11 @@ export const AllOrders = () => {
         }).unwrap();
       }
 
-      alert('Status Updated Successfully!');
       setShowShipmentModal(false);
       setTrackingNumber('');
     } catch (error) {
       console.log('Error updating status:', error);
-      alert('Status Update unsuccessful! Please try again.');
+      toast.error('Please fill in all required fields.');
     }
   };
 
@@ -402,23 +369,15 @@ export const AllOrders = () => {
             'SHIPPED',
             'DELIVERED',
             'CANCELLED',
-          ].map((status) => {
-            const count = getOrderCountByStatus(status);
-            return (
-              <button
-                key={status}
-                className={`${styles.tabButton} ${statusFilter === status ? styles.activeTab : ''}`}
-                onClick={() => setStatusFilter(status)}
-              >
-                {status}
-                <span
-                  className={`${styles.statusCountBadge} ${statusFilter === status ? styles.activeCountBadge : ''}`}
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+          ].map((status) => (
+            <button
+              key={status}
+              className={`${styles.tabButton} ${statusFilter === status ? styles.activeTab : ''}`}
+              onClick={() => setStatusFilter(status)}
+            >
+              {status}
+            </button>
+          ))}
         </div>
         <div className={styles.rightFilterGroup}>
           <div className={styles.datePickerContainer}>
@@ -610,7 +569,8 @@ export const AllOrders = () => {
               ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className={styles.tableCellCenter}>
-                    No orders found.
+                    No orders found{' '}
+                    {statusFilter !== 'ALL' && `for status "${statusFilter}"`}.
                   </td>
                 </tr>
               ) : (
@@ -634,9 +594,9 @@ export const AllOrders = () => {
                         {order.orderStatus === 'DELIVERED' && (
                           <span className={styles.statusDot}>✔</span>
                         )}
-                        {order.orderStatus === 'PENDING' && (
+                        {/* {order.orderStatus === 'PENDING' && (
                           <span className={styles.statusDot}>⏳</span>
-                        )}
+                        )} */}
                         {order.orderStatus === 'SHIPPED' && (
                           <span className={styles.statusDot}>🚚</span>
                         )}
@@ -666,7 +626,7 @@ export const AllOrders = () => {
             </tbody>
           </table>
           {/* ================= Pagination Controls (အသစ်ထပ်တိုးရန်) ================= */}
-          {totalPages > 0 && (
+          {orders.length > 0 && totalPages > 0 && (
             <div className={styles.paginationContainer}>
               <span className={styles.pageInfoText}>
                 Page {currentPage + 1} of {totalPages}
@@ -699,7 +659,7 @@ export const AllOrders = () => {
         <div className={styles.splitContainer}>
           {/* ဘယ်ဘက်ခြမ်း: List View */}
           <div className={styles.listContainer}>
-            {filteredOrders.map((order: any) => (
+            {orders.map((order: any) => (
               <div
                 key={order.orderId}
                 className={`${styles.listItem} ${selectedOrderNo === order.orderNo ? styles.activeOrder : ''}`}

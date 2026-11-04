@@ -48,10 +48,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const firstLetter = username ? username.charAt(0).toUpperCase() : 'A';
 
   const formatRole = (roleStr: string | null): string => {
-    if (roleStr === 'BUSINESS_OWNER' || roleStr === 'OWNER') return 'Business Owner';
     if (roleStr === 'ADMIN') return 'System Admin';
     if (roleStr === 'INVENTORY_STAFF') return 'Inventory Staff';
-    if (roleStr === 'SALES_STAFF') return 'Sales Staff';
+    if (roleStr === 'SALES_STAFF' || roleStr === 'ORDER_STAFF') return 'Order / Sales Staff';
     return roleStr || 'Staff';
   };
 
@@ -92,26 +91,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
     location.pathname.startsWith('/admin/variants') ||
     location.pathname.startsWith('/admin/variations');
 
-  const isInventoryActive = location.pathname.startsWith('/admin/inventory');
   const isStaffActive = location.pathname.startsWith('/admin/staff');
 
   const [catalogOpen, setCatalogOpen] = useState<boolean>(() => isCatalogActive);
-  const [inventoryOpen, setInventoryOpen] = useState<boolean>(() => isInventoryActive);
   const [staffOpen, setStaffOpen] = useState<boolean>(() => isStaffActive);
 
   // Auto-expand active dropdown when path changes
   useEffect(() => {
     if (isCatalogActive) setCatalogOpen(true);
-    if (isInventoryActive) setInventoryOpen(true);
     if (isStaffActive) setStaffOpen(true);
-  }, [isCatalogActive, isInventoryActive, isStaffActive]);
+  }, [isCatalogActive, isStaffActive]);
 
-  const handleDropdownToggle = (type: 'catalog' | 'inventory' | 'staff') => {
+  const handleDropdownToggle = (type: 'catalog' | 'staff') => {
     if (isCollapsed && onToggleCollapse) {
       onToggleCollapse();
     }
     if (type === 'catalog') setCatalogOpen(!catalogOpen);
-    if (type === 'inventory') setInventoryOpen(!inventoryOpen);
     if (type === 'staff') setStaffOpen(!staffOpen);
   };
 
@@ -311,52 +306,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               )}
 
-              {/* Inventory Dropdown */}
-              {canAccessInventory && (
-                <div className={styles.dropdownGroup}>
-                  <button
-                    type="button"
-                    className={`${styles.dropdownToggle} ${
-                      isInventoryActive ? styles.parentActive : ''
-                    }`}
-                    onClick={() => handleDropdownToggle('inventory')}
-                    title="Inventory"
-                    aria-expanded={inventoryOpen}
-                  >
-                    <div className={styles.linkLeftGroup}>
-                      <FiBox className={styles.linkIcon} />
-                      <span className={styles.linkLabel}>Inventory</span>
-                    </div>
-                    <FiChevronDown
-                      className={`${styles.chevron} ${
-                        inventoryOpen ? styles.chevronOpen : ''
-                      }`}
-                    />
-                  </button>
-
-                  {inventoryOpen && !isCollapsed && (
-                    <div className={styles.submenu}>
-                      <NavLink
-                        to="/admin/inventory"
-                        end
-                        className={subNavClass}
-                        title="Stock Management"
-                      >
-                        <FiBox className={styles.subIcon} />
-                        <span className={styles.subLabel}>Stock Management</span>
-                      </NavLink>
-
-                      <NavLink
-                        to="/admin/inventory?tab=LOW_STOCK"
-                        className={subNavClass}
-                        title="Low Stock Alerts"
-                      >
-                        <span className={styles.lowStockDot} />
-                        <span className={styles.subLabel}>Low Stock Alerts</span>
-                      </NavLink>
-                    </div>
-                  )}
-                </div>
+              {/* Stock Management */}
+              {canAccessInventory && hasInventoryMatches && (
+                <NavLink to="/admin/inventory" className={navClass} title="Stock Management">
+                  <div className={styles.linkLeftGroup}>
+                    <FiBox className={styles.linkIcon} />
+                    <span className={styles.linkLabel}>Stock Management</span>
+                  </div>
+                </NavLink>
               )}
             </>
           )}
@@ -393,8 +350,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </>
           )}
 
-          {/* Section: Staff Management */}
-          {canAccessStaff && (
+          {/* Section: Staff & Admin Management */}
+          {canAccessStaff && hasStaffMatches && (
             <>
               <div className={styles.navSectionTitle}>Team</div>
 
@@ -405,12 +362,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     isStaffActive ? styles.parentActive : ''
                   }`}
                   onClick={() => handleDropdownToggle('staff')}
-                  title="Staff Management"
-                  aria-expanded={staffOpen}
+                  title="Staff & Administrator Management"
                 >
                   <div className={styles.linkLeftGroup}>
                     <FiUsers className={styles.linkIcon} />
-                    <span className={styles.linkLabel}>Staff</span>
+                    <span className={styles.linkLabel}>Staff &amp; Admin</span>
                   </div>
                   <FiChevronDown
                     className={`${styles.chevron} ${
@@ -421,24 +377,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 {staffOpen && !isCollapsed && (
                   <div className={styles.submenu}>
-                    <NavLink
-                      to="/admin/staff"
-                      end
-                      className={subNavClass}
-                      title="All Staff"
-                    >
-                      <FiUsers className={styles.subIcon} />
-                      <span className={styles.subLabel}>All Staff</span>
-                    </NavLink>
-
-                    <NavLink
-                      to="/admin/staff/new"
-                      className={subNavClass}
-                      title="Add New Staff"
-                    >
-                      <FiUserPlus className={styles.subIcon} />
-                      <span className={styles.subLabel}>Add New Staff</span>
-                    </NavLink>
+                    {matchStaffList && (
+                      <NavLink to="/admin/staff" end className={subNavClass} title="All Accounts">
+                        <FiUsers size={13} className={styles.subIcon} />
+                        <span>All Accounts</span>
+                      </NavLink>
+                    )}
+                    {matchCreateStaff && (
+                      <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Account">
+                        <FiUserPlus size={13} className={styles.subIcon} />
+                        <span>Add New Account</span>
+                      </NavLink>
+                    )}
                   </div>
                 )}
               </div>

@@ -65,7 +65,7 @@ const getLogoUrl = (
 };
 
 // =====================================================
-// CATEGORY API (apiFetch ကို အသုံးပြုရန် ပြင်ဆင်ထားသည်)
+// CATEGORY API
 // =====================================================
 
 const getCategories = async (): Promise<Category[]> => {
@@ -414,7 +414,7 @@ export function BrandsPage() {
   };
 
   // =====================================================
-  // SAVE / CREATE / UPDATE
+  // SAVE / CREATE / UPDATE 
   // =====================================================
 
   const handleSave = async (
@@ -437,7 +437,7 @@ export function BrandsPage() {
       setShowModal(false);
       setEditingBrand(null);
 
-      // Refresh current page after create or edit.
+
       let result = await getBrands(
         page,
         PAGE_SIZE,
@@ -447,8 +447,6 @@ export function BrandsPage() {
         sortDir
       );
 
-      // If the current page became empty after editing,
-      // go back to the first page.
       if (result.content.length === 0 && page > 0) {
         setPage(0);
         return;
@@ -459,12 +457,8 @@ export function BrandsPage() {
       setTotalElements(result.totalElements);
     } catch (error) {
       console.error('Failed to save brand:', error);
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : 'Failed to save brand'
-      );
+      
+      throw error;
     } finally {
       setSaving(false);
     }
@@ -948,9 +942,7 @@ export function BrandsPage() {
         )}
       </div>
 
-
       {/* CREATE / EDIT MODAL */}
-
       <BrandModal
         show={showModal}
         brand={editingBrand}

@@ -47,6 +47,8 @@ export const ReportsPage = () => {
   const [formatLowStock, setFormatLowStock] = useState('pdf');
   
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [isMomModalOpen, setIsMomModalOpen] = useState(false);
+  const [momYear, setMomYear] = useState<number>(2026);
   const [downloadingFormat, setDownloadingFormat] = useState<string>('pdf');
   const [downloadTitle, setDownloadTitle] = useState<string>('');
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
@@ -591,7 +593,75 @@ export const ReportsPage = () => {
           </div>
         </div>
         
-      </div>
+      
+        {/* 6. Month-on-Month Profit & Margin Comparison Report */}
+        <div className={`${styles.reportCard} ${styles.cardMom}`}>
+          <div className={styles.cardHeader}>
+            <div className={styles.iconWrapper}><FiDollarSign /></div>
+            <div>
+              <h3 style={{ margin: 0 }}>MoM Profit & Margin</h3>
+              <span style={{ fontSize: '11px', color: '#8b5cf6', fontWeight: 600, background: '#f5f3ff', padding: '2px 8px', borderRadius: '999px' }}>
+                New Analytical Feature
+              </span>
+            </div>
+          </div>
+          <p className={styles.cardDescription}>
+            Track historical profit and margin changes across months. Calculates accurately even when selling prices fluctuate, using snapshotted cost and unit prices.
+          </p>
+          <div className={styles.inputGroup}>
+            <div className={styles.dateInputWrapper} style={{ width: '100%' }}>
+              <span className={styles.inputLabel}>Reporting Year</span>
+              <select
+                className={styles.styledInput}
+                value={momYear}
+                onChange={(e) => setMomYear(Number(e.target.value))}
+              >
+                <option value={2026}>2026</option>
+                <option value={2025}>2025</option>
+                <option value={2024}>2024</option>
+              </select>
+            </div>
+          </div>
+
+          <div className={styles.momActionRow}>
+            <button
+              className={styles.viewAnalysisBtn}
+              onClick={() => setIsMomModalOpen(true)}
+              type="button"
+            >
+              <FiMaximize2 />
+              <span>View Analysis</span>
+            </button>
+
+            <button
+              className={`${styles.downloadBtn} ${isDownloading === 'mom-profit' ? styles.downloadBtnLoading : ''}`}
+              disabled={isDownloading === 'mom-profit'}
+              onClick={() => {
+                downloadReport(
+                  `/month-on-month-profit/export?year=${momYear}`,
+                  `Month_on_Month_Profit_${momYear}`,
+                  'excel',
+                  'MoM Profit & Margin Report'
+                );
+              }}
+              style={{ minWidth: '120px' }}
+              type="button"
+            >
+              {isDownloading === 'mom-profit' ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                  <span>Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <FiDownload />
+                  <span>Excel</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+</div>
 
       {/* Floating Export Progress Animation HUD */}
       {isDownloading && (
@@ -613,6 +683,21 @@ export const ReportsPage = () => {
           </div>
         </div>
       )}
+
+      {/* Month-on-Month Interactive Profit & Margin Modal */}
+      <MonthOnMonthProfitModal
+        isOpen={isMomModalOpen}
+        onClose={() => setIsMomModalOpen(false)}
+        onExportExcel={(year) => {
+          downloadReport(
+            `/month-on-month-profit/export?year=${year}`,
+            `Month_on_Month_Profit_${year}`,
+            'excel',
+            'MoM Profit & Margin Report'
+          );
+        }}
+        isExportingExcel={isDownloading === 'mom-profit'}
+      />
 
       {/* Success Download Toast */}
       {downloadSuccess && (
