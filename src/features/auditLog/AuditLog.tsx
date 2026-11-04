@@ -46,7 +46,6 @@ const AuditLog: React.FC = () => {
   const [onlyChangedFields, setOnlyChangedFields] = useState<boolean>(true);
 
   useEffect(() => {
-    // 1. Error ပြင်ဆင်ချက်: {} ထည့်သွင်းပေးထားပါသည်
     dispatch(fetchAuditLogs({}));
   }, [dispatch]);
 
@@ -81,7 +80,6 @@ const AuditLog: React.FC = () => {
     setActivePreset('all');
     setStartDate('');
     setEndDate('');
-    // 2. Error ပြင်ဆင်ချက်: {} ထည့်သွင်းပေးထားပါသည်
     dispatch(fetchAuditLogs({}));
   };
 
@@ -136,7 +134,6 @@ const AuditLog: React.FC = () => {
     setEndDate('');
     setSelectedAction('ALL');
     setSearchQuery('');
-    // 3. Error ပြင်ဆင်ချက်: {} ထည့်သွင်းပေးထားပါသည်
     dispatch(fetchAuditLogs({}));
   };
 
@@ -240,6 +237,7 @@ const AuditLog: React.FC = () => {
     return clean;
   };
 
+  // Syntax Error ကို ရှင်းလင်းထားသော Function
   const humanizeDescription = (desc?: string, log?: AuditLogType): string => {
     if (!desc) return 'System activity recorded.';
     
@@ -271,8 +269,6 @@ const AuditLog: React.FC = () => {
     }
 
     return desc;
-    }
-    return clean;
   };
 
   const getActionMeta = (action?: string) => {
@@ -578,7 +574,6 @@ const AuditLog: React.FC = () => {
               <button
                 type="button"
                 className="btn-page"
-                // 4. Error ပြင်ဆင်ချက်: Syntax မှားနေသော p 1 နေရာတွင် p - 1 အဖြစ် ပြင်ဆင်ထားပါသည်
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
               >
