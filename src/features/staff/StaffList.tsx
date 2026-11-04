@@ -49,9 +49,34 @@ export const StaffList: React.FC = () => {
         }
     };
 
+    const [, setAvatarVersion] = useState(0);
+
     useEffect(() => {
         fetchStaff();
+
+        // Listen for avatar updates from Profile or other tabs
+        const onAvatarUpdate = () => setAvatarVersion(v => v + 1);
+        window.addEventListener('avatarChange', onAvatarUpdate);
+        window.addEventListener('storage', onAvatarUpdate);
+        return () => {
+            window.removeEventListener('avatarChange', onAvatarUpdate);
+            window.removeEventListener('storage', onAvatarUpdate);
+        };
     }, []);
+
+    const getStaffAvatar = (staff: StaffResponseDTO): string | null => {
+        const isSelf = currentUser.email?.toLowerCase() === staff.email?.toLowerCase() || 
+                       currentUser.username?.toLowerCase() === staff.userName?.toLowerCase();
+        return (
+            localStorage.getItem(`avatar_${staff.email?.toLowerCase()}`) ||
+            localStorage.getItem(`avatar_${staff.email}`) ||
+            localStorage.getItem(`avatar_${staff.userName?.toLowerCase()}`) ||
+            localStorage.getItem(`avatar_${staff.userName}`) ||
+            localStorage.getItem(`avatar_${staff.userId}`) ||
+            (isSelf ? localStorage.getItem('currentUserAvatar') : null) ||
+            null
+        );
+    };
 
     useEffect(() => {
         setCurrentPage(1);
@@ -295,10 +320,16 @@ export const StaffList: React.FC = () => {
                                         >
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    {/* Mini Avatar Pill */}
-                                                    <div className={`avatar-mini ${isSuperAdminUser ? 'avatar-super' : isAdminRole ? 'avatar-admin' : staff.roleName === 'INVENTORY_STAFF' ? 'avatar-inventory' : 'avatar-sales'}`}>
-                                                        {isSuperAdminUser ? '👑' : isAdminRole ? '🛡️' : staff.userName ? staff.userName.charAt(0).toUpperCase() : 'U'}
-                                                    </div>
+                                                    {/* Mini Avatar Pill (Shows photo if uploaded in Profile, else fallback) */}
+                                                    {getStaffAvatar(staff) ? (
+                                                        <div className="avatar-mini avatar-mini-has-img" title={staff.userName}>
+                                                            <img src={getStaffAvatar(staff)!} alt={staff.userName} className="avatar-mini-img" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className={`avatar-mini ${isSuperAdminUser ? 'avatar-super' : isAdminRole ? 'avatar-admin' : staff.roleName === 'INVENTORY_STAFF' ? 'avatar-inventory' : 'avatar-sales'}`}>
+                                                            {isSuperAdminUser ? '👑' : isAdminRole ? '🛡️' : staff.userName ? staff.userName.charAt(0).toUpperCase() : 'U'}
+                                                        </div>
+                                                    )}
 
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

@@ -14,11 +14,25 @@ const initialState: AuditLogState = {
   error: null,
 };
 
+// Date Filter အတွက် Parameter Data Type ကို ကြေညာခြင်း
+interface FetchAuditLogsArgs {
+  startDate?: string;
+  endDate?: string;
+}
+
+// args ကို လက်ခံပြီး API ကိုလှမ်းခေါ်မည့်အပိုင်း
 export const fetchAuditLogs = createAsyncThunk(
   'auditLog/fetchAuditLogs',
-  async (_, { rejectWithValue }) => {
+  async (args: FetchAuditLogsArgs | undefined, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<AuditLog[]>('/audit-logs');
+      let url = '/audit-logs';
+      
+      // startDate နဲ့ endDate ပါလာခဲ့ရင် Query Parameter အနေနဲ့ တွဲပို့ပေးမည်
+      if (args?.startDate && args?.endDate) {
+        url += `?startDate=${args.startDate}&endDate=${args.endDate}`;
+      }
+
+      const response = await axiosInstance.get<AuditLog[]>(url);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch audit logs');

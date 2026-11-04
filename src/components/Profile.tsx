@@ -1,5 +1,5 @@
 import { BackButton } from './common/BackButton';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../store';
 import api from '../utils/axiosConfig';
@@ -32,8 +32,28 @@ export const Profile: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
-    return localStorage.getItem(`avatar_${username || 'user'}`) || null;
+    return (
+      localStorage.getItem(`avatar_${username?.toLowerCase()}`) ||
+      localStorage.getItem(`avatar_${username}`) ||
+      localStorage.getItem(`avatar_${email?.toLowerCase()}`) ||
+      localStorage.getItem(`avatar_${email}`) ||
+      localStorage.getItem('currentUserAvatar') ||
+      null
+    );
   });
+
+  useEffect(() => {
+    if (!avatarUrl) {
+      const saved =
+        localStorage.getItem(`avatar_${username?.toLowerCase()}`) ||
+        localStorage.getItem(`avatar_${username}`) ||
+        localStorage.getItem(`avatar_${email?.toLowerCase()}`) ||
+        localStorage.getItem(`avatar_${email}`) ||
+        localStorage.getItem('currentUserAvatar') ||
+        null;
+      if (saved) setAvatarUrl(saved);
+    }
+  }, [username, email, avatarUrl]);
 
   const [message, setMessage] = useState<{
     type: 'success' | 'error';
@@ -65,7 +85,17 @@ export const Profile: React.FC = () => {
         setAvatarUrl(result);
         if (username) {
           localStorage.setItem(`avatar_${username}`, result);
+          localStorage.setItem(`avatar_${username.toLowerCase()}`, result);
         }
+        if (email) {
+          localStorage.setItem(`avatar_${email}`, result);
+          localStorage.setItem(`avatar_${email.toLowerCase()}`, result);
+        }
+        localStorage.setItem('currentUserAvatar', result);
+        
+        // Notify all components (Sidebar, All Accounts table, etc.)
+        window.dispatchEvent(new Event('avatarChange'));
+        setMessage({ type: 'success', text: 'Profile photo updated successfully!' });
       };
       reader.readAsDataURL(file);
     }

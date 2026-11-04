@@ -77,7 +77,11 @@ export const Login: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.field === 'email') {
+        if (data.blocked) {
+          setGeneralError(data.message);
+          setPasswordError(data.message);
+          toast.error(data.message, { autoClose: 7000 });
+        } else if (data.field === 'email') {
           setEmailError(data.message || 'Email not registered.');
         } else if (data.field === 'password') {
           setPasswordError(data.message || 'Incorrect password.');
@@ -232,7 +236,7 @@ export const Login: React.FC = () => {
                 type="button"
                 className="login-password-toggle"
                 onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}\
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
                 title={showPassword ? 'Hide password' : 'Show password'}
                 tabIndex={-1}
               >

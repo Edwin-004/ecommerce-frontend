@@ -46,7 +46,8 @@ const AuditLog: React.FC = () => {
   const [onlyChangedFields, setOnlyChangedFields] = useState<boolean>(true);
 
   useEffect(() => {
-    dispatch(fetchAuditLogs());
+    // 1. Error ပြင်ဆင်ချက်: {} ထည့်သွင်းပေးထားပါသည်
+    dispatch(fetchAuditLogs({}));
   }, [dispatch]);
 
   // Reset to first page whenever filters change
@@ -80,7 +81,8 @@ const AuditLog: React.FC = () => {
     setActivePreset('all');
     setStartDate('');
     setEndDate('');
-    dispatch(fetchAuditLogs());
+    // 2. Error ပြင်ဆင်ချက်: {} ထည့်သွင်းပေးထားပါသည်
+    dispatch(fetchAuditLogs({}));
   };
 
   const handlePresetToday = () => {
@@ -134,7 +136,8 @@ const AuditLog: React.FC = () => {
     setEndDate('');
     setSelectedAction('ALL');
     setSearchQuery('');
-    dispatch(fetchAuditLogs());
+    // 3. Error ပြင်ဆင်ချက်: {} ထည့်သွင်းပေးထားပါသည်
+    dispatch(fetchAuditLogs({}));
   };
 
   // Action Badge CSS Class
@@ -175,14 +178,45 @@ const AuditLog: React.FC = () => {
     return null;
   };
 
-  const formatFieldValue = (val: any): string => {
+  // Technical internal keys that should be filtered out from user-friendly view
+  const TECHNICAL_KEYS = new Set([
+    'passwordhash',
+    'password',
+    'tokenversion',
+    'mustchangepassword',
+    'createdby',
+    'modifiedby',
+    'class',
+    'hibernatelazyinitializer',
+    'handler'
+  ]);
+
+  const isTechnicalKey = (key: string): boolean => {
+    return TECHNICAL_KEYS.has(key.toLowerCase().trim());
+  };
+
+  const formatFieldValue = (val: any, key?: string): string => {
     if (val === null || val === undefined) return '—';
     if (typeof val === 'boolean') return val ? 'Yes' : 'No';
     if (typeof val === 'object') return JSON.stringify(val);
-    return String(val);
+    const str = String(val).trim();
+    if (key?.toLowerCase() === 'userrole') {
+      if (str === 'ADMIN') return 'Administrator';
+      if (str === 'INVENTORY_STAFF') return 'Inventory Staff';
+      if (str === 'SALES_STAFF') return 'Sales Staff';
+    }
+    return str;
   };
 
   const humanizeFieldLabel = (key: string): string => {
+    const k = key.trim().toLowerCase();
+    if (k === 'username') return 'Staff Username';
+    if (k === 'email') return 'Email Address';
+    if (k === 'userrole') return 'System Role';
+    if (k === 'status') return 'Account Status';
+    if (k === 'userid') return 'User ID';
+    if (k === 'createdat') return 'Creation Date';
+    if (k === 'modifiedat') return 'Last Modified';
     return key
       .replace(/([A-Z])/g, ' $1')
       .replace(/[_-]/g, ' ')
@@ -194,7 +228,49 @@ const AuditLog: React.FC = () => {
     if (!ip) return 'Unknown IP';
     const clean = ip.trim();
     if (clean === '0:0:0:0:0:0:0:1' || clean === '::1' || clean === '127.0.0.1') {
-      return `${clean} (This Computer / Local Machine)`;
+      return '127.0.0.1 (Localhost / This PC)';
+    }
+    return clean;
+  };
+
+  const formatTableIP = (ip?: string): string => {
+    if (!ip) return '-';
+    const clean = ip.trim();
+    if (clean === '0:0:0:0:0:0:0:1' || clean === '::1') return '127.0.0.1 (Local)';
+    return clean;
+  };
+
+  const humanizeDescription = (desc?: string, log?: AuditLogType): string => {
+    if (!desc) return 'System activity recorded.';
+    
+    if (desc.includes('updateStaffStatus')) {
+      const target = log?.userName ? ` for account "${log.userName}"` : '';
+      let val = '';
+      if (log?.newValue) {
+        val = ` to ${log.newValue.replace(/"/g, '')}`;
+      }
+      return `Changed staff account status${val}${target}`;
+    }
+    if (desc.includes('createStaff')) {
+      return log?.userName ? `Created new staff account for "${log.userName}"` : 'Created new staff/admin account';
+    }
+    if (desc.includes('updateStaff')) {
+      return log?.userName ? `Updated staff account details for "${log.userName}"` : 'Updated staff account details';
+    }
+    if (desc.includes('deleteStaff')) {
+      return log?.userName ? `Deactivated staff account for "${log.userName}"` : 'Deactivated staff account';
+    }
+    if (desc.includes('changePassword')) {
+      return 'Changed account password';
+    }
+
+    if (desc.startsWith('Executed method: ')) {
+      const m = desc.replace('Executed method: ', '').trim();
+      const humanized = m.replace(/([A-Z])/g, ' $1').toLowerCase();
+      return `Performed ${humanized} in ${log?.moduleName || 'system'}`;
+    }
+
+    return desc;
     }
     return clean;
   };
@@ -454,7 +530,7 @@ const AuditLog: React.FC = () => {
                   </span>
                 </td>
                 <td style={{ color: '#4b5563', fontFamily: 'monospace', fontSize: '12.5px' }}>
-                  {log.ipAddress || '-'}
+                  {formatTableIP(log.ipAddress)}
                 </td>
                 <td>
                   <span className={`status-badge ${log.status === 'SUCCESS' ? 'status-success' : 'status-error'}`}>
@@ -502,6 +578,7 @@ const AuditLog: React.FC = () => {
               <button
                 type="button"
                 className="btn-page"
+                // 4. Error ပြင်ဆင်ချက်: Syntax မှားနေသော p 1 နေရာတွင် p - 1 အဖြစ် ပြင်ဆင်ထားပါသည်
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
               >
@@ -530,8 +607,26 @@ const AuditLog: React.FC = () => {
         const actionMeta = getActionMeta(selectedLog.action);
         const actionUpper = selectedLog.action?.toUpperCase();
         const isAuthAction = actionUpper === 'LOGIN' || actionUpper === 'LOGOUT';
-        const oldParsed = tryParseJSON(selectedLog.oldValue);
-        const newParsed = tryParseJSON(selectedLog.newValue);
+        let oldParsed = tryParseJSON(selectedLog.oldValue);
+        let newParsed = tryParseJSON(selectedLog.newValue);
+
+        // Smart normalization: if newValue is a simple string (e.g. "INACTIVE" / "ACTIVE")
+        if (oldParsed && typeof oldParsed === 'object' && (!newParsed || typeof newParsed !== 'object') && selectedLog.newValue) {
+          const cleanNew = selectedLog.newValue.replace(/^"|"$/g, '').trim();
+          if (oldParsed.status && (cleanNew === 'ACTIVE' || cleanNew === 'INACTIVE')) {
+            newParsed = { ...oldParsed, status: cleanNew };
+          } else {
+            newParsed = { ...oldParsed, updatedValue: cleanNew };
+          }
+        }
+
+        // If newParsed has only 1 field (like status), inherit unchanged fields from oldParsed so diff works cleanly
+        if (oldParsed && newParsed && typeof oldParsed === 'object' && typeof newParsed === 'object') {
+          const newKeys = Object.keys(newParsed);
+          if (newKeys.length === 1 && !newParsed.email && oldParsed.email) {
+            newParsed = { ...oldParsed, ...newParsed };
+          }
+        }
         const hasRawData = Boolean(selectedLog.oldValue || selectedLog.newValue);
 
         const renderChangeDetails = () => {
@@ -600,12 +695,13 @@ const AuditLog: React.FC = () => {
           if (oldParsed || newParsed) {
             // Case A: UPDATE (Both Old & New parsed)
             if (oldParsed && newParsed) {
-              const allKeys = Array.from(new Set([...Object.keys(oldParsed), ...Object.keys(newParsed)]));
+              const allKeys = Array.from(new Set([...Object.keys(oldParsed), ...Object.keys(newParsed)]))
+                .filter((k) => !isTechnicalKey(k));
               const rows = allKeys.map((key) => {
                 const oldVal = oldParsed[key];
                 const newVal = newParsed[key];
-                const oldStr = formatFieldValue(oldVal);
-                const newStr = formatFieldValue(newVal);
+                const oldStr = formatFieldValue(oldVal, key);
+                const newStr = formatFieldValue(newVal, key);
                 const isChanged = oldStr !== newStr;
                 return {
                   key,
@@ -693,7 +789,7 @@ const AuditLog: React.FC = () => {
 
             // Case B: CREATE (Only New parsed)
             if (!oldParsed && newParsed) {
-              const keys = Object.keys(newParsed);
+              const keys = Object.keys(newParsed).filter((k) => !isTechnicalKey(k));
               return (
                 <div className="audit-diff-section">
                   <div className="audit-diff-toolbar">
@@ -724,7 +820,7 @@ const AuditLog: React.FC = () => {
                           <tr key={key} className="row-created">
                             <td className="diff-field-name">{humanizeFieldLabel(key)}</td>
                             <td className="diff-new-val">
-                              <span className="val-highlight-new">{formatFieldValue(newParsed[key])}</span>
+                              <span className="val-highlight-new">{formatFieldValue(newParsed[key], key)}</span>
                             </td>
                           </tr>
                         ))}
@@ -737,7 +833,7 @@ const AuditLog: React.FC = () => {
 
             // Case C: DELETE (Only Old parsed)
             if (oldParsed && !newParsed) {
-              const keys = Object.keys(oldParsed);
+              const keys = Object.keys(oldParsed).filter((k) => !isTechnicalKey(k));
               return (
                 <div className="audit-diff-section">
                   <div className="audit-diff-toolbar">
@@ -768,7 +864,7 @@ const AuditLog: React.FC = () => {
                           <tr key={key} className="row-deleted">
                             <td className="diff-field-name">{humanizeFieldLabel(key)}</td>
                             <td className="diff-old-val">
-                              <span className="val-highlight-old">{formatFieldValue(oldParsed[key])}</span>
+                              <span className="val-highlight-old">{formatFieldValue(oldParsed[key], key)}</span>
                             </td>
                           </tr>
                         ))}
@@ -906,7 +1002,7 @@ const AuditLog: React.FC = () => {
                 <div style={{ flex: 1 }}>
                   <div className="audit-desc-heading">Activity Description</div>
                   <div className="audit-desc-content">
-                    {selectedLog.description || 'No additional activity notes provided.'}
+                    {humanizeDescription(selectedLog.description, selectedLog)}
                   </div>
                 </div>
               </div>
