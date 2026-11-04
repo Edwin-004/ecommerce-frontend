@@ -296,10 +296,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <NavLink
                         to="/admin/variants"
                         className={subNavClass}
-                        title="Variants & Options"
+                        title="SKU &amp; Attributes"
                       >
                         <FiLayers className={styles.subIcon} />
-                        <span className={styles.subLabel}>Variants &amp; Options</span>
+                        <span className={styles.subLabel}>SKU &amp; Attributes</span>
                       </NavLink>
                     </div>
                   )}

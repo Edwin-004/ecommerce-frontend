@@ -11,6 +11,7 @@ import {
 } from './productManagementApi';
 import {
   FiPackage,
+  FiSearch,
   FiClock,
   FiEdit2,
   FiTrash2,
@@ -71,6 +72,20 @@ export const ProductManagementPage: React.FC = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [sortBy, setSortBy] = useState<string>('latest');
+
+  const handleSort = (field: string) => {
+    if (field === 'product') {
+      setSortBy((prev) => (prev === 'name-asc' ? 'name-desc' : 'name-asc'));
+    } else if (field === 'price') {
+      setSortBy((prev) => (prev === 'price-asc' ? 'price-desc' : 'price-asc'));
+    } else if (field === 'stock') {
+      setSortBy((prev) => (prev === 'stock-asc' ? 'stock-desc' : 'stock-asc'));
+    } else if (field === 'latest' || field === 'id') {
+      setSortBy((prev) => (prev === 'latest' ? 'oldest' : 'latest'));
+    }
+    setCurrentPage(1);
+  };
 
   // View Modal state
   const [viewProduct, setViewProduct] = useState<ProductItem | null>(null);
@@ -259,31 +274,54 @@ export const ProductManagementPage: React.FC = () => {
     }
   };
 
-  // Filter and sort products (latest first)
+  // Filter and sort products (latest first by default, with dynamic sorting)
   const filteredProducts = [...products]
-    .sort((a, b) => (b.productId || 0) - (a.productId || 0))
     .filter((p) => {
-    const matchesSearch =
-      p.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.categoryName && p.categoryName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.brandName && p.brandName.toLowerCase().includes(searchQuery.toLowerCase()));
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        p.productName.toLowerCase().includes(q) ||
+        (p.sku && p.sku.toLowerCase().includes(q)) ||
+        (p.categoryName && p.categoryName.toLowerCase().includes(q)) ||
+        (p.brandName && p.brandName.toLowerCase().includes(q));
 
-    const matchesCategory =
-      !selectedCategory ||
-      String(p.categoryId) === selectedCategory ||
-      p.categoryName === selectedCategory;
+      const matchesCategory =
+        !selectedCategory ||
+        String(p.categoryId) === selectedCategory ||
+        p.categoryName === selectedCategory;
 
-    const matchesBrand =
-      !selectedBrand ||
-      String(p.brandId) === selectedBrand ||
-      p.brandName === selectedBrand;
+      const matchesBrand =
+        !selectedBrand ||
+        String(p.brandId) === selectedBrand ||
+        p.brandName === selectedBrand;
 
-    const matchesStatus =
-      !selectedStatus || p.status?.toUpperCase() === selectedStatus.toUpperCase();
+      const matchesStatus =
+        !selectedStatus || p.status?.toUpperCase() === selectedStatus.toUpperCase();
 
-    return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
-  });
+      return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'latest':
+          return (b.productId || 0) - (a.productId || 0); // Newest created at top
+        case 'oldest':
+          return (a.productId || 0) - (b.productId || 0);
+        case 'price-asc':
+          return (a.sellingPrice || 0) - (b.sellingPrice || 0);
+        case 'price-desc':
+          return (b.sellingPrice || 0) - (a.sellingPrice || 0);
+        case 'stock-asc':
+          return (a.stock || 0) - (b.stock || 0);
+        case 'stock-desc':
+          return (b.stock || 0) - (a.stock || 0);
+        case 'name-asc':
+          return a.productName.localeCompare(b.productName);
+        case 'name-desc':
+          return b.productName.localeCompare(a.productName);
+        default:
+          return (b.productId || 0) - (a.productId || 0);
+      }
+    });
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
@@ -499,17 +537,44 @@ export const ProductManagementPage: React.FC = () => {
         <div className={styles.filterInputsGroup}>
           <div className={styles.fieldWithLabel}>
             <label>SEARCH</label>
-            <input
-              type="text"
-              placeholder="Search name, brand"
-              maxLength={100}
-              className={styles.fieldInputSearch}
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <FiSearch style={{ position: 'absolute', left: '10px', color: '#94a3b8', pointerEvents: 'none' }} size={14} />
+              <input
+                type="text"
+                placeholder="Search name, SKU, brand..."
+                maxLength={100}
+                className={styles.fieldInputSearch}
+                style={{ paddingLeft: '32px', paddingRight: searchQuery ? '28px' : '12px', width: '230px' }}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setCurrentPage(1);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#94a3b8',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Clear search"
+                >
+                  <FiX size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className={styles.fieldWithLabel}>
@@ -565,8 +630,28 @@ export const ProductManagementPage: React.FC = () => {
               <option value="INACTIVE">Inactive</option>
             </select>
           </div>
-        </div>
 
+          <div className={styles.fieldWithLabel}>
+            <label>SORT BY</label>
+            <select
+              className={styles.fieldSelectControl}
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              <option value="latest">✨ Newest First (Default)</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name-asc">Product Name (A - Z)</option>
+              <option value="name-desc">Product Name (Z - A)</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="stock-desc">Stock: High to Low</option>
+              <option value="stock-asc">Stock: Low to High</option>
+            </select>
+          </div>
+        </div>
         <div className={styles.filterActionsBar}>
           {/* Column Selector Popover */}
           <div className={styles.columnSelectorContainer} ref={columnDropdownRef}>
@@ -678,13 +763,36 @@ export const ProductManagementPage: React.FC = () => {
         <table className={`${styles.productTable} ${paginatedProducts.length > 0 ? 'table-with-data' : 'table-empty'}`}>
           <thead>
             <tr>
-              <th className="w-14 py-3 px-4 text-center text-xs font-medium text-slate-400 uppercase tracking-wider" style={{ textAlign: 'center' }}>
-                No.
+              <th
+                className="w-14 py-3 px-4 text-center text-xs font-medium text-slate-400 uppercase tracking-wider"
+                style={{ textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleSort('latest')}
+                title="Click to sort by Newest / Oldest"
+              >
+                No. {sortBy === 'latest' ? '↓' : sortBy === 'oldest' ? '↑' : ''}
               </th>
-              <th>PRODUCT</th>
+              <th
+                style={{ cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleSort('product')}
+                title="Click to sort by Product Name"
+              >
+                PRODUCT {sortBy === 'name-asc' ? '↑' : sortBy === 'name-desc' ? '↓' : '↕'}
+              </th>
               <th>SKU</th>
-              <th>PRICE</th>
-              <th>STOCK</th>
+              <th
+                style={{ cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleSort('price')}
+                title="Click to sort by Price"
+              >
+                PRICE {sortBy === 'price-asc' ? '↑' : sortBy === 'price-desc' ? '↓' : '↕'}
+              </th>
+              <th
+                style={{ cursor: 'pointer', userSelect: 'none' }}
+                onClick={() => handleSort('stock')}
+                title="Click to sort by Stock Quantity"
+              >
+                STOCK {sortBy === 'stock-asc' ? '↑' : sortBy === 'stock-desc' ? '↓' : '↕'}
+              </th>
               <th>STATUS</th>
               <th className="text-center" style={{ textAlign: 'center' }}>ACTIONS</th>
             </tr>
@@ -733,7 +841,7 @@ export const ProductManagementPage: React.FC = () => {
                           <div style={{ fontWeight: 600, color: '#0f172a' }}>{p.productName}</div>
                           {p.categoryName && (
                             <div style={{ fontSize: '11px', color: '#64748b' }}>
-                              {p.categoryName} â€¢ {p.brandName || 'Standard'}
+                              {p.categoryName} • {p.brandName || 'Standard'}
                             </div>
                           )}
                         </div>
@@ -752,7 +860,7 @@ export const ProductManagementPage: React.FC = () => {
                     </td>
                     <td>
                       <span className={styles.statusPillActive}>
-                        â— {p.status?.toLowerCase() === 'active' ? 'Active' : p.status || 'Active'}
+                        <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', marginRight: '6px' }}></span>{p.status?.toLowerCase() === 'active' ? 'Active' : p.status || 'Active'}
                       </span>
                     </td>
                     <td className="text-center" style={{ textAlign: 'center' }}>
@@ -1005,7 +1113,7 @@ export const ProductManagementPage: React.FC = () => {
               </div>
               <div>
                 <strong style={{ color: '#64748b' }}>Status:</strong>{' '}
-                <span className={styles.statusPillActive}>â— {viewProduct.status}</span>
+                <span className={styles.statusPillActive}><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', marginRight: '6px' }}></span>{viewProduct.status}</span>
               </div>
               <div>
                 <strong style={{ color: '#64748b' }}>Perishable Goods:</strong>{' '}
@@ -1084,7 +1192,7 @@ export const ProductManagementPage: React.FC = () => {
                               {v.sku}
                             </span>
                             <span className={styles.statusPillActive} style={{ fontSize: '11px' }}>
-                              â— {v.status}
+                              <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981', marginRight: '6px' }}></span>{v.status}
                             </span>
                           </div>
                           {/* Attribute Badges (Size, Color, etc.) */}
@@ -1166,7 +1274,7 @@ export const ProductManagementPage: React.FC = () => {
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                                   }}
                                 >
-                                  âœ•
+                                  ×
                                 </button>
                               </div>
                             ))
