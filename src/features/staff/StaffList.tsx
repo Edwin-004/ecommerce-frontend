@@ -1,8 +1,10 @@
+import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiEdit2, FiSlash, FiCheck, FiPlus, FiUsers, FiCheckCircle, FiShield, FiUserX, FiSearch } from 'react-icons/fi';
-import api from '../../utils/axiosConfig';
-import { formatDate } from '../../utils/dateUtils'; 
+import { useSelector } from 'react-redux';
+import { type RootState } from '../../store';
+import { FiEdit2, FiSlash, FiCheck, FiFilter } from 'react-icons/fi';
+import api from '../../utils/axiosConfig'; 
 import './StaffList.css';
 
 interface StaffResponseDTO {
@@ -111,22 +113,17 @@ export const StaffList: React.FC = () => {
         navigate(`/admin/staff/edit/${id}`);
     };
 
-    async function handleStatusToggle(id: number, name: string, currentStatus: string) {
-        const newStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-        const actionText = currentStatus === 'ACTIVE' ? 'Suspend' : 'Activate';
+    const openConfirmModal = (id: number, name: string, status: string, roleName: string, email: string) => {
+        // Prevent modifying own status
+        if (currentUser.email === email || currentUser.username === name) {
+            alert("You cannot change the status of your own logged-in account.");
+            return;
+        }
 
-        if (window.confirm(`${name} á á€¡á€€á€±á€¬á€„á€·á€ºá€€á€­á€¯ ${actionText} á€œá€¯á€•á€ºá€™á€¾á€¬ á€žá€±á€á€»á€¬á€•á€¼á€®á€œá€¬á€¸?`)) {
-            try {
-                await api.put(`/staff/${id}/status`, null, {
-                    params: { status: newStatus }
-                });
-
-                setStaffList(prevList => prevList.map(staff => staff.userId === id ? { ...staff, status: newStatus } : staff
-                ));
-            } catch (err) {
-                console.error(`Error ${actionText.toLowerCase()}ing staff:`, err);
-                alert(`${actionText} á€œá€¯á€•á€ºá€›á€¬á€á€½á€„á€º á€¡á€™á€¾á€¬á€¸á€¡á€šá€½á€„á€ºá€¸á€–á€¼á€…á€ºá€•á€±á€«á€ºá€á€²á€·á€•á€«á€žá€Šá€ºá‹`);
-            }
+        // Super Admin account can never be deactivated
+        if (email?.toLowerCase() === 'admin@ecommerce.com') {
+            alert("The primary Super Administrator account can never be suspended.");
+            return;
         }
 
         // Subordinate Admin cannot suspend fellow Admin
@@ -163,26 +160,29 @@ export const StaffList: React.FC = () => {
     return (
         <div className="staff-container">
             <div className="header-section">
-                <div>
-                    <h1 className="header-title text-xl font-semibold text-slate-900 tracking-tight">Staff Management</h1>
-                    <p className="header-subtitle text-xs text-slate-500">Manage system users, roles, and account statuses</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <BackButton fallbackUrl="/admin/dashboard" />
+                    <div>
+                        <h2 className="header-title">Staff &amp; Administrator Management</h2>
+                        <p className="header-subtitle">Manage system administrators and back-office staff accounts</p>
+                    </div>
                 </div>
                 <button className="btn-add" onClick={() => navigate('/admin/staff/new')}>
-                    <FiPlus size={16} /> Add New Staff
+                    + Add New Account
                 </button>
             </div>
 
             <div className="summary-cards">
                 <div className="card">
-                    <div className="icon-box icon-blue"><FiUsers size={20} /></div>
+                    <div className="icon-box icon-blue">👥</div>
                     <div>
                         <p className="card-value">{staffList.length}</p>
                         <p className="card-label">Total Accounts</p>
                     </div>
                 </div>
-                
-                <div className="card">
-                    <div className="icon-box icon-green"><FiCheckCircle size={20} /></div>
+
+                <div className="card" style={{ borderColor: 'rgba(216, 180, 254, 0.9)' }}>
+                    <div className="icon-box icon-purple">🛡️</div>
                     <div>
                         <p className="card-value">
                             {staffList.filter(s => s.roleName === 'ADMIN').length}
@@ -192,7 +192,7 @@ export const StaffList: React.FC = () => {
                 </div>
 
                 <div className="card">
-                    <div className="icon-box icon-purple"><FiShield size={20} /></div>
+                    <div className="icon-box icon-blue">📦</div>
                     <div>
                         <p className="card-value">
                             {staffList.filter(s => s.roleName === 'INVENTORY_STAFF').length}
@@ -202,7 +202,7 @@ export const StaffList: React.FC = () => {
                 </div>
 
                 <div className="card">
-                    <div className="icon-box icon-red"><FiUserX size={20} /></div>
+                    <div className="icon-box icon-green">🛍️</div>
                     <div>
                         <p className="card-value">
                             {staffList.filter(s => s.roleName === 'SALES_STAFF' || s.roleName === 'ORDER_STAFF').length}
@@ -237,14 +237,27 @@ export const StaffList: React.FC = () => {
                             Inactive ({staffList.filter(s => s.status !== 'ACTIVE').length})
                         </button>
                     </div>
-                    
-                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                        <FiSearch style={{ position: 'absolute', left: 12, color: '#94a3b8', pointerEvents: 'none' }} size={15} />
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <FiFilter size={14} color="#64748b" />
+                            <select
+                                className="search-input"
+                                style={{ width: '180px', padding: '7.5px 10px', cursor: 'pointer' }}
+                                value={selectedRole}
+                                onChange={(e) => setSelectedRole(e.target.value)}
+                            >
+                                <option value="ALL">All Roles</option>
+                                <option value="ADMIN">System Admin</option>
+                                <option value="INVENTORY_STAFF">Inventory Staff</option>
+                                <option value="SALES_STAFF">Order / Sales Staff</option>
+                            </select>
+                        </div>
+
                         <input
                             type="text"
-                            placeholder="Search staff..."
+                            placeholder="🔍 Search name, email..."
                             className="search-input"
-                            style={{ paddingLeft: '34px' }}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -252,23 +265,26 @@ export const StaffList: React.FC = () => {
                 </div>
 
                 <div className="table-responsive">
-                    <table className={`staff-table ${currentStaffData.length > 0 ? 'table-with-data' : 'table-empty'}`}>
+                    <table className="staff-table">
                         <thead>
                             <tr>
-                                {/* Row Number Column */}
-                                <th className="text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
-                                <th style={{ minWidth: '160px', textAlign: 'left' }}>Name</th>
-                                <th style={{ minWidth: '220px', textAlign: 'left' }}>Email</th>
-                                <th style={{ minWidth: '140px', textAlign: 'left' }}>Role</th>
-                                <th className="text-center" style={{ width: '120px', textAlign: 'center' }}>Status</th>
-                                <th className="text-center" style={{ width: '140px', textAlign: 'center' }}>Created At</th>
-                                <th className="text-center" style={{ width: '190px', textAlign: 'center' }}>Actions</th>
+                                <th>Name &amp; Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Created Date</th>
+                                <th style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap', width: '180px', minWidth: '180px' }}>
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             {currentStaffData.length > 0 ? (
-                                currentStaffData.map((staff, index) => {
-                                    const rowNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                                currentStaffData.map((staff) => {
+                                    const isSuperAdminUser = staff.email?.toLowerCase() === 'admin@ecommerce.com';
+                                    const isAdminRole = staff.roleName?.toUpperCase() === 'ADMIN';
+                                    const isSelf = currentUser.email === staff.email || currentUser.username === staff.userName;
+                                    const canManageTarget = isCurrentSuperAdmin || !isAdminRole;
+
                                     return (
                                     <tr key={staff.userId}>
                                         {/* Row Number Cell */}
@@ -316,16 +332,47 @@ export const StaffList: React.FC = () => {
                                                         <FiEdit2 size={13} style={{ flexShrink: 0 }} />
                                                         <span>Edit</span>
                                                     </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                  );
+                                                    
+                                                    {staff.status === 'ACTIVE' ? (
+                                                        <button
+                                                            type="button"
+                                                            className="btn-action-suspend"
+                                                            disabled={!canManageTarget || isSelf || isSuperAdminUser}
+                                                            style={{ 
+                                                                opacity: (!canManageTarget || isSelf || isSuperAdminUser) ? 0.45 : 1, 
+                                                                cursor: (!canManageTarget || isSelf || isSuperAdminUser) ? 'not-allowed' : 'pointer' 
+                                                            }}
+                                                            onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status, staff.roleName, staff.email)}
+                                                            title={isSuperAdminUser ? "Super Admin account cannot be suspended" : !canManageTarget ? "Admin accounts require Super Admin privileges" : isSelf ? "Cannot suspend own account" : "Suspend account"}
+                                                        >
+                                                            <FiSlash size={13} style={{ flexShrink: 0 }} />
+                                                            <span>Suspend</span>
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            className="btn-action-activate"
+                                                            disabled={!canManageTarget || isSelf}
+                                                            style={{ 
+                                                                opacity: (!canManageTarget || isSelf) ? 0.45 : 1, 
+                                                                cursor: (!canManageTarget || isSelf) ? 'not-allowed' : 'pointer' 
+                                                            }}
+                                                            onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status, staff.roleName, staff.email)}
+                                                            title={!canManageTarget ? "Admin accounts require Super Admin privileges" : isSelf ? "Cannot activate own account" : "Activate account"}
+                                                        >
+                                                            <FiCheck size={13} style={{ flexShrink: 0 }} />
+                                                            <span>Activate</span>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan={7} style={{ textAlign: 'center', padding: '30px', color: '#6b7280' }}>
-                                        No staff found matching your criteria.
+                                    <td colSpan={5} style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                                        No staff accounts found matching your filter criteria.
                                     </td>
                                 </tr>
                             )}

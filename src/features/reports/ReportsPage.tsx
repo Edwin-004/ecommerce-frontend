@@ -8,8 +8,11 @@ import {
   FiAlertTriangle,
   FiCheckCircle,
   FiAlertCircle,
-  FiTruck
+  FiTruck,
+  FiDollarSign,
+  FiMaximize2
 } from 'react-icons/fi';
+import { MonthOnMonthProfitModal } from './MonthOnMonthProfitModal';
 import styles from './ReportsPage.module.css';
 import { DatePicker } from '../../components/common/DatePicker';
 import api from '../../utils/axiosConfig';
@@ -688,7 +691,7 @@ export const ReportsPage = () => {
       <MonthOnMonthProfitModal
         isOpen={isMomModalOpen}
         onClose={() => setIsMomModalOpen(false)}
-        onExportExcel={(year) => {
+        onExportExcel={(year: any) => {
           downloadReport(
             `/month-on-month-profit/export?year=${year}`,
             `Month_on_Month_Profit_${year}`,

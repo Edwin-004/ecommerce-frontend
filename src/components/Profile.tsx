@@ -1,10 +1,10 @@
+import { BackButton } from './common/BackButton';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../store';
 import api from '../utils/axiosConfig';
 import styles from './Profile.module.css';
-import { BackButton } from './common/BackButton';
 import {
   FiLock,
   FiSave,
