@@ -49,9 +49,34 @@ export const StaffList: React.FC = () => {
         }
     };
 
+    const [, setAvatarVersion] = useState(0);
+
     useEffect(() => {
         fetchStaff();
+
+        // Listen for avatar updates from Profile or other tabs
+        const onAvatarUpdate = () => setAvatarVersion(v => v + 1);
+        window.addEventListener('avatarChange', onAvatarUpdate);
+        window.addEventListener('storage', onAvatarUpdate);
+        return () => {
+            window.removeEventListener('avatarChange', onAvatarUpdate);
+            window.removeEventListener('storage', onAvatarUpdate);
+        };
     }, []);
+
+    const getStaffAvatar = (staff: StaffResponseDTO): string | null => {
+        const isSelf = currentUser.email?.toLowerCase() === staff.email?.toLowerCase() || 
+                       currentUser.username?.toLowerCase() === staff.userName?.toLowerCase();
+        return (
+            localStorage.getItem(`avatar_${staff.email?.toLowerCase()}`) ||
+            localStorage.getItem(`avatar_${staff.email}`) ||
+            localStorage.getItem(`avatar_${staff.userName?.toLowerCase()}`) ||
+            localStorage.getItem(`avatar_${staff.userName}`) ||
+            localStorage.getItem(`avatar_${staff.userId}`) ||
+            (isSelf ? localStorage.getItem('currentUserAvatar') : null) ||
+            null
+        );
+    };
 
     useEffect(() => {
         setCurrentPage(1);
@@ -286,43 +311,69 @@ export const StaffList: React.FC = () => {
                                     const canManageTarget = isCurrentSuperAdmin || !isAdminRole;
 
                                     return (
-                                    <tr key={staff.userId}>
-                                        {/* Row Number Cell */}
-                                        <td className="text-center" style={{ textAlign: 'center', fontWeight: 600, color: '#64748b' }}>{rowNumber}</td>
-                                        <td style={{ fontWeight: '500' }}>{staff.userName}</td>
-                                        <td>{staff.email}</td>
-                                        <td>
-                                            <span className={`staff-badge ${getRoleBadgeClass(staff.roleName)}`}>
-                                                {staff.roleName.replace('_', ' ')}
-                                            </span>
-                                        </td>
-                                        <td className="text-center" style={{ textAlign: 'center' }}>
-                                            <span className={`staff-badge ${staff.status === 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'}`}>
-                                                {staff.status === 'ACTIVE' ? 'Active' : 'Inactive'}
-                                            </span>
-                                        </td>
-                                        <td className="text-center" style={{ textAlign: 'center' }}>{formatDate(staff.createdAt)}</td>
-                                        <td className="text-center" style={{ textAlign: 'center' }}>
-                                            <div className="table-action-group" style={{ justifyContent: 'center' }}>
-                                                <button
-                                                    type="button"
-                                                    className="table-btn-edit"
-                                                    onClick={() => handleEdit(staff.userId, staff.userName)}
-                                                    title="Edit staff account"
-                                                >
-                                                    <FiEdit2 size={12} /> Edit
-                                                </button>
-                                                
-                                                {staff.status === 'ACTIVE' ? (
-                                                    <button
-                                                        type="button"
-                                                        className="table-btn-delete"
-                                                        onClick={() => handleStatusToggle(staff.userId, staff.userName, staff.status)}
-                                                        title="Suspend staff account"
-                                                    >
-                                                        <FiSlash size={12} /> Suspend
-                                                    </button>
-                                                ) : (
+                                        <tr 
+                                            key={staff.userId}
+                                            style={isSuperAdminUser ? { 
+                                                background: 'rgba(254, 243, 199, 0.28)',
+                                                borderLeft: '3px solid #f59e0b'
+                                            } : undefined}
+                                        >
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    {/* Mini Avatar Pill (Shows photo if uploaded in Profile, else fallback) */}
+                                                    {getStaffAvatar(staff) ? (
+                                                        <div className="avatar-mini avatar-mini-has-img" title={staff.userName}>
+                                                            <img src={getStaffAvatar(staff)!} alt={staff.userName} className="avatar-mini-img" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className={`avatar-mini ${isSuperAdminUser ? 'avatar-super' : isAdminRole ? 'avatar-admin' : staff.roleName === 'INVENTORY_STAFF' ? 'avatar-inventory' : 'avatar-sales'}`}>
+                                                            {isSuperAdminUser ? '👑' : isAdminRole ? '🛡️' : staff.userName ? staff.userName.charAt(0).toUpperCase() : 'U'}
+                                                        </div>
+                                                    )}
+
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <span style={{ fontWeight: '600', color: '#0f172a', fontSize: '13.5px' }}>
+                                                                {staff.userName}
+                                                            </span>
+                                                            {isSuperAdminUser && (
+                                                                <span style={{ 
+                                                                    fontSize: '11px', 
+                                                                    background: '#fef3c7', 
+                                                                    color: '#92400e', 
+                                                                    border: '1px solid #fde68a', 
+                                                                    padding: '1px 6px', 
+                                                                    borderRadius: '4px', 
+                                                                    fontWeight: '700' 
+                                                                }}>
+                                                                    Root Super Admin
+                                                                </span>
+                                                            )}
+                                                            {isSelf && (
+                                                                <span style={{ fontSize: '11px', color: '#2563eb', fontWeight: '500' }}>
+                                                                    (You)
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <span style={{ fontSize: '12px', color: '#64748b' }}>{staff.email}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            <td>{renderRoleBadge(staff.roleName, staff.email)}</td>
+
+                                            <td>
+                                                <span className={`staff-badge ${staff.status === 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'}`}>
+                                                    {staff.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+
+                                            <td style={{ color: '#475569', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                                                {formatDateTimeDMY(staff.createdAt)}
+                                            </td>
+
+                                            <td style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', flexWrap: 'nowrap' }}>
                                                     <button
                                                         type="button"
                                                         className="btn-action-edit"

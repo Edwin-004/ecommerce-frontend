@@ -21,8 +21,18 @@ export const FirstTimePassword: React.FC = () => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // Field-specific Custom Error States (No browser default balloons)
+  const [currentPasswordError, setCurrentPasswordError] = useState('');
+  const [newPasswordError, setNewPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+  const [generalError, setGeneralError] = useState('');
+
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+
+  // Real-time Validation Criteria
+  const hasMinLength = newPassword.length >= 6;
+  const isDifferentFromCurrent = currentPassword.length > 0 && newPassword.length > 0 && newPassword !== currentPassword;
+  const isMatching = confirmPassword.length > 0 && newPassword === confirmPassword;
 
   const handleLogout = async () => {
     try {
@@ -37,25 +47,43 @@ export const FirstTimePassword: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
 
-    if (!currentPassword) {
-      setErrorMsg('Please enter your current (temporary) password.');
-      return;
+    // Reset all errors before validation
+    setCurrentPasswordError('');
+    setNewPasswordError('');
+    setConfirmPasswordError('');
+    setGeneralError('');
+
+    let hasError = false;
+
+    // 1. Current Password Validation
+    if (!currentPassword.trim()) {
+      setCurrentPasswordError('Please enter your current (temporary) password.');
+      hasError = true;
     }
 
-    if (newPassword.length < 6) {
-      setErrorMsg('New password must be at least 6 characters long.');
-      return;
+    // 2. New Password Validation
+    if (!newPassword.trim()) {
+      setNewPasswordError('New secret password is required.');
+      hasError = true;
+    } else if (newPassword.length < 6) {
+      setNewPasswordError('New password must be at least 6 characters long.');
+      hasError = true;
+    } else if (newPassword === currentPassword) {
+      setNewPasswordError('New password must be different from your temporary password.');
+      hasError = true;
     }
 
-    if (newPassword === currentPassword) {
-      setErrorMsg('New password must be different from your current temporary password.');
-      return;
+    // 3. Confirm Password Validation
+    if (!confirmPassword.trim()) {
+      setConfirmPasswordError('Please confirm your new password.');
+      hasError = true;
+    } else if (newPassword !== confirmPassword) {
+      setConfirmPasswordError('Confirm password does not match new password.');
+      hasError = true;
     }
 
-    if (newPassword !== confirmPassword) {
-      setErrorMsg('New password and confirm password do not match.');
+    if (hasError) {
       return;
     }
 
@@ -63,11 +91,11 @@ export const FirstTimePassword: React.FC = () => {
 
     try {
       await api.put('/auth/change-password', {
-        currentPassword,
-        newPassword,
+        currentPassword: currentPassword.trim(),
+        newPassword: newPassword.trim(),
       });
 
-      toast.success('Password set successfully! Please log in with your new password.');
+      toast.success('Your secret password has been set successfully! Please log in with your new password.');
       
       // Clear temporary session and redirect to login
       dispatch(logout());
@@ -75,7 +103,13 @@ export const FirstTimePassword: React.FC = () => {
     } catch (err: any) {
       console.error('Password change error:', err);
       const serverMsg = err.response?.data?.message || 'Failed to update password. Please check your credentials.';
-      setErrorMsg(serverMsg);
+
+      // Map server response to specific field if possible
+      if (serverMsg.toLowerCase().includes('current password') || serverMsg.toLowerCase().includes('incorrect')) {
+        setCurrentPasswordError(serverMsg);
+      } else {
+        setGeneralError(serverMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -93,97 +127,142 @@ export const FirstTimePassword: React.FC = () => {
 
         <h2 className="first-time-title">Set Your Secret Password</h2>
         <p className="first-time-subtitle">
-          Hello <strong>{username || email || 'Staff'}</strong>! For security reasons, you must change your initial temporary password before continuing.
+          Welcome <strong>{username || email || 'Staff Member'}</strong>! For security protection, please replace your temporary administrator-issued password with your own secret password.
         </p>
 
-        {errorMsg ? (
+        {generalError ? (
           <div className="first-time-alert first-time-alert-error">
             <FiAlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <span>{errorMsg}</span>
+            <span>{generalError}</span>
           </div>
         ) : (
           <div className="first-time-alert first-time-alert-info">
             <FiShield size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-            <span>After setting your new password, you will be redirected to sign in with your chosen credentials.</span>
+            <span>Once your secret password is set, you will be redirected to sign in with your permanent credentials.</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="first-time-form">
-          {/* Current Password */}
+        {/* noValidate attribute prevents Chrome/Google default browser tooltip popups */}
+        <form onSubmit={handleSubmit} className="first-time-form" noValidate>
+          {/* Current Password Field */}
           <div className="first-time-input-group">
             <label className="first-time-label">Current (Temporary) Password *</label>
-            <div className="first-time-input-wrapper">
+            <div className={`first-time-input-wrapper ${currentPasswordError ? 'has-error' : ''}`}>
               <FiLock className="first-time-input-icon" size={16} />
               <input
                 type={showCurrent ? 'text' : 'password'}
                 className="first-time-input"
                 placeholder="Enter temporary password"
                 value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setCurrentPassword(e.target.value);
+                  if (currentPasswordError) setCurrentPasswordError('');
+                  if (generalError) setGeneralError('');
+                }}
                 autoComplete="current-password"
               />
               <button
                 type="button"
                 className="first-time-pw-toggle"
                 onClick={() => setShowCurrent((p) => !p)}
+                aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
                 tabIndex={-1}
               >
                 {showCurrent ? <FiEyeOff size={16} /> : <FiEye size={16} />}
               </button>
             </div>
+            {currentPasswordError && (
+              <span className="first-time-error-text">
+                <FiAlertCircle size={13} /> {currentPasswordError}
+              </span>
+            )}
           </div>
 
-          {/* New Password */}
+          {/* New Password Field */}
           <div className="first-time-input-group">
-            <label className="first-time-label">New Password * (Min 6 characters)</label>
-            <div className="first-time-input-wrapper">
+            <label className="first-time-label">New Secret Password *</label>
+            <div className={`first-time-input-wrapper ${newPasswordError ? 'has-error' : ''}`}>
               <FiLock className="first-time-input-icon" size={16} />
               <input
                 type={showNew ? 'text' : 'password'}
                 className="first-time-input"
-                placeholder="Enter secret new password"
+                placeholder="Enter secret new password (min. 6 characters)"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  if (newPasswordError) setNewPasswordError('');
+                  if (generalError) setGeneralError('');
+                }}
                 autoComplete="new-password"
               />
               <button
                 type="button"
                 className="first-time-pw-toggle"
                 onClick={() => setShowNew((p) => !p)}
+                aria-label={showNew ? 'Hide new password' : 'Show new password'}
                 tabIndex={-1}
               >
                 {showNew ? <FiEyeOff size={16} /> : <FiEye size={16} />}
               </button>
             </div>
+            {newPasswordError && (
+              <span className="first-time-error-text">
+                <FiAlertCircle size={13} /> {newPasswordError}
+              </span>
+            )}
+
+            {/* Password Criteria Checklist */}
+            <div className="first-time-rules-list">
+              <div className={`first-time-rule-item ${hasMinLength ? 'valid' : ''}`}>
+                <FiCheck size={13} />
+                <span>At least 6 characters long</span>
+              </div>
+              <div className={`first-time-rule-item ${isDifferentFromCurrent ? 'valid' : ''}`}>
+                <FiCheck size={13} />
+                <span>Different from temporary password</span>
+              </div>
+            </div>
           </div>
 
-          {/* Confirm New Password */}
+          {/* Confirm New Password Field */}
           <div className="first-time-input-group">
             <label className="first-time-label">Confirm New Password *</label>
-            <div className="first-time-input-wrapper">
+            <div className={`first-time-input-wrapper ${confirmPasswordError ? 'has-error' : ''}`}>
               <FiLock className="first-time-input-icon" size={16} />
               <input
                 type={showConfirm ? 'text' : 'password'}
                 className="first-time-input"
                 placeholder="Confirm secret new password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (confirmPasswordError) setConfirmPasswordError('');
+                  if (generalError) setGeneralError('');
+                }}
                 autoComplete="new-password"
               />
               <button
                 type="button"
                 className="first-time-pw-toggle"
                 onClick={() => setShowConfirm((p) => !p)}
+                aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
                 tabIndex={-1}
               >
                 {showConfirm ? <FiEyeOff size={16} /> : <FiEye size={16} />}
               </button>
             </div>
+            {confirmPasswordError ? (
+              <span className="first-time-error-text">
+                <FiAlertCircle size={13} /> {confirmPasswordError}
+              </span>
+            ) : isMatching ? (
+              <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
+                <FiCheck size={13} /> Passwords match perfectly
+              </span>
+            ) : null}
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
             className="first-time-btn-submit"
@@ -199,6 +278,7 @@ export const FirstTimePassword: React.FC = () => {
           </button>
         </form>
 
+        {/* Footer Logout Action */}
         <div className="first-time-footer-action">
           <button
             type="button"

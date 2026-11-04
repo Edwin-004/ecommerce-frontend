@@ -821,3 +821,18 @@
   border-color: #93c5fd;
   color: #1d4ed8;
 }
+
+
+/* User Avatar Image in Sidebar Footer */
+.avatarBox,
+.avatarBoxCollapsed {
+  overflow: hidden !important;
+}
+
+.avatarImg {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 6px !important;
+  display: block !important;
+}
