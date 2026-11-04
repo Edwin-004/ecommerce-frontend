@@ -307,7 +307,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
 
               {/* Stock Management */}
-              {canAccessInventory && hasInventoryMatches && (
+              {canAccessInventory && (
                 <NavLink to="/admin/inventory" className={navClass} title="Stock Management">
                   <div className={styles.linkLeftGroup}>
                     <FiBox className={styles.linkIcon} />
@@ -351,7 +351,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {/* Section: Staff & Admin Management */}
-          {canAccessStaff && hasStaffMatches && (
+          {canAccessStaff && (
             <>
               <div className={styles.navSectionTitle}>Team</div>
 
@@ -377,18 +377,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 {staffOpen && !isCollapsed && (
                   <div className={styles.submenu}>
-                    {matchStaffList && (
-                      <NavLink to="/admin/staff" end className={subNavClass} title="All Accounts">
-                        <FiUsers size={13} className={styles.subIcon} />
-                        <span>All Accounts</span>
-                      </NavLink>
-                    )}
-                    {matchCreateStaff && (
-                      <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Account">
-                        <FiUserPlus size={13} className={styles.subIcon} />
-                        <span>Add New Account</span>
-                      </NavLink>
-                    )}
+                    <NavLink to="/admin/staff" end className={subNavClass} title="All Accounts">
+                      <FiUsers size={13} className={styles.subIcon} />
+                      <span>All Accounts</span>
+                    </NavLink>
+                    <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Account">
+                      <FiUserPlus size={13} className={styles.subIcon} />
+                      <span>Add New Account</span>
+                    </NavLink>
                   </div>
                 )}
               </div>

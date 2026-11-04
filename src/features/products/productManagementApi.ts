@@ -201,6 +201,9 @@ export const productManagementApi = {
     status: string;
     optionIds: number[];
     initialStock?: number;
+    expiryDate?: string;
+    batchNumber?: string;
+    isPerishable?: boolean;
   }) =>
     apiFetch<any>('/api/backoffice/product-variants/create-with-options', {
       method: 'POST',
