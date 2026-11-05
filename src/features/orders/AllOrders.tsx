@@ -1056,7 +1056,7 @@ export const AllOrders = () => {
                 </div>
               </div>
             ) : (
-              <p>Order Data မရှိပါ။</p>
+              <p>No order data available.</p>
             )}
           </div>
         </div>
