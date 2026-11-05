@@ -3,7 +3,14 @@ import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { setCredentials } from './authSlice';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiLogIn, FiAlertCircle } from 'react-icons/fi';
+import {
+  FiMail,
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiLogIn,
+  FiAlertCircle,
+} from 'react-icons/fi';
 import './Login.css';
 
 export const Login: React.FC = () => {
@@ -69,11 +76,14 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/backoffice/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailTrimmed, password }),
-      });
+      const response = await fetch(
+        'http://localhost:8080/api/backoffice/auth/login',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailTrimmed, password }),
+        }
+      );
 
       const data = await response.json();
 
@@ -105,9 +115,13 @@ export const Login: React.FC = () => {
 
       // First-time login / Force password change check
       if (data.mustChangePassword) {
-        toast.info("Please set your new password before accessing the system.");
+        toast.info('Please set your new password before accessing the system.');
         navigate('/admin/force-change-password');
-      } else if (['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF'].includes(data.role)) {
+      } else if (
+        ['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF'].includes(
+          data.role
+        )
+      ) {
         const redirectUrl = searchParams.get('redirect');
         navigate(redirectUrl || '/admin/dashboard');
       } else {
@@ -115,7 +129,9 @@ export const Login: React.FC = () => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setGeneralError('Cannot connect to server. Please ensure the backend is running.');
+      setGeneralError(
+        'Cannot connect to server. Please ensure the backend is running.'
+      );
     } finally {
       setLoading(false);
     }
@@ -129,7 +145,7 @@ export const Login: React.FC = () => {
 
       <div className="login-card">
         {/* Brand Icon Badge */}
-        <div className="login-badge-wrapper">
+        {/* <div className="login-badge-wrapper">
           <div className="login-logo-badge" aria-label="Ecommerce Logo">
             <svg
               width="32"
@@ -151,7 +167,14 @@ export const Login: React.FC = () => {
                   <stop offset="1" stopColor="#7c3aed" />
                 </linearGradient>
               </defs>
-              <rect x="4" y="8" width="20" height="16" rx="4.5" fill="#ffffff" />
+              <rect
+                x="4"
+                y="8"
+                width="20"
+                height="16"
+                rx="4.5"
+                fill="#ffffff"
+              />
               <path
                 d="M10 8V6C10 3.79086 11.7909 2 14 2C16.2091 2 18 3.79086 18 6V8"
                 stroke="#ffffff"
@@ -164,12 +187,33 @@ export const Login: React.FC = () => {
               />
             </svg>
           </div>
+        </div> */}
+        {/* Brand Icon Badge */}
+        <div className="login-badge-wrapper">
+          <div
+            className="login-logo-badge"
+            aria-label="Ecommerce Logo"
+            // အကယ်၍ မူလ အပြာရောင်နောက်ခံကို ဖျောက်ချင်ပါက အောက်ပါ style ကို ထည့်ပါ
+            style={{ background: 'transparent', padding: 0 }}
+          >
+            <img
+              src="/logo.png"
+              alt="Brand Logo"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                borderRadius: '50%', // ပုံကို အဝိုင်းပုံစံဖြစ်စေရန်
+              }}
+            />
+          </div>
         </div>
 
         {/* Brand Header */}
         <div className="login-brand-meta">
           <h1 className="login-brand-title">
-            Ecommerce <span className="login-brand-badge">Admin</span>
+            {/* Ecommerce <span className="login-brand-badge">Admin</span> */}
+            Inventory Management System
           </h1>
           <p className="login-subtitle">
             Welcome back! Please sign in to your account.
@@ -191,7 +235,9 @@ export const Login: React.FC = () => {
             <label htmlFor="login-email" className="login-label">
               Email Address
             </label>
-            <div className={`login-input-wrapper ${emailError ? 'has-error' : ''}`}>
+            <div
+              className={`login-input-wrapper ${emailError ? 'has-error' : ''}`}
+            >
               <FiMail className="login-input-icon" size={17} />
               <input
                 id="login-email"
@@ -219,7 +265,9 @@ export const Login: React.FC = () => {
             <label htmlFor="login-password" className="login-label">
               Password
             </label>
-            <div className={`login-input-wrapper ${passwordError ? 'has-error' : ''}`}>
+            <div
+              className={`login-input-wrapper ${passwordError ? 'has-error' : ''}`}
+            >
               <FiLock className="login-input-icon" size={17} />
               <input
                 id="login-password"
