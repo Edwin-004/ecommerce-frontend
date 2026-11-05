@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../../store';
-import { FiEye, FiEyeOff, FiUserPlus, FiShield } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiUserPlus, FiShield, FiInfo } from 'react-icons/fi';
 import api from '../../utils/axiosConfig';
+import { validatePasswordStrength } from '../../utils/passwordPolicy';
 import './CreateStaff.css'; 
 
 export const CreateStaff: React.FC = () => {
@@ -12,10 +13,11 @@ export const CreateStaff: React.FC = () => {
     const currentUser = useSelector((state: RootState) => state.auth);
     const isSuperAdmin = currentUser?.email === 'admin@ecommerce.com';
 
+    // Option 2: Default password initialized as 'Staff@123' (or 'Admin@123') with custom edit support
     const [newStaff, setNewStaff] = useState({
         userName: '',
         email: '',
-        password: '',
+        password: 'Staff@123',
         roleName: 'INVENTORY_STAFF' 
     });
     const [showPassword, setShowPassword] = useState(false);
@@ -39,6 +41,31 @@ export const CreateStaff: React.FC = () => {
         }
     };
 
+    const getDefaultPasswordForRole = (role: string) => {
+        return role === 'ADMIN' ? 'Admin@123' : 'Staff@123';
+    };
+
+    const handleRoleChange = (selectedRole: string) => {
+        const isDefaultPassword = 
+            newStaff.password === 'Staff@123' || 
+            newStaff.password === 'Admin@123' || 
+            newStaff.password.trim() === '';
+        
+        const nextDefault = getDefaultPasswordForRole(selectedRole);
+
+        setNewStaff(prev => ({
+            ...prev,
+            roleName: selectedRole,
+            // If the admin hasn't customized the password, automatically align it with the selected role
+            password: isDefaultPassword ? nextDefault : prev.password
+        }));
+    };
+
+    const handleResetToDefaultPassword = () => {
+        const defaultPwd = getDefaultPasswordForRole(newStaff.roleName);
+        setNewStaff(prev => ({ ...prev, password: defaultPwd }));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -47,15 +74,20 @@ export const CreateStaff: React.FC = () => {
             return;
         }
 
-        if (newStaff.password.length < 6) {
-            showModal("Password must be at least 6 characters long.", 'warning');
+        // Validate password strength against backend complexity policy
+        const passwordError = validatePasswordStrength(newStaff.password);
+        if (passwordError) {
+            showModal(passwordError, 'warning');
             return;
         }
 
         setLoading(true);
         try {
             await api.post('/staff', newStaff);
-            showModal("Account created successfully.", 'success');
+            showModal(
+                `Account created successfully for "${newStaff.userName}". Initial password: "${newStaff.password}". The user will be required to create their own secret password upon first login.`,
+                'success'
+            );
         } catch (err: any) {
             console.error("Error creating staff:", err);
             const errDetail = err.response?.data?.message || "An error occurred while creating the account.";
@@ -64,6 +96,8 @@ export const CreateStaff: React.FC = () => {
             setLoading(false);
         }
     };
+
+    const currentRoleDefault = getDefaultPasswordForRole(newStaff.roleName);
 
     return (
         <div className="create-staff-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', position: 'relative' }}>
@@ -105,15 +139,36 @@ export const CreateStaff: React.FC = () => {
                                 onChange={e => setNewStaff({...newStaff, email: e.target.value})} 
                             />
                         </div>
+
+                        <div className="form-group">
+                            <label>Assign Role *</label>
+                            <select 
+                                className="form-select"
+                                value={newStaff.roleName} 
+                                onChange={e => handleRoleChange(e.target.value)}
+                            >
+                                {isSuperAdmin && (
+                                    <option value="ADMIN">🛡️ System Administrator (Full Access)</option>
+                                )}
+                                <option value="INVENTORY_STAFF">📦 Inventory Staff (Stock & Products)</option>
+                                <option value="SALES_STAFF">🛍️ Order / Sales Staff (Orders & Shipments)</option>
+                            </select>
+                            {!isSuperAdmin && (
+                                <p style={{ margin: '6px 0 0 0', fontSize: '11.5px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <FiShield size={12} color="#f59e0b" />
+                                    Administrator roles can only be granted by Super Administrator.
+                                </p>
+                            )}
+                        </div>
                         
                         <div className="form-group">
-                            <label>Password *</label>
+                            <label>Initial Temporary Password *</label>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                                 <input 
                                     type={showPassword ? 'text' : 'password'} 
                                     className="form-input" 
                                     required 
-                                    placeholder="Enter at least 6 characters"
+                                    placeholder="Enter initial password (min. 8 characters)"
                                     value={newStaff.password} 
                                     onChange={e => setNewStaff({...newStaff, password: e.target.value})} 
                                     style={{ paddingRight: '40px' }}
@@ -137,27 +192,40 @@ export const CreateStaff: React.FC = () => {
                                     {showPassword ? <FiEyeOff /> : <FiEye />}
                                 </button>
                             </div>
-                        </div>
-                        
-                        <div className="form-group">
-                            <label>Assign Role *</label>
-                            <select 
-                                className="form-select"
-                                value={newStaff.roleName} 
-                                onChange={e => setNewStaff({...newStaff, roleName: e.target.value})}
-                            >
-                                {isSuperAdmin && (
-                                    <option value="ADMIN">🛡️ System Administrator (Full Access)</option>
+
+                            {/* Option 2 Helper Bar */}
+                            <div style={{ 
+                                marginTop: '7px', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'space-between', 
+                                fontSize: '12px', 
+                                color: '#475569' 
+                            }}>
+                                <span>Default: <strong style={{ color: '#2563eb' }}>{currentRoleDefault}</strong></span>
+                                {newStaff.password !== currentRoleDefault && (
+                                    <button
+                                        type="button"
+                                        onClick={handleResetToDefaultPassword}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#2563eb',
+                                            cursor: 'pointer',
+                                            padding: 0,
+                                            fontWeight: 500,
+                                            fontSize: '11.5px',
+                                            textDecoration: 'underline'
+                                        }}
+                                    >
+                                        Reset to Default
+                                    </button>
                                 )}
-                                <option value="INVENTORY_STAFF">📦 Inventory Staff (Stock & Products)</option>
-                                <option value="SALES_STAFF">🛍️ Order / Sales Staff (Orders & Shipments)</option>
-                            </select>
-                            {!isSuperAdmin && (
-                                <p style={{ margin: '6px 0 0 0', fontSize: '11.5px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <FiShield size={12} color="#f59e0b" />
-                                    Administrator roles can only be granted by Super Administrator.
-                                </p>
-                            )}
+                            </div>
+                            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <FiInfo size={12} />
+                                Staff member will be forced to set their own secret password upon first login.
+                            </p>
                         </div>
                         
                         <hr className="divider" />

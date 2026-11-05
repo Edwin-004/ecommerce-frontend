@@ -861,6 +861,7 @@
 
 /* Collapsible Technical Details (For IT / Audit) */
 .audit-tech-accordion {
+  display: none !important;
   margin-top: 16px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;

@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { type RootState } from '../store';
 import { logout } from '../features/auth/authSlice';
+import api from '../utils/axiosConfig';
 import styles from './Sidebar.module.css';
 
 import {
@@ -93,9 +94,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return formatted;
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
+  const handleLogout = async () => {
+    try { await api.post('/auth/logout'); } catch {} finally { dispatch(logout()); navigate('/login'); }
+
   };
 
   const isAdmin = role === 'ADMIN';

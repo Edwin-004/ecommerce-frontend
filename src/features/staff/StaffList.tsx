@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../../store';
-import { FiEdit2, FiSlash, FiCheck, FiFilter } from 'react-icons/fi';
+import { FiEdit2, FiSlash, FiCheck, FiFilter, FiShield, FiUser } from 'react-icons/fi';
 import api from '../../utils/axiosConfig'; 
 import './StaffList.css';
 
@@ -219,9 +219,7 @@ export const StaffList: React.FC = () => {
                 <div className="card">
                     <div className="icon-box icon-blue">📦</div>
                     <div>
-                        <p className="card-value">
-                            {staffList.filter(s => s.roleName === 'INVENTORY_STAFF').length}
-                        </p>
+                        <p className="card-value">{staffList.filter(s => s.roleName === 'INVENTORY_STAFF').length}</p>
                         <p className="card-label">Inventory Staff</p>
                     </div>
                 </div>
@@ -382,47 +380,51 @@ export const StaffList: React.FC = () => {
                                                 {formatDateTimeDMY(staff.createdAt)}
                                             </td>
 
-                                            {/* Actions */}
+                                            {/* Actions - Modern Compact Soft Pills */}
                                             <td style={{ textAlign: 'center' }}>
-                                                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'nowrap' }}>
+                                                <div className="action-pill-group">
                                                     <button
                                                         type="button"
-                                                        className="btn-action-edit"
+                                                        className="action-pill action-pill-edit"
                                                         onClick={() => handleEdit(staff.userId)}
                                                         title="Edit account details"
                                                     >
-                                                        <FiEdit2 size={13} style={{ flexShrink: 0 }} />
+                                                        <FiEdit2 size={12} style={{ flexShrink: 0 }} />
                                                         <span>Edit</span>
                                                     </button>
 
-                                                    {staff.status === 'ACTIVE' ? (
+                                                    {isSuperAdminUser ? (
+                                                        <span className="action-pill-protected" title="Primary Super Administrator cannot be suspended">
+                                                            <FiShield size={11} />
+                                                            <span>Protected</span>
+                                                        </span>
+                                                    ) : isSelf ? (
+                                                        <span className="action-pill-self" title="Currently logged in as this user">
+                                                            <FiUser size={11} />
+                                                            <span>You</span>
+                                                        </span>
+                                                    ) : staff.status === 'ACTIVE' ? (
                                                         <button
                                                             type="button"
-                                                            className="btn-action-suspend"
-                                                            disabled={!canManageTarget || isSelf || isSuperAdminUser}
-                                                            style={{ 
-                                                                opacity: (!canManageTarget || isSelf || isSuperAdminUser) ? 0.45 : 1, 
-                                                                cursor: (!canManageTarget || isSelf || isSuperAdminUser) ? 'not-allowed' : 'pointer' 
-                                                            }}
+                                                            className="action-pill action-pill-suspend"
+                                                            disabled={!canManageTarget}
+                                                            style={!canManageTarget ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
                                                             onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status, staff.roleName, staff.email)}
-                                                            title={isSuperAdminUser ? "Super Admin account cannot be suspended" : !canManageTarget ? "Admin accounts require Super Admin privileges" : isSelf ? "Cannot suspend own account" : "Suspend account"}
+                                                            title={!canManageTarget ? "Admin accounts require Super Admin privileges" : "Suspend staff account"}
                                                         >
-                                                            <FiSlash size={13} style={{ flexShrink: 0 }} />
+                                                            <FiSlash size={12} style={{ flexShrink: 0 }} />
                                                             <span>Suspend</span>
                                                         </button>
                                                     ) : (
                                                         <button
                                                             type="button"
-                                                            className="btn-action-activate"
-                                                            disabled={!canManageTarget || isSelf}
-                                                            style={{ 
-                                                                opacity: (!canManageTarget || isSelf) ? 0.45 : 1, 
-                                                                cursor: (!canManageTarget || isSelf) ? 'not-allowed' : 'pointer' 
-                                                            }}
+                                                            className="action-pill action-pill-activate"
+                                                            disabled={!canManageTarget}
+                                                            style={!canManageTarget ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
                                                             onClick={() => openConfirmModal(staff.userId, staff.userName, staff.status, staff.roleName, staff.email)}
-                                                            title={!canManageTarget ? "Admin accounts require Super Admin privileges" : isSelf ? "Cannot activate own account" : "Activate account"}
+                                                            title={!canManageTarget ? "Admin accounts require Super Admin privileges" : "Activate staff account"}
                                                         >
-                                                            <FiCheck size={13} style={{ flexShrink: 0 }} />
+                                                            <FiCheck size={12} style={{ flexShrink: 0 }} />
                                                             <span>Activate</span>
                                                         </button>
                                                     )}

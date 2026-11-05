@@ -31,7 +31,32 @@ export async function apiFetch<T>(
   });
 
   if (!response.ok) {
+    let errorMsg = `HTTP Error ${response.status}`;
+    let errorData: any = null;
+
+    try {
+      errorData = await response.json();
+      if (errorData?.message) {
+        errorMsg = errorData.message;
+      } else if (typeof errorData === 'string') {
+        errorMsg = errorData;
+      }
+    } catch {
+      const text = await response.text().catch(() => '');
+      if (text) {
+        errorMsg = text;
+      }
+    }
+
     if (response.status === 401) {
+      let expiredNotice = 'Your session has expired. Please log in again.';
+      if (errorData?.error === 'SESSION_TERMINATED' || (errorData?.message && errorData.message.includes('another session'))) {
+        expiredNotice = '⚠️ သင့်အကောင့်အား အခြားနေရာ (Device သို့မဟုတ် Tab) မှ Login ဝင်ရောက်သွားပါသဖြင့် ဤ Session ကို အလိုအလျောက် ပိတ်လိုက်ပါသည် (Your session expired because of a new login from another session).';
+      } else if (errorMsg) {
+        expiredNotice = errorMsg;
+      }
+      sessionStorage.setItem('auth_expired_message', expiredNotice);
+
       localStorage.removeItem('token');
       localStorage.removeItem('username');
       localStorage.removeItem('email');
@@ -39,24 +64,6 @@ export async function apiFetch<T>(
       localStorage.removeItem('permissions');
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
-      }
-    }
-
-    let errorMsg = `HTTP Error ${response.status}`;
-
-    try {
-      const errorData = await response.json();
-
-      if (errorData.message) {
-        errorMsg = errorData.message;
-      } else if (typeof errorData === 'string') {
-        errorMsg = errorData;
-      }
-    } catch {
-      const text = await response.text().catch(() => '');
-
-      if (text) {
-        errorMsg = text;
       }
     }
 

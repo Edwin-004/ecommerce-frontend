@@ -34,6 +34,7 @@ const AuditLog: React.FC = () => {
 
   // Search & Action Filter States
   const [selectedAction, setSelectedAction] = useState<string>('ALL');
+  const [selectedModule, setSelectedModule] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Pagination States
@@ -45,6 +46,17 @@ const AuditLog: React.FC = () => {
   const [showRawJson, setShowRawJson] = useState<boolean>(false);
   const [onlyChangedFields, setOnlyChangedFields] = useState<boolean>(true);
 
+  // Dynamic Unique Modules list from fetched logs
+  const availableModules = React.useMemo(() => {
+    const set = new Set<string>();
+    logs.forEach((log) => {
+      if (log.moduleName && log.moduleName.trim()) {
+        set.add(log.moduleName.trim().toUpperCase());
+      }
+    });
+    return Array.from(set).sort();
+  }, [logs]);
+
   useEffect(() => {
     dispatch(fetchAuditLogs({}));
   }, [dispatch]);
@@ -52,7 +64,7 @@ const AuditLog: React.FC = () => {
   // Reset to first page whenever filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedAction, searchQuery, startDate, endDate, itemsPerPage]);
+  }, [selectedAction, selectedModule, searchQuery, startDate, endDate, itemsPerPage]);
 
   const formatDateForInput = (date: Date): string => {
     const year = date.getFullYear();
@@ -133,6 +145,7 @@ const AuditLog: React.FC = () => {
     setStartDate('');
     setEndDate('');
     setSelectedAction('ALL');
+    setSelectedModule('ALL');
     setSearchQuery('');
     dispatch(fetchAuditLogs({}));
   };
@@ -350,6 +363,9 @@ const AuditLog: React.FC = () => {
     if (selectedAction !== 'ALL' && log.action?.toUpperCase() !== selectedAction) {
       return false;
     }
+    if (selectedModule !== 'ALL' && log.moduleName?.toUpperCase() !== selectedModule) {
+      return false;
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const matchUser = log.userName?.toLowerCase().includes(q);
@@ -466,6 +482,20 @@ const AuditLog: React.FC = () => {
             <option value="CREATE">CREATE</option>
             <option value="UPDATE">UPDATE</option>
             <option value="DELETE">DELETE</option>
+          </select>
+
+          <select 
+            className="audit-select"
+            value={selectedModule}
+            onChange={(e) => setSelectedModule(e.target.value)}
+            title="Filter by System Module"
+          >
+            <option value="ALL">All Modules</option>
+            {availableModules.map((mod) => (
+              <option key={mod} value={mod}>
+                {mod}
+              </option>
+            ))}
           </select>
 
           <select 
@@ -1007,7 +1037,8 @@ const AuditLog: React.FC = () => {
                 {renderChangeDetails()}
               </div>
 
-              {/* Collapsible Technical Details (For IT / Developers / Audit) */}
+              {/* Technical details hidden from UI per requirement */}
+              {false && (
               <details className="audit-tech-accordion">
                 <summary className="audit-tech-summary">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1041,6 +1072,7 @@ const AuditLog: React.FC = () => {
                   </div>
                 </div>
               </details>
+              )}
 
               {/* Modal Footer */}
               <div className="audit-modal-footer">

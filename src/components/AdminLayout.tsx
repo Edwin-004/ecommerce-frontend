@@ -2,9 +2,13 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { useSingleSessionSync } from "../hooks/useSingleSessionSync";
 import styles from "./AdminLayout.module.css";
 
 export const AdminLayout = () => {
+  // Activate Single Active Session Cross-Tab Sync & Heartbeat
+  useSingleSessionSync();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem("admin_sidebar_collapsed") === "true";
@@ -44,7 +48,7 @@ export const AdminLayout = () => {
 
       {/* Main Area Wrapper: flex-1 flex flex-col h-screen overflow-hidden min-w-0 */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 bg-[#f8fafc]">
-        {/* Top Header Component: h-14 bg-white border-b border-slate-100 px-6 flex items-center justify-between sticky top-0 z-30 */}
+        {/* Top Header Component: h-14 bg-white border-b border-slate-100 px-6 flex items-center justify-between sticky top-0 z-30 flex-shrink-0 */}
         <header className="h-14 bg-white border-b border-slate-100 px-6 flex items-center justify-between sticky top-0 z-30 flex-shrink-0">
           <Topbar
             onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}

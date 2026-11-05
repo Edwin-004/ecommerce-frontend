@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { BackButton } from '../../components/common/BackButton';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { FiEye, FiEyeOff, FiInfo } from 'react-icons/fi';
 import api from '../../utils/axiosConfig';
+import { validatePasswordStrength } from '../../utils/passwordPolicy';
 import './EditStaff.css';
 
 export const EditStaff: React.FC = () => {
@@ -20,6 +22,7 @@ export const EditStaff: React.FC = () => {
         password: '' // Optional password reset field
     });
     
+    const [showPassword, setShowPassword] = useState(false);
     const [initialStatus, setInitialStatus] = useState('ACTIVE');
     const [initialRoleName, setInitialRoleName] = useState('SALES_STAFF');
     const [showRoleConfirmModal, setShowRoleConfirmModal] = useState(false);
@@ -40,6 +43,16 @@ export const EditStaff: React.FC = () => {
     // Subordinate admins cannot edit Super Admin or fellow Admins
     const isEditingRestricted = (!isCurrentSuperAdmin && !isCurrentLoggedInUser && isTargetAdmin) || 
                                 (isTargetSuperAdmin && !isCurrentSuperAdmin);
+
+    const defaultRolePassword = formData.roleName === 'ADMIN' ? 'Admin@123' : 'Staff@123';
+
+    const handleApplyDefaultPassword = () => {
+        setFormData(prev => ({ ...prev, password: defaultRolePassword }));
+    };
+
+    const handleClearPassword = () => {
+        setFormData(prev => ({ ...prev, password: '' }));
+    };
 
     const getRoleBadgeLabel = (role: string) => {
         const r = role?.toUpperCase();
@@ -89,6 +102,15 @@ export const EditStaff: React.FC = () => {
             return;
         }
 
+        // Validate password strength if a new password is being set
+        if (!isTargetSuperAdmin && formData.password && formData.password.trim()) {
+            const passwordError = validatePasswordStrength(formData.password.trim());
+            if (passwordError) {
+                toast.warning(passwordError);
+                return;
+            }
+        }
+
         const isRoleChanging = formData.roleName !== initialRoleName;
 
         // If a non-SuperAdmin attempts to change role
@@ -117,8 +139,10 @@ export const EditStaff: React.FC = () => {
                 roleName: formData.roleName === 'ORDER_STAFF' ? 'SALES_STAFF' : formData.roleName
             };
 
+            const isPasswordUpdated = !isTargetSuperAdmin && Boolean(formData.password && formData.password.trim());
+
             // Only send password if admin entered one (and not for super admin)
-            if (!isTargetSuperAdmin && formData.password && formData.password.trim()) {
+            if (isPasswordUpdated) {
                 updatePayload.password = formData.password.trim();
             }
 
@@ -131,7 +155,11 @@ export const EditStaff: React.FC = () => {
                 });
             }
 
-            toast.success('Account details updated successfully.');
+            if (isPasswordUpdated) {
+                toast.success(`Staff updated successfully. New temporary password: "${formData.password.trim()}". Staff will be required to change password on next login.`, { autoClose: 6000 });
+            } else {
+                toast.success('Account details updated successfully.');
+            }
             navigate('/admin/staff');
         } catch (err: any) {
             console.error("Error updating staff:", err);
@@ -261,20 +289,102 @@ export const EditStaff: React.FC = () => {
                     {!isTargetSuperAdmin ? (
                         <div className="form-group">
                             <label>Reset Password (Optional)</label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                disabled={isEditingRestricted}
-                                placeholder={isEditingRestricted ? "Password modification restricted" : "Leave blank to keep current password"}
-                                autoComplete="new-password"
-                            />
-                            <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                                {isEditingRestricted 
-                                    ? "Password reset is restricted for this administrator."
-                                    : "Only enter a new password if you want to reset this staff member's password. They will be required to change it on their next login."}
-                            </small>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    disabled={isEditingRestricted}
+                                    placeholder={isEditingRestricted ? "Password modification restricted" : "Leave blank to keep current password"}
+                                    autoComplete="new-password"
+                                    style={{ paddingRight: '40px', width: '100%' }}
+                                />
+                                {!isEditingRestricted && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '12px',
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#64748b',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            fontSize: '16px'
+                                        }}
+                                        aria-label="Toggle password visibility"
+                                    >
+                                        {showPassword ? <FiEyeOff /> : <FiEye />}
+                                    </button>
+                                )}
+                            </div>
+
+                            {!isEditingRestricted && (
+                                <>
+                                    {/* Option 2 Helper Bar */}
+                                    <div style={{ 
+                                        marginTop: '7px', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'space-between', 
+                                        fontSize: '12px', 
+                                        color: '#475569' 
+                                    }}>
+                                        <span>Default: <strong style={{ color: '#2563eb' }}>{defaultRolePassword}</strong></span>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            {formData.password !== defaultRolePassword && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleApplyDefaultPassword}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: '#2563eb',
+                                                        cursor: 'pointer',
+                                                        padding: 0,
+                                                        fontWeight: 500,
+                                                        fontSize: '11.5px',
+                                                        textDecoration: 'underline'
+                                                    }}
+                                                >
+                                                    Use Default ({defaultRolePassword})
+                                                </button>
+                                            )}
+                                            {formData.password && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleClearPassword}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: '#dc2626',
+                                                        cursor: 'pointer',
+                                                        padding: 0,
+                                                        fontWeight: 500,
+                                                        fontSize: '11.5px',
+                                                        textDecoration: 'underline'
+                                                    }}
+                                                >
+                                                    Clear
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <small style={{ color: '#6b7280', fontSize: '11.5px', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <FiInfo size={13} style={{ flexShrink: 0 }} />
+                                        {formData.password.trim() ? (
+                                            <span>
+                                                Staff member will be forced to create their own secret password upon next login with this temporary password.
+                                            </span>
+                                        ) : (
+                                            <span>Leave blank to keep their current password unchanged.</span>
+                                        )}
+                                    </small>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <div className="form-group">
