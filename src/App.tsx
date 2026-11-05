@@ -74,6 +74,10 @@ function App() {
                 path="/admin/products/edit/:id"
                 element={<EditProductPage />}
               />
+              <Route
+                path="/admin/products/edit"
+                element={<EditProductPage />}
+              />
               <Route path="/product" element={<CreateProductPage />} />
               <Route path="/admin/variants" element={<VariantsPage />} />
               <Route path="/admin/variations" element={<VariantsPage />} />
