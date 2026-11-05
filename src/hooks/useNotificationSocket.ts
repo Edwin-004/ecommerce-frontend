@@ -54,6 +54,8 @@ export function useNotificationSocket() {
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const connectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef<boolean>(true);
 
   // Load initial notifications and check unread count for Login Alert
   const loadInitialData = useCallback(async () => {
@@ -82,17 +84,35 @@ export function useNotificationSocket() {
 
   // WebSocket Connection
   useEffect(() => {
+    isMountedRef.current = true;
     loadInitialData();
 
-    let isMounted = true;
-
     const connectWebSocket = () => {
+      // Guard against opening duplicate connections if already connected or connecting
+      if (
+        socketRef.current &&
+        (socketRef.current.readyState === WebSocket.OPEN ||
+          socketRef.current.readyState === WebSocket.CONNECTING)
+      ) {
+        return;
+      }
+
       // Connect to Spring Boot WebSocket endpoint
       const wsUrl = 'ws://localhost:8080/ws/notifications';
       const ws = new WebSocket(wsUrl);
       socketRef.current = ws;
 
       ws.onopen = () => {
+        // If hook unmounted while connecting, close cleanly without error
+        if (!isMountedRef.current) {
+          try {
+            ws.close(1000, 'Unmounted');
+          } catch {
+            // Suppress close error during teardown
+          }
+          return;
+        }
+
         console.log('✅ Connected to Admin Notification WebSocket');
         // Heartbeat ping every 25 seconds
         if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
@@ -104,7 +124,7 @@ export function useNotificationSocket() {
       };
 
       ws.onmessage = (event) => {
-        if (!isMounted) return;
+        if (!isMountedRef.current) return;
         try {
           const data = JSON.parse(event.data);
 
@@ -130,9 +150,10 @@ export function useNotificationSocket() {
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
-        if (isMounted) {
+        // Only reconnect if still mounted and was not an intentional clean close (code 1000)
+        if (isMountedRef.current && event.code !== 1000) {
           // Reconnect with 3 second delay
           reconnectTimeoutRef.current = setTimeout(() => {
             connectWebSocket();
@@ -141,19 +162,52 @@ export function useNotificationSocket() {
       };
 
       ws.onerror = (err) => {
+        // Suppress false-positive error logs when unmounting or intentionally cleaning up
+        if (!isMountedRef.current) return;
         console.warn('Notification WebSocket error:', err);
         ws.close();
       };
     };
 
-    connectWebSocket();
+    // Debounce initial connection by 80ms to guard against React 18 StrictMode immediate unmount/remount
+    connectTimerRef.current = setTimeout(() => {
+      if (isMountedRef.current) {
+        connectWebSocket();
+      }
+    }, 80);
 
     return () => {
-      isMounted = false;
+      isMountedRef.current = false;
+      if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
-      if (socketRef.current) {
-        socketRef.current.close();
+
+      const ws = socketRef.current;
+      if (ws) {
+        // Detach listeners to prevent state updates after unmount
+        ws.onmessage = null;
+        if (ws.readyState === WebSocket.CONNECTING) {
+          // Guard against premature close error: close cleanly once connection opens
+          ws.onopen = () => {
+            try {
+              ws.close(1000, 'Unmounted');
+            } catch {
+              // Teardown ignore
+            }
+          };
+          ws.onerror = null;
+          ws.onclose = null;
+        } else if (ws.readyState === WebSocket.OPEN) {
+          ws.onopen = null;
+          ws.onerror = null;
+          ws.onclose = null;
+          try {
+            ws.close(1000, 'Unmounted');
+          } catch {
+            // Teardown ignore
+          }
+        }
+        socketRef.current = null;
       }
     };
   }, [loadInitialData]);

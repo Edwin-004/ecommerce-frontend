@@ -12,7 +12,6 @@ import {
   FiBell as Bell,
   FiMenu,
   FiCheck,
-  FiZap,
 } from "react-icons/fi";
 import { type RootState } from "../store";
 import styles from "./Topbar.module.css";
@@ -44,7 +43,6 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
     dismissLoginAlert,
     markAsRead,
     markAllAsRead,
-    triggerTestRefund,
   } = useNotificationSocket();
 
   const [showDropdown, setShowDropdown] = useState(false);
@@ -111,12 +109,26 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
 
   const firstLetter = username ? username.charAt(0).toUpperCase() : 'S';
 
+  const isRefundNotif = (item: AdminNotificationItem) => {
+    return (
+      item.type === "REFUND_REQUEST" ||
+      item.type?.toUpperCase().includes("REFUND") ||
+      item.title?.toLowerCase().includes("refund") ||
+      item.link?.includes("/admin/refunds")
+    );
+  };
+
   const handleNotificationItemClick = (item: AdminNotificationItem) => {
     if (!item.isRead) {
       markAsRead(item.notificationId);
     }
     setShowDropdown(false);
-    navigate(item.link || "/admin/refunds");
+    // Only navigate to /admin/refunds if it is a refund notification
+    if (isRefundNotif(item)) {
+      navigate("/admin/refunds");
+    } else if (item.link && item.link !== "/admin/refunds") {
+      navigate(item.link);
+    }
   };
 
   const formatTimeAgo = (isoDate?: string) => {
@@ -354,14 +366,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
                         <FiCheck size={12} /> Mark read
                       </button>
                     )}
-                    <button
-                      type="button"
-                      className={styles.notifBtnTest}
-                      onClick={triggerTestRefund}
-                      title="Simulate a new refund request notification to test WebSocket"
-                    >
-                      <FiZap size={11} className="text-warning" /> Test Noti
-                    </button>
+
                   </div>
                 </div>
 
@@ -394,19 +399,21 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
                   )}
                 </div>
 
-                {/* Footer link to Refunds Page */}
-                <div className={styles.notifFooter}>
-                  <button
-                    type="button"
-                    className={styles.notifFooterLink}
-                    onClick={() => {
-                      setShowDropdown(false);
-                      navigate("/admin/refunds");
-                    }}
-                  >
-                    View all in Refund Management &rarr;
-                  </button>
-                </div>
+                {/* Footer link to Refunds Page (only shown if refund notifications exist) */}
+                {notifications.some(isRefundNotif) && (
+                  <div className={styles.notifFooter}>
+                    <button
+                      type="button"
+                      className={styles.notifFooterLink}
+                      onClick={() => {
+                        setShowDropdown(false);
+                        navigate("/admin/refunds");
+                      }}
+                    >
+                      View all in Refund Management &rarr;
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
