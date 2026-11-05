@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
 import styles from "./AdminDashboard.module.css";
 import {
   FiShoppingCart,
@@ -39,17 +41,29 @@ interface DailyMetric {
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
-  const currentUser = useSelector((state: RootState) => state.auth);
-  const userRole = currentUser?.role;
+  const { role } = useSelector((state: RootState) => state.auth);
+  const normalizedRole = (role || "").toUpperCase();
 
-  // Dedicated automatic views for Staff Roles
-  if (userRole === "INVENTORY_STAFF") {
+  // ၁။ Staff Role များအတွက် သီးသန့် Dashboard များဆီသို့ တိုက်ရိုက်ပို့ဆောင်ခြင်း
+  if (normalizedRole === "INVENTORY_STAFF" || normalizedRole === "ROLE_INVENTORY_STAFF") {
     return <InventoryDashboard />;
   }
 
-  if (userRole === "SALES_STAFF" || userRole === "ORDER_STAFF") {
+  if (
+    normalizedRole === "SALES_STAFF" ||
+    normalizedRole === "ROLE_SALES_STAFF" ||
+    normalizedRole === "ORDER_STAFF" ||
+    normalizedRole === "ROLE_ORDER_STAFF"
+  ) {
     return <SalesOrderDashboard />;
   }
+
+  // ၂။ Executive Admin Dashboard အတွက် Permission များ စစ်ဆေးခြင်း
+  const isAdmin = normalizedRole === "ADMIN" || normalizedRole === "ROLE_ADMIN";
+  const canAccessCatalog = isAdmin || normalizedRole === "INVENTORY_STAFF" || normalizedRole === "ROLE_INVENTORY_STAFF";
+  const canAccessOperations = isAdmin || normalizedRole === "SALES_STAFF" || normalizedRole === "ROLE_SALES_STAFF" || normalizedRole === "ORDER_STAFF" || normalizedRole === "ROLE_ORDER_STAFF";
+  const canAccessInventory = isAdmin || normalizedRole === "INVENTORY_STAFF" || normalizedRole === "ROLE_INVENTORY_STAFF" || normalizedRole === "SALES_STAFF" || normalizedRole === "ROLE_SALES_STAFF";
+
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   const [staffCount, setStaffCount] = useState<number>(0);
   const [products, setProducts] = useState<ProductItem[]>([]);
@@ -59,8 +73,9 @@ export const AdminDashboard = () => {
   const [chartType, setChartType] = useState<"bar" | "area">("bar");
 
   // Real-time Orders & Revenue from Backend
-  const { data: orderData } = useGetOrdersQuery({ page: 0, size: 200 });
+  const { data: orderData } = useGetOrdersQuery({ page: 0, size: 200 }, { skip: !canAccessOperations });
   const orders: OrderResponseDto[] = useMemo(() => orderData?.content || [], [orderData]);
+  ...
 
   const totalOrders = orderData?.totalElements ?? orders.length;
   const totalRevenue = useMemo(() => {
@@ -70,28 +85,34 @@ export const AdminDashboard = () => {
   }, [orders]);
 
   useEffect(() => {
-    // 1. Fetch Low Stock Alerts
-    inventoryApi
-      .getLowStockAlerts()
-      .then((data) => setLowStockCount(data.length))
-      .catch(() => setLowStockCount(0));
+    // 1. Fetch Low Stock Alerts (Admin, Inventory, Sales)
+    if (canAccessInventory) {
+      inventoryApi
+        .getLowStockAlerts()
+        .then((data) => setLowStockCount(data.length))
+        .catch(() => setLowStockCount(0));
+    }
 
-    // 2. Fetch Staff Count
-    api
-      .get("/staff")
-      .then((res) => {
-        if (Array.isArray(res.data)) {
-          setStaffCount(res.data.length);
-        }
-      })
-      .catch(() => setStaffCount(0));
+    // 2. Fetch Staff Count (Strictly ADMIN only)
+    if (isAdmin) {
+      api
+        .get("/staff")
+        .then((res) => {
+          if (Array.isArray(res.data)) {
+            setStaffCount(res.data.length);
+          }
+        })
+        .catch(() => setStaffCount(0));
+    }
 
-    // 3. Fetch Products for Category Analysis
-    productManagementApi
-      .getProducts()
-      .then((data) => setProducts(data))
-      .catch(() => setProducts([]));
-  }, []);
+    // 3. Fetch Products for Category Analysis (ADMIN and INVENTORY_STAFF only)
+    if (canAccessCatalog) {
+      productManagementApi
+        .getProducts()
+        .then((data) => setProducts(data))
+        .catch(() => setProducts([]));
+    }
+  }, [isAdmin, canAccessCatalog, canAccessInventory]);
 
   // =========================================================
   // 1. REVENUE & ORDERS TREND GRAPH DATA
@@ -298,13 +319,23 @@ export const AdminDashboard = () => {
           </p>
         </div>
         <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={styles.primaryBtn}
-            onClick={() => navigate("/admin/orders")}
-          >
-            <FiShoppingCart size={14} /> View Orders &rarr;
-          </button>
+          {canAccessOperations ? (
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              onClick={() => navigate("/admin/orders")}
+            >
+              <FiShoppingCart size={14} /> View Orders &rarr;
+            </button>
+          ) : canAccessInventory ? (
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              onClick={() => navigate("/admin/inventory")}
+            >
+              <FiPackage size={14} /> View Inventory &rarr;
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -312,20 +343,21 @@ export const AdminDashboard = () => {
       <div className={styles.statsGrid}>
         {/* 1. Total Revenue */}
         <div
-          className={`${styles.statCard} ${activeMetric === "revenue" ? styles.statCardActive : ""}`}
-          onClick={() => setActiveMetric("revenue")}
-          title="Click to view Revenue trend"
+          className={`${styles.statCard} ${activeMetric === "revenue" && canAccessOperations ? styles.statCardActive : ""}`}
+          onClick={canAccessOperations ? () => setActiveMetric("revenue") : undefined}
+          style={!canAccessOperations ? { cursor: "default" } : undefined}
+          title={canAccessOperations ? "Click to view Revenue trend" : "Restricted to Sales & Admin"}
         >
           <div className={styles.statTopRow}>
             <span className={styles.statLabel}>Total revenue</span>
-            <span className={styles.statDotBlue} />
+            {canAccessOperations && <span className={styles.statDotBlue} />}
           </div>
           <div className={styles.statValue}>
-            {totalRevenue.toLocaleString()} MMK
+            {canAccessOperations ? `${totalRevenue.toLocaleString()} MMK` : "—"}
           </div>
           <div className={styles.statBottomRow}>
-            <span className={styles.statTrendGreen}>
-              <FiTrendingUp size={13} /> Gross sales across all orders
+            <span className={styles.statTrendGreen} style={!canAccessOperations ? { color: "#94a3b8" } : undefined}>
+              <FiTrendingUp size={13} /> {canAccessOperations ? "Gross sales across all orders" : "Requires Order access"}
             </span>
             <div className={`${styles.statIconBox} ${styles.iconGreen}`}>
               <span style={{ fontWeight: 700, fontSize: "13px", letterSpacing: "-0.02em" }}>Ks</span>
@@ -335,18 +367,19 @@ export const AdminDashboard = () => {
 
         {/* 2. Total Orders */}
         <div
-          className={`${styles.statCard} ${activeMetric === "orders" ? styles.statCardActive : ""}`}
-          onClick={() => setActiveMetric("orders")}
-          title="Click to view Orders trend"
+          className={`${styles.statCard} ${activeMetric === "orders" && canAccessOperations ? styles.statCardActive : ""}`}
+          onClick={canAccessOperations ? () => setActiveMetric("orders") : undefined}
+          style={!canAccessOperations ? { cursor: "default" } : undefined}
+          title={canAccessOperations ? "Click to view Orders trend" : "Restricted to Sales & Admin"}
         >
           <div className={styles.statTopRow}>
             <span className={styles.statLabel}>Total orders</span>
-            <span className={styles.statDotBlue} />
+            {canAccessOperations && <span className={styles.statDotBlue} />}
           </div>
-          <div className={styles.statValue}>{totalOrders.toLocaleString()}</div>
+          <div className={styles.statValue}>{canAccessOperations ? totalOrders.toLocaleString() : "—"}</div>
           <div className={styles.statBottomRow}>
-            <span className={styles.statTrendBlue}>
-              <FiShoppingCart size={13} /> Lifetime processed orders
+            <span className={styles.statTrendBlue} style={!canAccessOperations ? { color: "#94a3b8" } : undefined}>
+              <FiShoppingCart size={13} /> {canAccessOperations ? "Lifetime processed orders" : "Requires Order access"}
             </span>
             <div className={`${styles.statIconBox} ${styles.iconBlue}`}>
               <FiShoppingCart size={15} />
@@ -381,17 +414,18 @@ export const AdminDashboard = () => {
         {/* 4. Active Staff */}
         <div
           className={styles.statCard}
-          onClick={() => navigate("/admin/staff")}
-          title="Click to view staff roster"
+          onClick={isAdmin ? () => navigate("/admin/staff") : undefined}
+          style={!isAdmin ? { cursor: "default" } : undefined}
+          title={isAdmin ? "Click to view staff roster" : "Restricted to Admin"}
         >
           <div className={styles.statTopRow}>
             <span className={styles.statLabel}>Active staff</span>
-            <span className={styles.statDotPurple} />
+            {isAdmin && <span className={styles.statDotPurple} />}
           </div>
-          <div className={styles.statValue}>{staffCount}</div>
+          <div className={styles.statValue}>{isAdmin ? staffCount : "—"}</div>
           <div className={styles.statBottomRow}>
-            <span className={styles.statTrendPurple}>
-              <FiCheckCircle size={13} /> Store managers &amp; staff
+            <span className={styles.statTrendPurple} style={!isAdmin ? { color: "#94a3b8" } : undefined}>
+              <FiCheckCircle size={13} /> {isAdmin ? "Store managers & staff" : "Restricted to Admin"}
             </span>
             <div className={`${styles.statIconBox} ${styles.iconPurple}`}>
               <FiUsers size={15} />
@@ -873,7 +907,17 @@ export const AdminDashboard = () => {
           </div>
 
           <div className={styles.barList}>
-            {categoryStats.length === 0 ? (
+            {!canAccessCatalog ? (
+              <div className={styles.emptyContainer}>
+                <div className={styles.emptyIconCircle}>
+                  <FiPackage size={22} />
+                </div>
+                <h4 className={styles.emptyTitle}>Catalog Distribution Restricted</h4>
+                <p className={styles.emptySubtitle}>
+                  Product categorization and catalog management are assigned to Inventory Staff and Administrators.
+                </p>
+              </div>
+            ) : categoryStats.length === 0 ? (
               <div className={styles.emptyContainer}>
                 <div className={styles.emptyIconCircle}>
                   <FiPackage size={22} />
@@ -936,7 +980,17 @@ export const AdminDashboard = () => {
           </div>
 
           <div className={styles.tableWrapper}>
-            {recentOrders.length === 0 ? (
+            {!canAccessOperations ? (
+              <div className={styles.emptyContainer}>
+                <div className={styles.emptyIconCircle}>
+                  <FiShoppingCart size={22} />
+                </div>
+                <h4 className={styles.emptyTitle}>Recent Orders Restricted</h4>
+                <p className={styles.emptySubtitle}>
+                  Customer order transactions and processing are managed by Sales Staff and Administrators.
+                </p>
+              </div>
+            ) : recentOrders.length === 0 ? (
               <div className={styles.emptyContainer}>
                 <div className={styles.emptyIconCircle}>
                   <FiShoppingCart size={22} />

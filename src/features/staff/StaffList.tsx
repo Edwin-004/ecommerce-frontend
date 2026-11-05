@@ -325,7 +325,19 @@ export const StaffList: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {currentStaffData.length > 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                                        Loading staff accounts...
+                                    </td>
+                                </tr>
+                            ) : error ? (
+                                <tr>
+                                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: '#ef4444' }}>
+                                        {error}
+                                    </td>
+                                </tr>
+                            ) : currentStaffData.length > 0 ? (
                                 currentStaffData.map((staff, index) => {
                                     const rowNumber = startIndex + index + 1;
                                     const isSuperAdminUser = staff.email?.toLowerCase() === 'admin@ecommerce.com';
@@ -481,7 +493,7 @@ export const StaffList: React.FC = () => {
                             type="button"
                             className="page-btn page-btn-nav" 
                             disabled={currentPage === 1} 
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
                         >
                             Previous
                         </button>
@@ -501,7 +513,7 @@ export const StaffList: React.FC = () => {
                             type="button"
                             className="page-btn page-btn-nav" 
                             disabled={currentPage === totalPages} 
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
                         >
                             Next
                         </button>
