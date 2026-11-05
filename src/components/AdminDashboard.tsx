@@ -25,6 +25,10 @@ import {
   type ProductItem,
 } from "../features/products/productManagementApi";
 import api from "../utils/axiosConfig";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
+import { InventoryDashboard } from "./dashboard/InventoryDashboard";
+import { SalesOrderDashboard } from "./dashboard/SalesOrderDashboard";
 
 interface DailyMetric {
   dateKey: string;
@@ -35,6 +39,17 @@ interface DailyMetric {
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
+  const currentUser = useSelector((state: RootState) => state.auth);
+  const userRole = currentUser?.role;
+
+  // Dedicated automatic views for Staff Roles
+  if (userRole === "INVENTORY_STAFF") {
+    return <InventoryDashboard />;
+  }
+
+  if (userRole === "SALES_STAFF" || userRole === "ORDER_STAFF") {
+    return <SalesOrderDashboard />;
+  }
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   const [staffCount, setStaffCount] = useState<number>(0);
   const [products, setProducts] = useState<ProductItem[]>([]);
