@@ -43,6 +43,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
     dismissLoginAlert,
     markAsRead,
     markAllAsRead,
+    hasNotificationAccess,
   } = useNotificationSocket();
 
   const [showDropdown, setShowDropdown] = useState(false);
@@ -210,7 +211,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
   return (
     <>
       {/* 1. Real-time Toast Notification (Pop-up upon new refund event) */}
-      {activeToast && (
+      {hasNotificationAccess && activeToast && (
         <NotificationToast
           notification={activeToast}
           onClose={dismissToast}
@@ -219,7 +220,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
       )}
 
       {/* 2. Login Unread Notifications Alert Dialog (Appears upon login if unread requests exist) */}
-      {showLoginAlert && (
+      {hasNotificationAccess && showLoginAlert && (
         <LoginUnreadModal
           unreadCount={unreadCount}
           items={loginAlertItems}
@@ -301,6 +302,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
             {/* Dropdown Menu (Z-index 50) */}
             {quickOpen && (
               <div className={styles.createMenu}>
+                {(role === 'ADMIN' || role === 'INVENTORY_STAFF') && (
                 <Link
                   to="/admin/products/new"
                   onClick={() => setQuickOpen(false)}
@@ -309,6 +311,8 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
                   <Package className={styles.createMenuIcon} />
                   <span>Add New Product</span>
                 </Link>
+                )}
+                {(role === 'ADMIN' || role === 'INVENTORY_STAFF') && (
                 <Link
                   to="/admin/categories?create=true"
                   onClick={() => setQuickOpen(false)}
@@ -317,6 +321,8 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
                   <FolderPlus className={styles.createMenuIcon} />
                   <span>Create Category</span>
                 </Link>
+                )}
+                {role === 'ADMIN' && (
                 <Link
                   to="/admin/staff/new"
                   onClick={() => setQuickOpen(false)}
@@ -325,11 +331,13 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
                   <UserPlus className={styles.createMenuIcon} />
                   <span>Add Staff Member</span>
                 </Link>
+                )}
               </div>
             )}
           </div>
 
           {/* C. Notification Bell Icon: Prominent high-contrast button matching UI design tokens */}
+          {hasNotificationAccess && (
           <div className="relative" ref={dropdownRef}>
             <button
               type="button"
@@ -417,6 +425,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
               </div>
             )}
           </div>
+          )}
 
           {/* D. Profile Avatar Alignment: Clean avatar and text matching sidebar bottom */}
           <div 

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSelector } from 'react-redux';
+import { type RootState } from '../store';
 import {
   getRecentNotifications,
   getUnreadSummary,
@@ -45,6 +47,16 @@ function playNotificationChime() {
 }
 
 export function useNotificationSocket() {
+  const authRole = useSelector((state: RootState) => state.auth.role);
+  const normalizedRole = (authRole || '').toUpperCase();
+  // Inventory staff accounts do not use notification features (only Admin and Sales/Order staff have notification access)
+  const hasNotificationAccess =
+    normalizedRole === 'ADMIN' ||
+    normalizedRole === 'ROLE_ADMIN' ||
+    normalizedRole === 'SALES_STAFF' ||
+    normalizedRole === 'ROLE_SALES_STAFF' ||
+    normalizedRole === 'ORDER_STAFF' ||
+    normalizedRole === 'ROLE_ORDER_STAFF';
   const [notifications, setNotifications] = useState<AdminNotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [activeToast, setActiveToast] = useState<AdminNotificationItem | null>(null);
@@ -59,6 +71,7 @@ export function useNotificationSocket() {
 
   // Load initial notifications and check unread count for Login Alert
   const loadInitialData = useCallback(async () => {
+    if (!hasNotificationAccess) return;
     try {
       const [recentList, unreadSummary] = await Promise.all([
         getRecentNotifications(),
@@ -80,10 +93,13 @@ export function useNotificationSocket() {
     } catch (err) {
       console.warn('Could not load initial notification data:', err);
     }
-  }, []);
+  }, [hasNotificationAccess]);
 
   // WebSocket Connection
   useEffect(() => {
+    if (!hasNotificationAccess) {
+      return;
+    }
     isMountedRef.current = true;
     loadInitialData();
 
@@ -210,7 +226,7 @@ export function useNotificationSocket() {
         socketRef.current = null;
       }
     };
-  }, [loadInitialData]);
+  }, [loadInitialData, hasNotificationAccess]);
 
   // Auto-dismiss active toast after 8 seconds
   useEffect(() => {
@@ -271,5 +287,6 @@ export function useNotificationSocket() {
     markAsRead: handleMarkAsRead,
     markAllAsRead: handleMarkAllAsRead,
     triggerTestRefund,
+    hasNotificationAccess,
   };
 }
