@@ -1034,3 +1034,67 @@
   color: #475569;
   border: 1px solid #cbd5e1;
 }
+
+
+/* ဖုန်းမှာ Table တွေကို ဘေးတိုက် Scroll ဆွဲလို့ရအောင် လုပ်ခြင်း */
+.tableContainer {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+.tableResponsiveWrapper {
+  width: 100%;
+  overflow-x: auto; /* ⭐️ ဒီကောင်က Media Query အပြင်မှာ ရှိနေမှ အမြဲ Scroll ပေါ်မည် */
+  -webkit-overflow-scrolling: touch;
+}
+
+.orderTable {
+  width: 100%;
+  min-width: 900px; /* ⭐️ ဇယားကို 900px အောက် မကျုံ့စေရန် */
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+/* 📱 Mobile & Tablet Responsiveness (Screen size 768px နဲ့အောက် ရောက်သွားချိန်) */
+@media screen and (max-width: 1024px) {
+  
+  /* Split View ကို Flex အဖြစ်မထားတော့ဘဲ အပြည့် (Block) အဖြစ် ပြောင်းမည် */
+  .splitContainer {
+    display: block; 
+  }
+  
+  /* ⭐️ အဓိက အချက်: Order ရွေးလိုက်လို့ 'detailActive' ဖြစ်သွားရင် Order List ကြီးကို လုံးဝ ဖျောက်လိုက်မည် ⭐️ */
+  .detailActive .listContainer {
+    display: none;
+  }
+  
+  /* Order မရွေးရသေးခင် (သို့) Back နှိပ်လိုက်ချိန်မှာ List ကို အပြည့်ပြန်ပေါ်စေမည် */
+  .listContainer {
+    width: 100%;
+  }
+  
+  /* Order Detail ကို စခရင်အပြည့် ပေါ်စေမည် */
+  .detailContainer {
+    width: 100%;
+  }
+  
+  /* Detail အတွင်းပိုင်း (Customer Info နဲ့ Action Card တွေ) ကိုပါ အထက်အောက် စီမည် */
+  .detailGrid {
+    flex-direction: column;
+  }
+  .actionColumn {
+    width: 100%;
+  }
+
+  /* Filter များကို အောက်တစ်ကြောင်း ဆင်းစေရန် */
+  .filterSection {
+    flex-wrap: wrap; 
+  }
+  .rightFilterGroup, .searchContainer {
+    width: 100%;
+  }
+  .searchContainer input {
+    width: 100%;
+  }
+}

@@ -145,55 +145,10 @@ export const Login: React.FC = () => {
 
       <div className="login-card">
         {/* Brand Icon Badge */}
-        {/* <div className="login-badge-wrapper">
-          <div className="login-logo-badge" aria-label="Ecommerce Logo">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 28 28"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                <linearGradient
-                  id="loginBrandSparkGrad"
-                  x1="9"
-                  y1="11"
-                  x2="19"
-                  y2="19"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop stopColor="#2563eb" />
-                  <stop offset="1" stopColor="#7c3aed" />
-                </linearGradient>
-              </defs>
-              <rect
-                x="4"
-                y="8"
-                width="20"
-                height="16"
-                rx="4.5"
-                fill="#ffffff"
-              />
-              <path
-                d="M10 8V6C10 3.79086 11.7909 2 14 2C16.2091 2 18 3.79086 18 6V8"
-                stroke="#ffffff"
-                strokeLinecap="round"
-                strokeWidth="1.2"
-              />
-              <path
-                d="M14 11.5L14.9 14.1L17.5 15L14.9 15.9L14 18.5L13.1 15.9L10.5 15L13.1 14.1L14 11.5Z"
-                fill="url(#loginBrandSparkGrad)"
-              />
-            </svg>
-          </div>
-        </div> */}
-        {/* Brand Icon Badge */}
         <div className="login-badge-wrapper">
           <div
             className="login-logo-badge"
             aria-label="Ecommerce Logo"
-            // အကယ်၍ မူလ အပြာရောင်နောက်ခံကို ဖျောက်ချင်ပါက အောက်ပါ style ကို ထည့်ပါ
             style={{ background: 'transparent', padding: 0 }}
           >
             <img
@@ -203,7 +158,7 @@ export const Login: React.FC = () => {
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
-                borderRadius: '50%', // ပုံကို အဝိုင်းပုံစံဖြစ်စေရန်
+                borderRadius: '50%',
               }}
             />
           </div>
