@@ -17,7 +17,7 @@ interface RestockModalProps {
 }
 
 export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuccess }) => {
-  const [quantity, setQuantity] = useState<number>(10);
+  const [quantity, setQuantity] = useState<number | ''>('');
   const [referenceType, setReferenceType] = useState<string>('MANUAL');
   const [referenceId, setReferenceId] = useState<string>('');
   const [remark, setRemark] = useState<string>('');
@@ -28,8 +28,9 @@ export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuc
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (quantity <= 0) {
-      setError('Quantity must be greater than 0');
+    const numQty = Number(quantity);
+    if (!quantity || isNaN(numQty) || numQty <= 0) {
+      setError('Please enter a valid quantity of units to add (at least 1)');
       return;
     }
 
@@ -61,7 +62,7 @@ export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuc
           <h3 style={{ margin: 0 }}>Restock Variant</h3>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <div className={styles.modalBody}>
             {error && <div className={styles.errorMessage}><FiAlertCircle /> {error}</div>}
 
@@ -77,8 +78,10 @@ export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuc
                 type="number"
                 min="1"
                 required
+                placeholder="Enter units to add (e.g. 50)"
                 value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                onChange={(e) => setQuantity(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
+                autoFocus
               />
             </div>
 
@@ -162,7 +165,7 @@ interface WriteOffModalProps {
 }
 
 export const WriteOffModal: React.FC<WriteOffModalProps> = ({ item, onClose, onSuccess }) => {
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState<number | ''>('');
   const [remark, setRemark] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

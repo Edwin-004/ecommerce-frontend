@@ -282,11 +282,7 @@ export const VariantsPage: React.FC = () => {
           <button className={styles.btnSecondary} onClick={loadData} disabled={loading} title="Refresh data">
             <FiRefreshCw className={loading ? 'spin' : ''} /> Refresh
           </button>
-          {activeTab === 'VARIANTS' ? (
-            <button className={styles.btnPrimary} onClick={() => setShowCreateVariantModal(true)}>
-              <FiPlus /> New Variant SKU
-            </button>
-          ) : (
+          {activeTab !== 'VARIANTS' && (
             <button className={styles.btnPrimary} onClick={() => setShowAddVariationModal(true)}>
               <FiPlus /> New Global Attribute
             </button>

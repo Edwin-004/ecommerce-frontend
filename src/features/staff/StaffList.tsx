@@ -27,15 +27,10 @@ export const StaffList: React.FC = () => {
 
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const paramTab = (searchParams.get('tab') as 'ALL' | 'ACTIVE' | 'INACTIVE') || 'ALL';
-    const paramRole = searchParams.get('role') || 'ALL';
-    const paramSearch = searchParams.get('search') || '';
-    const paramPage = Number(searchParams.get('page')) || 1;
-
-    const [activeTab, setActiveTabState] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>(paramTab);
-    const [selectedRole, setSelectedRoleState] = useState<string>(paramRole);
-    const [searchQuery, setSearchQueryState] = useState(paramSearch);
-    const [currentPage, setCurrentPageState] = useState(paramPage);
+    const activeTab = (searchParams.get('tab') as 'ALL' | 'ACTIVE' | 'INACTIVE') || 'ALL';
+    const selectedRole = searchParams.get('role') || 'ALL';
+    const searchQuery = searchParams.get('search') || '';
+    const currentPage = Math.max(1, Number(searchParams.get('page')) || 1);
 
     const updateQueryParams = (updates: { tab?: string; role?: string; search?: string; page?: number }) => {
         const next = new URLSearchParams(searchParams);
@@ -52,39 +47,10 @@ export const StaffList: React.FC = () => {
         setSearchParams(next, { replace: true });
     };
 
-    const setActiveTab = (tab: 'ALL' | 'ACTIVE' | 'INACTIVE') => {
-        setActiveTabState(tab);
-        setCurrentPageState(1);
-        updateQueryParams({ tab, page: 1 });
-    };
-
-    const setSelectedRole = (role: string) => {
-        setSelectedRoleState(role);
-        setCurrentPageState(1);
-        updateQueryParams({ role, page: 1 });
-    };
-
-    const setSearchQuery = (query: string) => {
-        setSearchQueryState(query);
-        setCurrentPageState(1);
-        updateQueryParams({ search: query, page: 1 });
-    };
-
-    const setCurrentPage = (page: number) => {
-        setCurrentPageState(page);
-        updateQueryParams({ page });
-    };
-
-    useEffect(() => {
-        const tab = (searchParams.get('tab') as 'ALL' | 'ACTIVE' | 'INACTIVE') || 'ALL';
-        const role = searchParams.get('role') || 'ALL';
-        const search = searchParams.get('search') || '';
-        const page = Number(searchParams.get('page')) || 1;
-        setActiveTabState(tab);
-        setSelectedRoleState(role);
-        setSearchQueryState(search);
-        setCurrentPageState(page);
-    }, [searchParams]);
+    const setActiveTab = (tab: 'ALL' | 'ACTIVE' | 'INACTIVE') => updateQueryParams({ tab, page: 1 });
+    const setSelectedRole = (role: string) => updateQueryParams({ role, page: 1 });
+    const setSearchQuery = (query: string) => updateQueryParams({ search: query, page: 1 });
+    const setCurrentPage = (page: number) => updateQueryParams({ page });
 
 
 
@@ -137,9 +103,7 @@ export const StaffList: React.FC = () => {
         );
     };
 
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [activeTab, selectedRole, searchQuery]);
+    // Page reset handled directly inside updateQueryParams
 
     const formatDateTimeDMY = (dateString?: string): string => {
         if (!dateString) return '—';

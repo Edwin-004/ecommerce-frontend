@@ -27,6 +27,10 @@ import {
   type ProductItem,
 } from "../features/products/productManagementApi";
 import api from "../utils/axiosConfig";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
+import { InventoryDashboard } from "./dashboard/InventoryDashboard";
+import { SalesOrderDashboard } from "./dashboard/SalesOrderDashboard";
 
 interface DailyMetric {
   dateKey: string;
@@ -39,10 +43,27 @@ export const AdminDashboard = () => {
   const navigate = useNavigate();
   const { role } = useSelector((state: RootState) => state.auth);
   const normalizedRole = (role || "").toUpperCase();
+
+  // ၁။ Staff Role များအတွက် သီးသန့် Dashboard များဆီသို့ တိုက်ရိုက်ပို့ဆောင်ခြင်း
+  if (normalizedRole === "INVENTORY_STAFF" || normalizedRole === "ROLE_INVENTORY_STAFF") {
+    return <InventoryDashboard />;
+  }
+
+  if (
+    normalizedRole === "SALES_STAFF" ||
+    normalizedRole === "ROLE_SALES_STAFF" ||
+    normalizedRole === "ORDER_STAFF" ||
+    normalizedRole === "ROLE_ORDER_STAFF"
+  ) {
+    return <SalesOrderDashboard />;
+  }
+
+  // ၂။ Executive Admin Dashboard အတွက် Permission များ စစ်ဆေးခြင်း
   const isAdmin = normalizedRole === "ADMIN" || normalizedRole === "ROLE_ADMIN";
   const canAccessCatalog = isAdmin || normalizedRole === "INVENTORY_STAFF" || normalizedRole === "ROLE_INVENTORY_STAFF";
   const canAccessOperations = isAdmin || normalizedRole === "SALES_STAFF" || normalizedRole === "ROLE_SALES_STAFF" || normalizedRole === "ORDER_STAFF" || normalizedRole === "ROLE_ORDER_STAFF";
   const canAccessInventory = isAdmin || normalizedRole === "INVENTORY_STAFF" || normalizedRole === "ROLE_INVENTORY_STAFF" || normalizedRole === "SALES_STAFF" || normalizedRole === "ROLE_SALES_STAFF";
+
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   const [staffCount, setStaffCount] = useState<number>(0);
   const [products, setProducts] = useState<ProductItem[]>([]);
@@ -54,6 +75,7 @@ export const AdminDashboard = () => {
   // Real-time Orders & Revenue from Backend
   const { data: orderData } = useGetOrdersQuery({ page: 0, size: 200 }, { skip: !canAccessOperations });
   const orders: OrderResponseDto[] = useMemo(() => orderData?.content || [], [orderData]);
+  ...
 
   const totalOrders = orderData?.totalElements ?? orders.length;
   const totalRevenue = useMemo(() => {
