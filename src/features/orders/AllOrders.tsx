@@ -29,7 +29,7 @@ export const AllOrders = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const paramPage = Number(searchParams.get('page')) || 0;
-  const paramStatus = searchParams.get('status') || 'PAID'; // Default PAID
+  const paramStatus = searchParams.get('status') || '';
   const paramSearch = searchParams.get('search') || '';
   const paramStart = searchParams.get('start') || '';
   const paramEnd = searchParams.get('end') || '';
@@ -82,25 +82,29 @@ export const AllOrders = () => {
   const setStatusFilter = (st: string) => {
     setStatusFilterState(st);
     setCurrentPageState(0);
-    updateOrderQueryParams({ status: st, page: 0 });
+    setSelectedOrderNoState(null);
+    updateOrderQueryParams({ status: st, page: 0, orderNo: null });
   };
 
   const setSearchTerm = (s: string) => {
     setSearchTermState(s);
     setCurrentPageState(0);
-    updateOrderQueryParams({ search: s, page: 0 });
+    setSelectedOrderNoState(null);
+    updateOrderQueryParams({ status: s, page: 0, orderNo: null });
   };
 
   const setStartDate = (d: string) => {
     setStartDateState(d);
     setCurrentPageState(0);
-    updateOrderQueryParams({ start: d, page: 0 });
+    setSelectedOrderNoState(null);
+    updateOrderQueryParams({ status: d, page: 0, orderNo: null });
   };
 
   const setEndDate = (d: string) => {
     setEndDateState(d);
     setCurrentPageState(0);
-    updateOrderQueryParams({ end: d, page: 0 });
+    setSelectedOrderNoState(null);
+    updateOrderQueryParams({ status: d, page: 0, orderNo: null });
   };
 
   const setCurrentPage = (p: number) => {
@@ -114,7 +118,7 @@ export const AllOrders = () => {
   };
 
   useEffect(() => {
-    setStatusFilterState(searchParams.get('status') || 'PAID');
+    setStatusFilterState(searchParams.get('status') || '');
     setSearchTermState(searchParams.get('search') || '');
     setStartDateState(searchParams.get('start') || '');
     setEndDateState(searchParams.get('end') || '');
@@ -920,7 +924,10 @@ export const AllOrders = () => {
                           value={selectedStatus}
                           onChange={(e) => setSelectedStatus(e.target.value)}
                           className={styles.statusSelect}
-                          disabled={allowedNextStatuses.length === 0}
+                          disabled={
+                            allowedNextStatuses.length === 0 ||
+                            orderDetails.orderStatus === 'PENDING'
+                          }
                         >
                           <option value={currentOrderStatus}>
                             {currentOrderStatus}
@@ -939,7 +946,8 @@ export const AllOrders = () => {
                           disabled={
                             isUpdating ||
                             selectedStatus === orderDetails.orderStatus ||
-                            allowedNextStatuses.length === 0
+                            allowedNextStatuses.length === 0 ||
+                            orderDetails.orderStatus === 'PENDING'
                           }
                         >
                           {isUpdating ? 'Updating...' : 'Update Status'}
