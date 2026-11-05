@@ -435,10 +435,10 @@ export const CategoryList: React.FC<CategoryListProps> = ({
             <thead>
               <tr>
                 <th className="text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
-                <th>Category</th>
-                <th>Parent Category</th>
-                <th style={{ width: '100%' }}>Description</th>
-                <th className="text-center" style={{ width: '180px', textAlign: 'center' }}>Actions</th>
+                <th style={{ minWidth: '180px' }}>Category</th>
+                <th style={{ minWidth: '150px' }}>Parent Category</th>
+                <th>Description</th>
+                <th className="text-center" style={{ width: '170px', minWidth: '170px', textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
 
@@ -495,8 +495,8 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                     </span>
                   </td>
 
-                  <td className="text-center" style={{ width: '180px', textAlign: 'center' }}>
-                    <div className={styles.actions} style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+                  <td className="text-center" style={{ width: '170px', minWidth: '170px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <div className={styles.actions} style={{ display: 'inline-flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                       <button
                         type="button"
                         className="table-btn-edit"
