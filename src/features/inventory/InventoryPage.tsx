@@ -661,55 +661,7 @@ export const InventoryPage: React.FC = () => {
 
       {/* Data Views - Card with Slide Bar & Drag-to-Scroll */}
       <div className={styles.tableCard}>
-        {/* Modern Interactive Slide Toggle Bar (Only shown when data is loaded) */}
-        {(activeTab !== 'TRANSACTIONS' ? filteredItems.length > 0 : transactions.length > 0) && (
-          <div className={styles.scrollNoticeBar}>
-            <div className={styles.scrollNoticeLeft}>
-              <FiSliders size={13} style={{ color: '#2563eb' }} />
-              <span className={styles.scrollNoticeTitle}>Table Slide Bar:</span>
-              <span className={styles.scrollNoticeTag}>
-                {scrollPercent <= 5
-                  ? (activeTab === 'TRANSACTIONS' ? 'Start (Date & Time)' : 'Start (Variant & SKU)')
-                  : scrollPercent >= 95
-                  ? (activeTab === 'TRANSACTIONS' ? 'End (Remark)' : 'End (Actions)')
-                  : `${scrollPercent}%`}
-              </span>
-            </div>
 
-            <div className={styles.slideToggleWrapper}>
-              <button
-                type="button"
-                className={styles.sliderEndpointBtn}
-                onClick={() => scrollToEndpoint('start')}
-                title={activeTab === 'TRANSACTIONS' ? 'Jump to Date & Time' : 'Jump to Variant & SKU'}
-              >
-                <FiChevronLeft size={13} /> {activeTab === 'TRANSACTIONS' ? 'Left (Date)' : 'Left (SKU)'}
-              </button>
-              <div className={styles.sliderTrackContainer}>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={scrollPercent}
-                  onChange={handleSliderChange}
-                  className={styles.modernSlideRange}
-                  title="Slide cursor across this bar to scroll table sideways"
-                  style={{
-                    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${scrollPercent}%, #e2e8f0 ${scrollPercent}%, #e2e8f0 100%)`
-                  }}
-                />
-              </div>
-              <button
-                type="button"
-                className={styles.sliderEndpointBtn}
-                onClick={() => scrollToEndpoint('end')}
-                title={activeTab === 'TRANSACTIONS' ? 'Jump to Remark' : 'Jump to Actions'}
-              >
-                {activeTab === 'TRANSACTIONS' ? 'Right (Remark)' : 'Right (Actions)'} <FiChevronRight size={13} />
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Scrollable & Draggable Table Area */}
         <div

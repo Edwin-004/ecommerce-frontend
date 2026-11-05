@@ -1,6 +1,5 @@
 import { createPortal } from 'react-dom';
 import React, { useState, useEffect, useRef } from 'react';
-import { BackButton } from '../../components/common/BackButton';
 import { toast } from 'react-toastify';
 import {
   useGetLocationsQuery,

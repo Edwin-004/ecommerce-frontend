@@ -19,6 +19,12 @@ export const LoginUnreadModal: React.FC<LoginUnreadModalProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  const isRefundNotif = (item: AdminNotificationItem) =>
+    item.type === 'REFUND_REQUEST' ||
+    item.type?.toUpperCase().includes('REFUND') ||
+    item.title?.toLowerCase().includes('refund') ||
+    item.link?.includes('/admin/refunds');
+
   const handleReviewAll = () => {
     onMarkAllAsRead();
     onClose();
@@ -27,7 +33,11 @@ export const LoginUnreadModal: React.FC<LoginUnreadModalProps> = ({
 
   const handleItemClick = (item: AdminNotificationItem) => {
     onClose();
-    navigate(item.link || '/admin/refunds');
+    if (isRefundNotif(item)) {
+      navigate('/admin/refunds');
+    } else if (item.link && item.link !== '/admin/refunds') {
+      navigate(item.link);
+    }
   };
 
   return (
@@ -42,7 +52,7 @@ export const LoginUnreadModal: React.FC<LoginUnreadModalProps> = ({
             <div>
               <h3 className={styles.modalTitle}>Unread Notifications</h3>
               <p className={styles.modalSubtitle}>
-                You have <strong>{unreadCount}</strong> unread refund request{unreadCount !== 1 ? 's' : ''} awaiting admin review.
+                You have <strong>{unreadCount}</strong> unread notification{unreadCount !== 1 ? 's' : ''} awaiting review.
               </p>
             </div>
           </div>
@@ -81,7 +91,7 @@ export const LoginUnreadModal: React.FC<LoginUnreadModalProps> = ({
 
           {unreadCount > 5 && (
             <p className={styles.moreCountText}>
-              + {unreadCount - 5} more pending requests in queue
+              + {unreadCount - 5} more pending items in queue
             </p>
           )}
         </div>
@@ -101,7 +111,7 @@ export const LoginUnreadModal: React.FC<LoginUnreadModalProps> = ({
             onClick={handleReviewAll}
           >
             <FiCheckCircle size={15} />
-            <span>Review Now</span>
+            <span>Mark All as Read</span>
           </button>
         </div>
       </div>

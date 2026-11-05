@@ -412,7 +412,6 @@ export default function TagManagement() {
                 <option value="tagId,asc">Oldest First</option>
                 <option value="tagName,asc">Tag Name (A - Z)</option>
                 <option value="tagName,desc">Tag Name (Z - A)</option>
-                <option value="modifiedAt,desc">Recently Modified</option>
               </select>
             </div>
 
@@ -472,20 +471,7 @@ export default function TagManagement() {
                 >
                   TAG {renderSortIndicator('tagName')}
                 </th>
-                <th 
-                  style={{ minWidth: '160px', textAlign: 'left', cursor: 'pointer', userSelect: 'none' }}
-                  onClick={() => handleSortToggle('createdAt')}
-                  title="Click to sort by Created Date"
-                >
-                  CREATED {renderSortIndicator('createdAt')}
-                </th>
-                <th 
-                  style={{ minWidth: '160px', textAlign: 'left', cursor: 'pointer', userSelect: 'none' }}
-                  onClick={() => handleSortToggle('modifiedAt')}
-                  title="Click to sort by Modified Date"
-                >
-                  LAST MODIFIED {renderSortIndicator('modifiedAt')}
-                </th>
+
                 <th className="actions-column text-center" style={{ width: '180px', textAlign: 'center' }}>ACTIONS</th>
               </tr>
             </thead>
@@ -493,7 +479,7 @@ export default function TagManagement() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={3}>
                     <div className="loading-state">
                       <span className="large-spinner" />
                       <span>Loading tags...</span>
@@ -502,7 +488,7 @@ export default function TagManagement() {
                 </tr>
               ) : tags.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={3}>
                     <div className="empty-state">
                       <div className="empty-icon">#</div>
 
@@ -561,33 +547,7 @@ export default function TagManagement() {
                       </div>
                     </td>
 
-                    <td>
-                      <div className="date-cell">
-                        <strong>
-                          {formatDate(tag.createdAt)}
-                        </strong>
 
-                        {tag.createdByName && (
-                          <span>
-                            by {tag.createdByName}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    <td>
-                      <div className="date-cell">
-                        <strong>
-                          {formatDate(tag.modifiedAt)}
-                        </strong>
-
-                        {tag.modifiedByName && (
-                          <span>
-                            by {tag.modifiedByName}
-                          </span>
-                        )}
-                      </div>
-                    </td>
 
                     <td className="text-center" style={{ textAlign: 'center' }}>
                       <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>

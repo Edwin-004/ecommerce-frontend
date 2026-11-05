@@ -17,12 +17,22 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  const isRefund =
+    notification.type === 'REFUND_REQUEST' ||
+    notification.type?.toUpperCase().includes('REFUND') ||
+    notification.title?.toLowerCase().includes('refund') ||
+    notification.link?.includes('/admin/refunds');
+
   const handleClick = () => {
     if (onRead && notification.notificationId) {
       onRead(notification.notificationId);
     }
     onClose();
-    navigate(notification.link || '/admin/refunds');
+    if (isRefund) {
+      navigate('/admin/refunds');
+    } else if (notification.link && notification.link !== '/admin/refunds') {
+      navigate(notification.link);
+    }
   };
 
   return (
@@ -34,14 +44,25 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
         </div>
         <div className={styles.toastTextWrapper}>
           <div className={styles.toastHeaderRow}>
-            <span className={styles.toastBadge}>STOREFRONT EVENT</span>
+            <span className={styles.toastBadge}>{isRefund ? 'REFUND REQUEST' : (notification.type || 'EVENT')}</span>
             <span className={styles.toastTime}>Just now</span>
           </div>
           <h4 className={styles.toastTitle}>{notification.title}</h4>
           <p className={styles.toastMessage}>{notification.message}</p>
           <div className={styles.toastActionPrompt}>
-            <span>Click to review request</span>
-            <FiArrowRight size={13} />
+            {isRefund ? (
+              <>
+                <span>Click to review request in Refunds</span>
+                <FiArrowRight size={13} />
+              </>
+            ) : notification.link ? (
+              <>
+                <span>Click to view details</span>
+                <FiArrowRight size={13} />
+              </>
+            ) : (
+              <span>Notification received</span>
+            )}
           </div>
         </div>
         <button
