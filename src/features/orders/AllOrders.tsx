@@ -7,16 +7,12 @@ import {
   useCreateShipmentMutation,
   useUpdateOrderStatusMutation,
   useGetOrderStatusHistoryQuery,
-} from './orderApi'; // RTK Query မှ Hook ကို Import လုပ်ခြင်း
+} from './orderApi';
 import styles from './AllOrders.module.css';
 import { DatePicker } from '../../components/common/DatePicker';
 import { formatDate, formatDateTime } from '../../utils/dateUtils';
 import { useEffect, useState, useRef } from 'react';
-import {
-  FiChevronLeft,
-  FiChevronRight,
-  FiSearch,
-} from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import { useSearchParams } from 'react-router-dom';
 
@@ -33,7 +29,7 @@ export const AllOrders = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const paramPage = Number(searchParams.get('page')) || 0;
-  const paramStatus = searchParams.get('status') || 'PENDING';
+  const paramStatus = searchParams.get('status') || 'PAID'; // Default PAID
   const paramSearch = searchParams.get('search') || '';
   const paramStart = searchParams.get('start') || '';
   const paramEnd = searchParams.get('end') || '';
@@ -44,7 +40,9 @@ export const AllOrders = () => {
   const [endDate, setEndDateState] = useState<string>(paramEnd);
   const [statusFilter, setStatusFilterState] = useState<string>(paramStatus);
   const [searchTerm, setSearchTermState] = useState<string>(paramSearch);
-  const [selectedOrderNo, setSelectedOrderNoState] = useState<string | null>(paramOrderNo);
+  const [selectedOrderNo, setSelectedOrderNoState] = useState<string | null>(
+    paramOrderNo
+  );
 
   const updateOrderQueryParams = (updates: {
     page?: number;
@@ -55,19 +53,28 @@ export const AllOrders = () => {
     orderNo?: string | null;
   }) => {
     const next = new URLSearchParams(searchParams);
-    const nextStatus = updates.status !== undefined ? updates.status : statusFilter;
-    const nextSearch = updates.search !== undefined ? updates.search : searchTerm;
+    const nextStatus =
+      updates.status !== undefined ? updates.status : statusFilter;
+    const nextSearch =
+      updates.search !== undefined ? updates.search : searchTerm;
     const nextStart = updates.start !== undefined ? updates.start : startDate;
     const nextEnd = updates.end !== undefined ? updates.end : endDate;
     const nextPage = updates.page !== undefined ? updates.page : 0;
-    const nextOrderNo = updates.orderNo !== undefined ? updates.orderNo : selectedOrderNo;
+    const nextOrderNo =
+      updates.orderNo !== undefined ? updates.orderNo : selectedOrderNo;
 
-    if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus); else next.delete('status');
-    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
-    if (nextStart) next.set('start', nextStart); else next.delete('start');
-    if (nextEnd) next.set('end', nextEnd); else next.delete('end');
-    if (nextPage > 0) next.set('page', String(nextPage)); else next.delete('page');
-    if (nextOrderNo) next.set('orderNo', nextOrderNo); else next.delete('orderNo');
+    if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus);
+    else next.delete('status');
+    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim());
+    else next.delete('search');
+    if (nextStart) next.set('start', nextStart);
+    else next.delete('start');
+    if (nextEnd) next.set('end', nextEnd);
+    else next.delete('end');
+    if (nextPage > 0) next.set('page', String(nextPage));
+    else next.delete('page');
+    if (nextOrderNo) next.set('orderNo', nextOrderNo);
+    else next.delete('orderNo');
 
     setSearchParams(next, { replace: true });
   };
@@ -107,22 +114,13 @@ export const AllOrders = () => {
   };
 
   useEffect(() => {
-    setStatusFilterState(searchParams.get('status') || 'PENDING');
+    setStatusFilterState(searchParams.get('status') || 'PAID');
     setSearchTermState(searchParams.get('search') || '');
     setStartDateState(searchParams.get('start') || '');
     setEndDateState(searchParams.get('end') || '');
     setCurrentPageState(Number(searchParams.get('page')) || 0);
     setSelectedOrderNoState(searchParams.get('orderNo') || null);
   }, [searchParams]);
-
-
-
-
-
-  // ➕ ထည့်ရမည့်အပိုင်း (Filter ပြောင်းတိုင်း Page 0 သို့ ပြန်သွားရန်)
-  useEffect(() => {
-    setCurrentPage(0);
-  }, [statusFilter, searchTerm, startDate, endDate]);
 
   const pageSize = 10;
 
@@ -134,10 +132,9 @@ export const AllOrders = () => {
     startDate: startDate,
     endDate: endDate,
   });
-  // data ထဲတွင် ယခုအခါ data.content အဖြစ် ပြောင်းသွားပါမည်
+
   const orders = data?.content || [];
   const totalPages = data?.totalPages || 0;
-
 
   const { data: paymentInfo, isLoading: LoadingPaymentInfo } =
     useGetPaymentByOrderNoQuery(selectedOrderNo || '', {
@@ -148,7 +145,6 @@ export const AllOrders = () => {
       skip: !selectedOrderNo,
     });
 
-  // Dynamic Export State
   const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>(
     ORDER_EXPORT_COLUMNS.map((c) => c.key)
   );
@@ -164,7 +160,6 @@ export const AllOrders = () => {
   const columnDropdownRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -269,7 +264,7 @@ export const AllOrders = () => {
 
   const { data: statusHistory = [], isLoading: isLoadingHistory } =
     useGetOrderStatusHistoryQuery(selectedOrderNo || '', {
-      skip: !selectedOrderNo, // ရွေးထားတဲ့ OrderNo မရှိရင် API မခေါ်ပါ
+      skip: !selectedOrderNo,
     });
 
   const getCourierPrefix = (name: string) => {
@@ -288,24 +283,26 @@ export const AllOrders = () => {
         return 'TRK';
     }
   };
+
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [showShipmentModal, setShowShipmentModal] = useState<boolean>(false);
-  const [courierName, setCourierName] = useState<string>(''); // Default Enum
+  const [courierName, setCourierName] = useState<string>('');
   const [trackingNumber, setTrackingNumber] = useState<string>('');
-  // const [courierList, setCourierList] = useState<string[]>([]);
   const { data: courierList = [] } = useGetCouriersQuery();
   const [createShipment, { isLoading: isCreatingShipment }] =
     useCreateShipmentMutation();
   const [updateOrderStatusApi, { isLoading: isUpdatingStatus }] =
     useUpdateOrderStatusMutation();
+
   const isUpdating = isCreatingShipment || isUpdatingStatus;
+
   const VALID_TRANSITIONS: Record<string, string[]> = {
     PENDING: ['PAID'],
     PAID: ['PROCESSING'],
     PROCESSING: ['SHIPPED'],
     SHIPPED: ['DELIVERED'],
-    DELIVERED: [], // ဘယ်မှ ထပ်သွားခွင့်မရှိပါ
-    CANCELLED: [], // ဘယ်မှ ထပ်သွားခွင့်မရှိပါ
+    DELIVERED: [],
+    CANCELLED: [],
   };
 
   const ALL_STATUS_OPTIONS = [
@@ -322,19 +319,17 @@ export const AllOrders = () => {
 
   const handleUpdateClick = () => {
     if (selectedStatus === 'SHIPPED') {
-      setShowShipmentModal(true); // Modal ကို ဖွင့်ပါ
+      setShowShipmentModal(true);
     } else {
-      handleStatusUpdate(); // မူလအတိုင်း တန်းပြီး Status ပြောင်းပါ
+      handleStatusUpdate();
     }
   };
 
   useEffect(() => {
-    // Modal ပွင့်နေပြီး Courier လည်း ရွေးထားမယ်၊ Order No လည်း ရှိနေမယ်ဆိုရင်
     if (showShipmentModal && courierName && selectedOrderNo) {
       const prefix = getCourierPrefix(courierName);
       const randomDigits = Math.floor(1000 + Math.random() * 9000);
       const formattedOrderNo = selectedOrderNo.replace(/_/g, '-');
-
       setTrackingNumber(`${prefix}-${formattedOrderNo}-${randomDigits}`);
     } else {
       setTrackingNumber('');
@@ -347,7 +342,6 @@ export const AllOrders = () => {
     }
   }, [courierList, courierName]);
 
-  // J_AND_T ကဲ့သို့သော Enum String များကို J&T Express ဟု ဖတ်လွယ်အောင် ပြောင်းပေးမည့် Helper
   const formatCourierName = (name: string) => {
     if (name === 'J_AND_T') return 'J&T Express';
     if (name === 'NINJAVAN') return 'Ninjavan';
@@ -368,32 +362,27 @@ export const AllOrders = () => {
 
   const handleStatusUpdate = async () => {
     if (!selectedOrderNo) return;
-
     try {
       if (selectedStatus === 'SHIPPED') {
-        // Shipment API ခေါ်ခြင်း (POST)
         await createShipment({
           orderNo: selectedOrderNo,
           courierName,
           trackingNumber,
         }).unwrap();
       } else {
-        // ရိုးရိုး Status ပြောင်းသည့် API ခေါ်ခြင်း (PATCH)
         await updateOrderStatusApi({
           orderNo: selectedOrderNo,
           newStatus: selectedStatus,
         }).unwrap();
       }
-
       setShowShipmentModal(false);
       setTrackingNumber('');
+      toast.success('Order status updated successfully.');
     } catch (error) {
-      console.log('Error updating status:', error);
-      toast.error('Please fill in all required fields.');
+      toast.error('Failed to update order status. Please try again.');
     }
   };
 
-  // Status ပေါ်မူတည်၍ အရောင်ရွေးပေးမည့် Helper Method
   const getStatusBadgeClass = (status: string) => {
     switch (status.toUpperCase()) {
       case 'PENDING':
@@ -410,7 +399,7 @@ export const AllOrders = () => {
         return '';
     }
   };
-  // variantAttributes String (eg: "{"Size": "L"}") ကို ပြေပြစ်စွာပြသရန် Helper
+
   const formatAttributes = (attrString: string) => {
     try {
       const parsed = JSON.parse(attrString);
@@ -470,7 +459,12 @@ export const AllOrders = () => {
               onChange={(e) => setStartDate(e.target.value)}
               title="Start Date"
               style={{ width: '135px' }}
-              inputStyle={{ border: 'none', padding: '4px 22px 4px 0', fontSize: '12px', background: 'transparent' }}
+              inputStyle={{
+                border: 'none',
+                padding: '4px 22px 4px 0',
+                fontSize: '12px',
+                background: 'transparent',
+              }}
             />
             <span className={styles.dateSeparator}>-</span>
             <DatePicker
@@ -479,7 +473,12 @@ export const AllOrders = () => {
               title="End Date"
               align="right"
               style={{ width: '135px' }}
-              inputStyle={{ border: 'none', padding: '4px 22px 4px 0', fontSize: '12px', background: 'transparent' }}
+              inputStyle={{
+                border: 'none',
+                padding: '4px 22px 4px 0',
+                fontSize: '12px',
+                background: 'transparent',
+              }}
             />
           </div>
         </div>
@@ -503,7 +502,6 @@ export const AllOrders = () => {
             />
           </div>
 
-          {/* Dynamic Column Selector Popover */}
           <div
             className={styles.columnSelectorContainer}
             ref={columnDropdownRef}
@@ -532,7 +530,6 @@ export const AllOrders = () => {
                     Select All
                   </button>
                 </div>
-
                 <div className={styles.columnCheckboxList}>
                   {ORDER_EXPORT_COLUMNS.map((col) => (
                     <label key={col.key} className={styles.columnCheckboxLabel}>
@@ -549,14 +546,12 @@ export const AllOrders = () => {
             )}
           </div>
 
-          {/* Export Dropdown Menu (PDF & Excel Only) */}
           <div className={styles.exportDropdownContainer} ref={exportMenuRef}>
             <button
               type="button"
               className={`${styles.btnExportDropdown} ${exportingFormat ? styles.btnExporting : ''}`}
               onClick={() => setShowExportMenu((prev) => !prev)}
               disabled={!!exportingFormat}
-              title="Export filtered orders as PDF or Excel"
             >
               {exportingFormat ? (
                 <>
@@ -578,7 +573,6 @@ export const AllOrders = () => {
             {showExportMenu && !exportingFormat && (
               <div className={styles.exportDropdownMenu}>
                 <div className={styles.exportDropdownHeader}>Export As</div>
-
                 <button
                   type="button"
                   className={styles.exportMenuItem}
@@ -597,7 +591,6 @@ export const AllOrders = () => {
                     <span className={styles.exportMenuSub}>.xlsx format</span>
                   </div>
                 </button>
-
                 <button
                   type="button"
                   className={styles.exportMenuItem}
@@ -623,12 +616,18 @@ export const AllOrders = () => {
       </div>
 
       {!selectedOrderNo ? (
-        /* ==================== View ၁။ Table View (ဘာမှမရွေးထားချိန်) ==================== */
         <div className={styles.tableContainer}>
-          <table className={`${styles.orderTable} ${orders.length > 0 ? 'table-with-data' : 'table-empty'}`}>
+          <table
+            className={`${styles.orderTable} ${orders.length > 0 ? 'table-with-data' : 'table-empty'}`}
+          >
             <thead>
               <tr>
-                <th className="text-center" style={{ width: '60px', textAlign: 'center' }}>No.</th>
+                <th
+                  className="text-center"
+                  style={{ width: '60px', textAlign: 'center' }}
+                >
+                  No.
+                </th>
                 <th>Order No</th>
                 <th>Date</th>
                 <th>Customer</th>
@@ -647,7 +646,7 @@ export const AllOrders = () => {
               ) : isError ? (
                 <tr>
                   <td colSpan={7} style={{ textAlign: 'center', color: 'red' }}>
-                    Error fetching orders!
+                    Failed to load orders. Please try again.
                   </td>
                 </tr>
               ) : orders.length === 0 ? (
@@ -659,57 +658,62 @@ export const AllOrders = () => {
                 </tr>
               ) : (
                 orders.map((order: any, index: number) => {
-                  const rowNumber = (currentPage - 1) * pageSize + index + 1;
+                  const rowNumber = currentPage * pageSize + index + 1;
                   return (
-                  <tr
-                    key={order.orderId}
-                    onClick={() => setSelectedOrderNo(order.orderNo)}
-                    className={styles.tableRow}
-                  >
-                    <td className="text-center" style={{ fontWeight: 600, color: '#64748b', textAlign: 'center' }}>{rowNumber}</td>
-                    <td style={{ fontWeight: 'bold' }}>{order.orderNo}</td>
-                    <td>{formatDate(order.createdAt)}</td>
-                    <td>{order.customerName}</td>
-                    <td>{order.totalAmount?.toLocaleString()} MMK</td>
-                    <td>
-                      <span
-                        className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}
+                    <tr
+                      key={order.orderId}
+                      onClick={() => setSelectedOrderNo(order.orderNo)}
+                      className={styles.tableRow}
+                    >
+                      <td
+                        className="text-center"
+                        style={{
+                          fontWeight: 600,
+                          color: '#64748b',
+                          textAlign: 'center',
+                        }}
                       >
-                        {order.orderStatus === 'DELIVERED' && (
-                          <span className={styles.statusDot}>✔</span>
-                        )}
-                        {/* {order.orderStatus === 'PENDING' && (
-                          <span className={styles.statusDot}>⏳</span>
-                        )} */}
-                        {order.orderStatus === 'SHIPPED' && (
-                          <span className={styles.statusDot}>🚚</span>
-                        )}
-                        {order.orderStatus === 'PROCESSING' && (
-                          <span className={styles.statusDot}>⚙</span>
-                        )}
-                        {order.orderStatus === 'CANCELLED' && (
-                          <span className={styles.statusDot}>✖</span>
-                        )}
-                        <span>{order.orderStatus}</span>
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`${styles.paymentBadge} ${order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID' ? styles.paymentSuccess : order.paymentStatus === 'REFUNDED' || order.paymentStatus === 'PARTIALLY_REFUNDED' ? styles.paymentRefunded : styles.paymentPending}`}
-                      >
-                        {(order.paymentStatus === 'SUCCESS' ||
-                          order.paymentStatus === 'PAID') &&
-                          '✔ '}
-                        {order.paymentStatus}
-                      </span>
-                    </td>
-                  </tr>
+                        {rowNumber}
+                      </td>
+                      <td style={{ fontWeight: 'bold' }}>{order.orderNo}</td>
+                      <td>{formatDate(order.createdAt)}</td>
+                      <td>{order.customerName}</td>
+                      <td>{order.totalAmount?.toLocaleString()} MMK</td>
+                      <td>
+                        <span
+                          className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}
+                        >
+                          {order.orderStatus === 'DELIVERED' && (
+                            <span className={styles.statusDot}>✔</span>
+                          )}
+                          {order.orderStatus === 'SHIPPED' && (
+                            <span className={styles.statusDot}>🚚</span>
+                          )}
+                          {order.orderStatus === 'PROCESSING' && (
+                            <span className={styles.statusDot}>⚙</span>
+                          )}
+                          {order.orderStatus === 'CANCELLED' && (
+                            <span className={styles.statusDot}>✖</span>
+                          )}
+                          <span>{order.orderStatus}</span>
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={`${styles.paymentBadge} ${order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID' ? styles.paymentSuccess : order.paymentStatus === 'REFUNDED' || order.paymentStatus === 'PARTIALLY_REFUNDED' ? styles.paymentRefunded : styles.paymentPending}`}
+                        >
+                          {(order.paymentStatus === 'SUCCESS' ||
+                            order.paymentStatus === 'PAID') &&
+                            '✔ '}
+                          {order.paymentStatus}
+                        </span>
+                      </td>
+                    </tr>
                   );
                 })
               )}
             </tbody>
           </table>
-          {/* ================= Pagination Controls (အသစ်ထပ်တိုးရန်) ================= */}
           {orders.length > 0 && totalPages > 0 && (
             <div className={styles.paginationContainer}>
               <span className={styles.pageInfoText}>
@@ -717,9 +721,7 @@ export const AllOrders = () => {
               </span>
               <div className={styles.paginationControls}>
                 <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 0))
-                  }
+                  onClick={() => setCurrentPage(Math.max(currentPage - 1, 0))}
                   disabled={currentPage === 0}
                   className={styles.paginationBtn}
                 >
@@ -727,7 +729,7 @@ export const AllOrders = () => {
                 </button>
                 <button
                   onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))
+                    setCurrentPage(Math.min(currentPage + 1, totalPages - 1))
                   }
                   disabled={data?.last || currentPage === totalPages - 1}
                   className={styles.paginationBtn}
@@ -739,9 +741,7 @@ export const AllOrders = () => {
           )}
         </div>
       ) : (
-        /* ==================== View ၂။ Split View (ရွေးချယ်ထားချိန်) ==================== */
         <div className={styles.splitContainer}>
-          {/* ဘယ်ဘက်ခြမ်း: List View */}
           <div className={styles.listContainer}>
             {orders.map((order: any) => (
               <div
@@ -758,12 +758,13 @@ export const AllOrders = () => {
                   </span>
                 </div>
                 <div className={styles.listSubtext}>
-                  {order.orderNo} • {formatDate(order.createdAt)}
+                  {order.orderNo} | {formatDate(order.createdAt)}
                 </div>
                 <div>
                   Order Status :
                   <span
                     className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}
+                    style={{ marginLeft: '8px' }}
                   >
                     {order.orderStatus}
                   </span>
@@ -772,21 +773,24 @@ export const AllOrders = () => {
             ))}
           </div>
 
-          {/* ညာဘက်ခြမ်း: Detail View */}
           <div className={styles.detailContainer}>
             {loadingDetails ? (
               <p>Loading details...</p>
             ) : orderDetails ? (
               <div>
-                <div className={styles.detailHeader} style={{ justifyContent: 'flex-start', gap: '14px' }}>
-                  <BackButton onClick={() => setSelectedOrderNo(null)} label="Back" />
-                  {/* Order Details Header */}
-                  <h3 style={{ margin: 0 }}>Order Details: #{orderDetails.orderNo}</h3>
+                <div
+                  className={styles.detailHeader}
+                  style={{ justifyContent: 'flex-start', gap: '14px' }}
+                >
+                  <BackButton
+                    onClick={() => setSelectedOrderNo(null)}
+                    label="Back"
+                  />
+                  <h3 style={{ margin: 0 }}>
+                    Order Details: #{orderDetails.orderNo}
+                  </h3>
                 </div>
-
-                {/* --- ဒီနေရာမှစ၍ OrderManagement ၏ Card UI ဖြင့် အစားထိုးထားသည် --- */}
                 <div className={styles.detailGrid}>
-                  {/* Information View (Customer + Items) */}
                   <div>
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Customer Information</h3>
@@ -813,7 +817,6 @@ export const AllOrders = () => {
                         {formatDateTime(orderDetails.createdAt)}
                       </p>
                     </div>
-
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Ordered Items</h3>
                       <table className={styles.itemTable}>
@@ -831,6 +834,7 @@ export const AllOrders = () => {
                                 {item.productName}
                                 {item.variantAttributes && (
                                   <span className={styles.variantText}>
+                                    {' '}
                                     ({formatAttributes(item.variantAttributes)})
                                   </span>
                                 )}
@@ -850,10 +854,8 @@ export const AllOrders = () => {
                         </h4>
                       </div>
                     </div>
-
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Status History</h3>
-
                       {isLoadingHistory ? (
                         <p className={styles.loadingText}>Loading history...</p>
                       ) : statusHistory.length > 0 ? (
@@ -902,8 +904,6 @@ export const AllOrders = () => {
                       )}
                     </div>
                   </div>
-
-                  {/* Action View (Update Status) */}
                   <div className={styles.actionColumn}>
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Order Action</h3>
@@ -915,7 +915,6 @@ export const AllOrders = () => {
                           {orderDetails.orderStatus}
                         </span>
                       </p>
-
                       <div className={styles.statusUpdateBox}>
                         <select
                           value={selectedStatus}
@@ -923,12 +922,9 @@ export const AllOrders = () => {
                           className={styles.statusSelect}
                           disabled={allowedNextStatuses.length === 0}
                         >
-                          {/* လက်ရှိ Status ကို အမြဲတမ်း Default အနေနဲ့ ပြထားပေးမည် */}
                           <option value={currentOrderStatus}>
                             {currentOrderStatus}
                           </option>
-
-                          {/* သွားခွင့်ရှိတဲ့ Status များကိုသာ Option အဖြစ် Filter ထုတ်ပြီး ပြမည် */}
                           {ALL_STATUS_OPTIONS.filter((status) =>
                             allowedNextStatuses.includes(status)
                           ).map((status) => (
@@ -937,7 +933,6 @@ export const AllOrders = () => {
                             </option>
                           ))}
                         </select>
-
                         <button
                           onClick={handleUpdateClick}
                           className={styles.updateBtn}
@@ -951,7 +946,7 @@ export const AllOrders = () => {
                         </button>
                       </div>
                     </div>
-                    {/* ၂။ Payment Information Card*/}
+
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Payment Information</h3>
                       {LoadingPaymentInfo ? (
@@ -974,14 +969,12 @@ export const AllOrders = () => {
                               {paymentInfo.paymentStatus || 'N/A'}
                             </strong>
                           </div>
-
                           <div className={styles.paymentRow}>
                             <span className={styles.paymentLabel}>Method:</span>
                             <strong className={styles.paymentValue}>
                               {paymentInfo.paymentMethod || 'N/A'}
                             </strong>
                           </div>
-
                           <div className={styles.paymentRow}>
                             <span className={styles.paymentLabel}>
                               Txn Ref:
@@ -990,26 +983,28 @@ export const AllOrders = () => {
                               {paymentInfo.transactionRef || 'N/A'}
                             </strong>
                           </div>
-
                           <div className={styles.paymentRow}>
                             <span className={styles.paymentLabel}>
                               Paid At:
                             </span>
                             <strong className={styles.paymentValue}>
-                              {paymentInfo.paidAt ? formatDateTime(paymentInfo.paidAt) : '-'}
+                              {paymentInfo.paidAt
+                                ? formatDateTime(paymentInfo.paidAt)
+                                : '-'}
                             </strong>
                           </div>
                         </div>
                       ) : (
-                        <p style={{ fontSize: '14px', color: '#999' }}>
+                        <p
+                          style={{ fontSize: '14px', color: '#999', margin: 0 }}
+                        >
                           Payment data not found.
                         </p>
                       )}
                     </div>
-                    {/* ၃။ Shipment Information Card */}
+
                     <div className={styles.card}>
                       <h3 className={styles.cardTitle}>Shipment Information</h3>
-
                       {orderDetails.shipment ? (
                         <div>
                           <div className={styles.paymentRow}>
@@ -1022,7 +1017,6 @@ export const AllOrders = () => {
                               )}
                             </strong>
                           </div>
-
                           <div className={styles.paymentRow}>
                             <span className={styles.paymentLabel}>
                               Tracking:
@@ -1034,13 +1028,16 @@ export const AllOrders = () => {
                               {orderDetails.shipment.trackingNumber || 'N/A'}
                             </strong>
                           </div>
-
                           <div className={styles.paymentRow}>
                             <span className={styles.paymentLabel}>
                               Shipped At:
                             </span>
                             <strong className={styles.paymentValue}>
-                              {orderDetails.shipment.shippedAt ? formatDateTime(orderDetails.shipment.shippedAt) : '-'}
+                              {orderDetails.shipment.shippedAt
+                                ? formatDateTime(
+                                    orderDetails.shipment.shippedAt
+                                  )
+                                : '-'}
                             </strong>
                           </div>
                         </div>
@@ -1056,18 +1053,16 @@ export const AllOrders = () => {
                 </div>
               </div>
             ) : (
-              <p>Order Data မရှိပါ။</p>
+              <p>Order data not found.</p>
             )}
           </div>
         </div>
       )}
 
-      {/* ==================== Shipment Modal ==================== */}
       {showShipmentModal && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalContent}>
             <h3 className={styles.modalHeaderTitle}>Create Shipment</h3>
-
             <div className={styles.formGroup}>
               <label className={styles.inputLabel}>Courier Service:</label>
               <select
@@ -1075,7 +1070,6 @@ export const AllOrders = () => {
                 onChange={(e) => setCourierName(e.target.value)}
                 className={styles.formControl}
               >
-                {/* Backend မှ ရလာသော Courier List ကို Dynamic Map ထုတ်ခြင်း */}
                 {courierList.length > 0 ? (
                   courierList.map((courier) => (
                     <option key={courier} value={courier}>
@@ -1087,7 +1081,6 @@ export const AllOrders = () => {
                 )}
               </select>
             </div>
-
             <div className={styles.formGroupLast}>
               <label className={styles.inputLabel}>Tracking Number:</label>
               <input
@@ -1098,7 +1091,6 @@ export const AllOrders = () => {
                 className={styles.formControl}
               />
             </div>
-
             <div className={styles.modalFooter}>
               <button
                 onClick={() => setShowShipmentModal(false)}
