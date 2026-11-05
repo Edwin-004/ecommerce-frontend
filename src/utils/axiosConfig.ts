@@ -28,6 +28,17 @@ api.interceptors.request.use(
 
 const handleAuthError = (error: any) => {
     if (error.response && error.response.status === 401) {
+        const errorData = error.response.data;
+        let message = 'Your session has expired. Please log in again.';
+
+        if (errorData?.error === 'SESSION_TERMINATED' || (errorData?.message && errorData.message.includes('another session'))) {
+            message = '⚠️ သင့်အကောင့်အား အခြားနေရာ (Device သို့မဟုတ် Tab) မှ Login ဝင်ရောက်သွားပါသဖြင့် ဤ Session ကို အလိုအလျောက် ပိတ်လိုက်ပါသည် (Your session expired because of a new login from another session).';
+        } else if (errorData?.message) {
+            message = errorData.message;
+        }
+
+        sessionStorage.setItem('auth_expired_message', message);
+
         store.dispatch(logout());
         localStorage.removeItem('token');
         localStorage.removeItem('username');
