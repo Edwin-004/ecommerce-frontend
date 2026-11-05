@@ -63,7 +63,8 @@ export async function apiFetch<T>(
       localStorage.removeItem('role');
       localStorage.removeItem('permissions');
       if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+        const currentPath = window.location.pathname + window.location.search;
+        window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
       }
     }
 

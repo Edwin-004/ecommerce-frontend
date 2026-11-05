@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   FiDownload, 
   FiBarChart2, 
@@ -50,7 +51,17 @@ export const ReportsPage = () => {
   const [formatLowStock, setFormatLowStock] = useState('pdf');
   
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isMomModalOpen, setIsMomModalOpen] = useState(false);
+
+  useEffect(() => {
+    const modalParam = searchParams.get('modal');
+    const yearParam = Number(searchParams.get('year'));
+    if (modalParam === 'mom') {
+      setIsMomModalOpen(true);
+      if (yearParam && yearParam >= 2020) setMomYear(yearParam);
+    }
+  }, [searchParams]);
   const [momYear, setMomYear] = useState<number>(2026);
   const [downloadingFormat, setDownloadingFormat] = useState<string>('pdf');
   const [downloadTitle, setDownloadTitle] = useState<string>('');

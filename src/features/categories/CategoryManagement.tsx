@@ -1,7 +1,7 @@
 import { BackButton } from '../../components/common/BackButton';
 
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiLayers,
   FiFolder,
@@ -25,7 +25,21 @@ import styles from "./CategoryManagement.module.css";
 export const CategoryManagement: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<"flat" | "tree">("flat");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = searchParams.get("view") === "tree" ? "tree" : "flat";
+  const [viewMode, setViewModeState] = useState<"flat" | "tree">(initialView);
+
+  const setViewMode = (mode: "flat" | "tree") => {
+    setViewModeState(mode);
+    const next = new URLSearchParams(searchParams);
+    if (mode === "tree") next.set("view", "tree"); else next.delete("view");
+    setSearchParams(next, { replace: true });
+  };
+
+  useEffect(() => {
+    const mode = searchParams.get("view") === "tree" ? "tree" : "flat";
+    setViewModeState(mode);
+  }, [searchParams]);
 
   const [categories, setCategories] = useState<CategoryResponseDto[]>([]);
   const [treeCategories, setTreeCategories] = useState<CategoryResponseDto[]>([]);

@@ -1,5 +1,6 @@
 
 import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import {
   type Brand,
@@ -89,14 +90,56 @@ export function BrandsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
 
   // Pagination
-  const [page, setPage] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramPage = Number(searchParams.get('page')) || 0;
+  const paramStatus = (searchParams.get('status') as BrandStatus | 'ALL') || 'ALL';
+  const paramSearch = searchParams.get('search') || '';
+
+  const [page, setPageState] = useState(paramPage);
+  const [search, setSearchState] = useState(paramSearch);
+  const [status, setStatusState] = useState<BrandStatus | 'ALL'>(paramStatus);
+
+  const updateBrandParams = (updates: { page?: number; status?: BrandStatus | 'ALL'; search?: string }) => {
+    const next = new URLSearchParams(searchParams);
+    const nextStatus = updates.status !== undefined ? updates.status : status;
+    const nextSearch = updates.search !== undefined ? updates.search : search;
+    const nextPage = updates.page !== undefined ? updates.page : 0;
+
+    if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus); else next.delete('status');
+    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
+    if (nextPage > 0) next.set('page', String(nextPage)); else next.delete('page');
+
+    setSearchParams(next, { replace: true });
+  };
+
+  const setPage = (p: number) => {
+    setPageState(p);
+    updateBrandParams({ page: p });
+  };
+
+  const setSearch = (s: string) => {
+    setSearchState(s);
+    updateBrandParams({ search: s, page: 0 });
+  };
+
+  const setStatus = (st: BrandStatus | 'ALL') => {
+    setStatusState(st);
+    updateBrandParams({ status: st, page: 0 });
+  };
+
+  useEffect(() => {
+    setStatusState((searchParams.get('status') as BrandStatus | 'ALL') || 'ALL');
+    setSearchState(searchParams.get('search') || '');
+    setPageState(Number(searchParams.get('page')) || 0);
+  }, [searchParams]);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
   // Search and status
-  const [search, setSearch] = useState('');
+
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [status, setStatus] = useState<BrandStatus | 'ALL'>('ALL');
+
 
   // Dynamic Export Column Selector state
   const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>([
