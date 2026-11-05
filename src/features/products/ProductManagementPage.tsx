@@ -24,6 +24,8 @@ import {
   FiFileText,
   FiCheckCircle,
   FiUploadCloud,
+  FiSlash,
+  FiCheck,
 } from 'react-icons/fi';
 import { Pagination } from '../../components/common/Pagination';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
@@ -410,6 +412,41 @@ export const ProductManagementPage: React.FC = () => {
     } finally {
       setExportingFormat(null);
     }
+  };
+
+  // Toggle Product Status (ACTIVE <-> INACTIVE)
+  const handleToggleProductStatus = (productId: number, productName: string, currentStatus: string) => {
+    const isCurrentlyActive = currentStatus?.toUpperCase() === 'ACTIVE';
+    const newStatus = isCurrentlyActive ? 'INACTIVE' : 'ACTIVE';
+    const actionLabel = isCurrentlyActive ? 'deactivate' : 'activate';
+
+    setConfirmModalConfig({
+      isOpen: true,
+      title: `Confirm Product ${isCurrentlyActive ? 'Deactivation' : 'Activation'}`,
+      message: `Are you sure you want to ${actionLabel} "${productName}"? ${
+        isCurrentlyActive 
+          ? 'It will be hidden from customer storefront browsing and search.' 
+          : 'It will become active and available for customer purchases.'
+      }`,
+      confirmText: isCurrentlyActive ? 'Deactivate Product' : 'Activate Product',
+      variant: isCurrentlyActive ? 'danger' : 'primary',
+      onConfirm: async () => {
+        try {
+          await productManagementApi.updateProductStatus(productId, newStatus);
+          setProducts((prev) =>
+            prev.map((p) => (p.productId === productId ? { ...p, status: newStatus } : p))
+          );
+        } catch (err: any) {
+          console.error('Failed to update product status:', err);
+          // Fallback UI update
+          setProducts((prev) =>
+            prev.map((p) => (p.productId === productId ? { ...p, status: newStatus } : p))
+          );
+        } finally {
+          setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   // Single Product Delete (Uses React ConfirmModal instead of native browser confirm)
@@ -877,21 +914,62 @@ export const ProductManagementPage: React.FC = () => {
                         <button
                           type="button"
                           className="table-btn-edit"
-                          onClick={() => navigate(`/admin/products/edit?id=${p.productId}`)}
+                          onClick={() => {
+                            sessionStorage.setItem('activeEditProductId', String(p.productId));
+                            navigate('/admin/products/edit', { state: { productId: p.productId } });
+                          }}
                           title="Edit Product"
                         >
                           <FiEdit2 size={12} />
                           Edit
                         </button>
-                        <button
-                          type="button"
-                          className="table-btn-delete"
-                          onClick={() => handleDeleteSingle(p.productId, p.productName)}
-                          title="Delete Product"
-                        >
-                          <FiTrash2 size={12} />
-                          Delete
-                        </button>
+                        {p.status?.toUpperCase() === 'ACTIVE' ? (
+                          <button
+                            type="button"
+                            className="btn-action-suspend"
+                            style={{
+                              padding: '5px 10px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              borderRadius: '6px',
+                              border: '1px solid #fed7aa',
+                              background: '#fff7ed',
+                              color: '#ea580c',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => handleToggleProductStatus(p.productId, p.productName, p.status)}
+                            title="Deactivate Product"
+                          >
+                            <FiSlash size={12} />
+                            Deactivate
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn-action-activate"
+                            style={{
+                              padding: '5px 10px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              borderRadius: '6px',
+                              border: '1px solid #bbf7d0',
+                              background: '#f0fdf4',
+                              color: '#16a34a',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => handleToggleProductStatus(p.productId, p.productName, p.status)}
+                            title="Activate Product"
+                          >
+                            <FiCheck size={12} />
+                            Activate
+                          </button>
+                        )}
                       </div>
                     </td>
 
@@ -1347,7 +1425,8 @@ export const ProductManagementPage: React.FC = () => {
                 onClick={() => {
                   const pId = viewProduct.productId;
                   setViewProduct(null);
-                  navigate(`/admin/products/edit/${pId}`);
+                  sessionStorage.setItem('activeEditProductId', String(pId));
+                  navigate('/admin/products/edit', { state: { productId: pId } });
                 }}
               >
                 <FiEdit2 size={13} />

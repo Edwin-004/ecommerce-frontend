@@ -1,7 +1,7 @@
 import { toast } from 'react-toastify';
 import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
 import { DatePicker } from '../../components/common/DatePicker';
 import {
@@ -39,9 +39,19 @@ import {
 export const EditProductPage: React.FC = () => {
   const { id: pathId } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const id = searchParams.get('id') || pathId;
+
+  const stateId = (location.state as any)?.productId || (location.state as any)?.id;
+  const storedId = sessionStorage.getItem('activeEditProductId');
+  const id = stateId || searchParams.get('id') || pathId || storedId;
   const productId = Number(id);
+
+  useEffect(() => {
+    if (productId && !isNaN(productId)) {
+      sessionStorage.setItem('activeEditProductId', String(productId));
+    }
+  }, [productId]);
 
   // Loading & error
   const [loading, setLoading] = useState<boolean>(true);
