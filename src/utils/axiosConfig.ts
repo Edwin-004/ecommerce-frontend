@@ -32,7 +32,7 @@ const handleAuthError = (error: any) => {
         let message = 'Your session has expired. Please log in again.';
 
         if (errorData?.error === 'SESSION_TERMINATED' || (errorData?.message && errorData.message.includes('another session'))) {
-            message = '⚠️ သင့်အကောင့်အား အခြားနေရာ (Device သို့မဟုတ် Tab) မှ Login ဝင်ရောက်သွားပါသဖြင့် ဤ Session ကို အလိုအလျောက် ပိတ်လိုက်ပါသည် (Your session expired because of a new login from another session).';
+            message = 'Your session has expired because a new login occurred from another device or browser tab.';
         } else if (errorData?.message) {
             message = errorData.message;
         }

@@ -269,16 +269,20 @@ export const EditStaff: React.FC = () => {
                             name="status"
                             value={formData.status}
                             onChange={handleChange}
-                            disabled={isEditingRestricted || isCurrentLoggedInUser || isTargetSuperAdmin}
+                            disabled={isEditingRestricted || isCurrentLoggedInUser || isTargetSuperAdmin || (isTargetAdmin && !isCurrentSuperAdmin)}
                         >
                             <option value="ACTIVE">Active</option>
-                            <option value="INACTIVE" disabled={isCurrentLoggedInUser || isTargetSuperAdmin}>
+                            <option value="INACTIVE" disabled={isCurrentLoggedInUser || isTargetSuperAdmin || (isTargetAdmin && !isCurrentSuperAdmin)}>
                                 Inactive (Suspended)
                             </option>
                         </select>
                         {isTargetSuperAdmin ? (
                             <small style={{ color: '#6b7280', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
-                                The Super Administrator account can never be deactivated or suspended.
+                                The primary Super Administrator account cannot be deactivated or suspended.
+                            </small>
+                        ) : (isTargetAdmin && !isCurrentSuperAdmin) ? (
+                            <small style={{ color: '#6b7280', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
+                                Only the primary Super Administrator can change the status of an Administrator.
                             </small>
                         ) : isCurrentLoggedInUser && (
                             <small style={{ color: '#6b7280', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>

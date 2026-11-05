@@ -23,7 +23,7 @@ export const useSingleSessionSync = () => {
         if (!e.newValue) {
           sessionStorage.setItem(
             'auth_expired_message',
-            '⚠️ အခြား Browser Tab တစ်ခုတွင် Logout ပြုလုပ်လိုက်ပါသဖြင့် ဤ Tab ကိုပါ Logout ထွက်လိုက်ပါသည် (Logged out from another tab).'
+            'You have been logged out from another browser tab.'
           );
           dispatch(logout());
           navigate('/login');
@@ -32,7 +32,7 @@ export const useSingleSessionSync = () => {
         else if (e.newValue !== initialTokenRef.current) {
           sessionStorage.setItem(
             'auth_expired_message',
-            '⚠️ အခြား Browser Tab တစ်ခုမှ Login အသစ်ဝင်ရောက်သွားပါသဖြင့် ဤ Session ကို အလိုအလျောက် ပိတ်လိုက်ပါသည် (New login occurred from another tab).'
+            'Your session has expired because a new login occurred in another browser tab.'
           );
           dispatch(logout());
           navigate('/login');

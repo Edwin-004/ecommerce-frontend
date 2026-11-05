@@ -184,7 +184,7 @@ export const ReportsPage = () => {
       // Trigger success feedback or zero-record notice
       if (recordCount === 0) {
         setDownloadSuccess(null);
-        setEmptyDataNotice(`သတိပေးချက်- ရွေးချယ်ထားသော ကာလအတွင်း အချက်အလက် မရှိပါ (Notice: No records found for ${reportTitle}. An empty report template was downloaded.)`);
+        setEmptyDataNotice(`Notice: No records found for ${reportTitle}. An empty report template was downloaded.`);
         setTimeout(() => setEmptyDataNotice(null), 6000);
       } else {
         setEmptyDataNotice(null);

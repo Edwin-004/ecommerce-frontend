@@ -1053,7 +1053,7 @@ export const AllOrders = () => {
                 </div>
               </div>
             ) : (
-              <p>Order data not found.</p>
+              <p>No order data available.</p>
             )}
           </div>
         </div>

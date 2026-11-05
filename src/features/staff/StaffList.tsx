@@ -194,7 +194,7 @@ export const StaffList: React.FC = () => {
     };
 
     const handleEdit = (id: number) => {
-        navigate(`/admin/staff/edit?id=${id}`);
+        navigate(`/admin/staff/edit/${id}`);
     };
 
     const openConfirmModal = (id: number, name: string, status: string, roleName: string, email: string) => {
@@ -210,9 +210,9 @@ export const StaffList: React.FC = () => {
             return;
         }
 
-        // Subordinate Admin cannot suspend fellow Admin
-        if (roleName === 'ADMIN' && !isCurrentSuperAdmin) {
-            alert("Administrator accounts can only be managed by Super Administrator.");
+        // Administrator accounts can only be suspended or deactivated by Super Administrator
+        if (roleName?.toUpperCase() === 'ADMIN' && !isCurrentSuperAdmin) {
+            alert("Only the primary Super Administrator can suspend or deactivate another administrator.");
             return;
         }
 
@@ -461,6 +461,11 @@ export const StaffList: React.FC = () => {
                                                         <span className="action-pill-self" title="Currently logged in as this user">
                                                             <FiUser size={11} />
                                                             <span>You</span>
+                                                        </span>
+                                                    ) : (isAdminRole && !isCurrentSuperAdmin) ? (
+                                                        <span className="action-pill-protected" title="Administrators can only be managed by Super Administrator">
+                                                            <FiShield size={11} />
+                                                            <span>Admin Protected</span>
                                                         </span>
                                                     ) : staff.status === 'ACTIVE' ? (
                                                         <button
