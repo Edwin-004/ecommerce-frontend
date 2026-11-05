@@ -19,7 +19,7 @@ import {
 } from 'react-icons/fi';
 import { AddNewZoneModal } from './AddNewZoneModal';
 import { EditZoneModal } from './EditZoneModal';
-import { BulkEditRateModal } from './BulkEditRateModal'; // BulkEditRateModal ကို Import လုပ်ရန်
+import { BulkEditRateModal } from './BulkEditRateModal';
 import Swal from 'sweetalert2';
 
 export const ShippingRates = () => {
@@ -35,15 +35,24 @@ export const ShippingRates = () => {
   const [searchTerm, setSearchTermState] = useState(paramSearch);
   const [statusFilter, setStatusFilterState] = useState(paramStatus);
 
-  const updateShippingParams = (updates: { page?: number; status?: string; search?: string }) => {
+  const updateShippingParams = (updates: {
+    page?: number;
+    status?: string;
+    search?: string;
+  }) => {
     const next = new URLSearchParams(searchParams);
-    const nextStatus = updates.status !== undefined ? updates.status : statusFilter;
-    const nextSearch = updates.search !== undefined ? updates.search : searchTerm;
+    const nextStatus =
+      updates.status !== undefined ? updates.status : statusFilter;
+    const nextSearch =
+      updates.search !== undefined ? updates.search : searchTerm;
     const nextPage = updates.page !== undefined ? updates.page : 0;
 
-    if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus); else next.delete('status');
-    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
-    if (nextPage > 0) next.set('page', String(nextPage)); else next.delete('page');
+    if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus);
+    else next.delete('status');
+    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim());
+    else next.delete('search');
+    if (nextPage > 0) next.set('page', String(nextPage));
+    else next.delete('page');
 
     setSearchParams(next, { replace: true });
   };
@@ -71,16 +80,11 @@ export const ShippingRates = () => {
     setCurrentPageState(Number(searchParams.get('page')) || 0);
   }, [searchParams]);
 
-
   const pageSize = 10;
 
   const { data: stats } = useGetZoneStatsQuery();
   const [selectedZoneGroups, setSelectedZoneGroups] = useState<any[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-
-  useEffect(() => {
-    // Reset handled by updateShippingParams
-  }, [searchTerm, statusFilter]);
 
   const {
     data: zoneGroupsResponse,
@@ -287,10 +291,17 @@ export const ShippingRates = () => {
       </div>
 
       <div className={styles.tableContainer}>
-        <table className={`${styles.zoneTable} ${displayZoneGroups.length > 0 ? 'table-with-data' : 'table-empty'}`}>
+        <table
+          className={`${styles.zoneTable} ${displayZoneGroups.length > 0 ? 'table-with-data' : 'table-empty'}`}
+        >
           <thead>
             <tr>
-              <th className="w-14 py-3 px-4 text-center text-xs font-medium text-slate-400 uppercase tracking-wider" style={{ textAlign: 'center' }}>No.</th>
+              <th
+                className="text-center"
+                style={{ width: '60px', textAlign: 'center' }}
+              >
+                No.
+              </th>
               <th style={{ width: '40px' }}>
                 <input
                   type="checkbox"
@@ -307,117 +318,196 @@ export const ShippingRates = () => {
               <th>Current Fee</th>
               <th>Est. Days</th>
               <th>Status</th>
-              <th className="text-center" style={{ textAlign: 'center' }}>Actions</th>
+              <th className="text-center" style={{ textAlign: 'center' }}>
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={8} className={styles.stateCell}>
+                <td colSpan={9} className={styles.stateCell}>
                   Loading delivery zones...
                 </td>
               </tr>
             ) : displayZoneGroups.length === 0 ? (
               <tr>
-                <td colSpan={8} className={styles.stateCell}>
+                <td colSpan={9} className={styles.stateCell}>
                   No delivery zones found. Click <strong>"Add New Zone"</strong>{' '}
                   to create one.
                 </td>
               </tr>
             ) : (
-              displayZoneGroups.map((zone, index) => (
-                <tr key={`${zone.zoneName}_${zone.city}`}>
-                  <td className="text-center" style={{ fontWeight: 600, color: '#64748b', textAlign: 'center' }}>{index + 1}</td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedZoneGroups.some(
-                        (zg) =>
-                          zg.zoneName === zone.zoneName && zg.city === zone.city
-                      )}
-                      onChange={(e) => handleSelectZone(zone, e.target.checked)}
-                    />
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 500 }}>{zone.zoneName}</div>
-                    <div className={styles.subText}>{zone.zoneCode}</div>
-                  </td>
-                  <td>
-                    <div style={{ fontWeight: 500 }}>{zone.city}</div>
-                    <div className={styles.subText}>{zone.regionOrState}</div>
-                  </td>
-                  <td>
-                    {zone.isCityDefault ? (
-                      <span className={styles.defaultTownshipBadge}>
-                        All Other Townships (City Default)
-                      </span>
-                    ) : (
-                      <div className={styles.townshipList}>
-                        {zone.townships.map((t: string) => (
-                          <span key={t} className={styles.townshipTag}>
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ fontWeight: 600, color: '#0f172a' }}>
-                    {(zone.shippingFee ?? 0).toLocaleString()} MMK
-                  </td>
-                  <td>
-                    {zone.estimatedDays ? `${zone.estimatedDays} Days` : '-'}
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleStatus(zone)}
+              displayZoneGroups.map((zone, index) => {
+                const rowNumber = currentPage * pageSize + index + 1;
+                return (
+                  <tr key={`${zone.zoneName}_${zone.city}`}>
+                    <td
+                      className="text-center"
                       style={{
-                        border: 'none',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        padding: 0,
+                        fontWeight: 600,
+                        color: '#64748b',
+                        textAlign: 'center',
                       }}
-                      title="Click to toggle status"
                     >
-                      <span
-                        className={`badge-status ${
-                          zone.status === 'ACTIVE'
-                            ? 'badge-status-active'
-                            : 'badge-status-inactive'
-                        }`}
-                      >
-                        {zone.status === 'ACTIVE' ? (
-                          <FiCheckCircle size={12} />
-                        ) : (
-                          <FiXCircle size={12} />
+                      {rowNumber}
+                    </td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedZoneGroups.some(
+                          (zg) =>
+                            zg.zoneName === zone.zoneName &&
+                            zg.city === zone.city
                         )}
-                        {zone.status}
-                      </span>
-                    </button>
-                  </td>
-                  <td className="text-center" style={{ textAlign: 'center' }}>
-                    <div className={styles.actionGroup}>
+                        onChange={(e) =>
+                          handleSelectZone(zone, e.target.checked)
+                        }
+                      />
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 500 }}>{zone.zoneName}</div>
+                      <div className={styles.subText}>{zone.zoneCode}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 500 }}>{zone.city}</div>
+                      <div className={styles.subText}>{zone.regionOrState}</div>
+                    </td>
+                    <td>
+                      {zone.isCityDefault ? (
+                        <span className={styles.defaultTownshipBadge}>
+                          All Other Townships (City Default)
+                        </span>
+                      ) : (
+                        <div className={styles.townshipList}>
+                          {zone.townships.map((t: string) => (
+                            <span key={t} className={styles.townshipTag}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ fontWeight: 600, color: '#0f172a' }}>
+                      {(zone.shippingFee ?? 0).toLocaleString()} MMK
+                    </td>
+                    <td>
+                      {zone.estimatedDays ? `${zone.estimatedDays} Days` : '-'}
+                    </td>
+                    <td>
                       <button
                         type="button"
-                        className="table-btn-edit"
-                        title="Edit Zone & Rates"
-                        onClick={() => setEditingZone(zone)}
+                        onClick={() => handleToggleStatus(zone)}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                        title="Click to toggle status"
                       >
-                        <FiEdit2 size={13} /> Edit Zone & Rates
+                        <span
+                          className={`badge-status ${
+                            zone.status === 'ACTIVE'
+                              ? 'badge-status-active'
+                              : 'badge-status-inactive'
+                          }`}
+                        >
+                          {zone.status === 'ACTIVE' ? (
+                            <FiCheckCircle size={12} />
+                          ) : (
+                            <FiXCircle size={12} />
+                          )}
+                          {zone.status}
+                        </span>
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="text-center" style={{ textAlign: 'center' }}>
+                      <div className={styles.actionGroup}>
+                        <button
+                          type="button"
+                          className="table-btn-edit"
+                          title="Edit Zone & Rates"
+                          onClick={() => setEditingZone(zone)}
+                        >
+                          <FiEdit2 size={13} /> Edit Zone & Rates
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
+
+        {/* ⭐️ ဖြည့်စွက်ထားသော Pagination အပိုင်း ⭐️ */}
+        {zoneGroups.length > 0 && totalPages > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '16px',
+              borderTop: '1px solid #e2e8f0',
+              alignItems: 'center',
+            }}
+          >
+            <span style={{ fontSize: '14px', color: '#64748b' }}>
+              Page {currentPage + 1} of {totalPages}
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setCurrentPage(Math.max(currentPage - 1, 0))}
+                disabled={currentPage === 0}
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '4px',
+                  cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <FiChevronLeft size={15} /> Previous
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentPage(Math.min(currentPage + 1, totalPages - 1))
+                }
+                disabled={
+                  zoneGroupsResponse?.last || currentPage === totalPages - 1
+                }
+                style={{
+                  padding: '6px 12px',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '4px',
+                  cursor:
+                    zoneGroupsResponse?.last || currentPage === totalPages - 1
+                      ? 'not-allowed'
+                      : 'pointer',
+                }}
+              >
+                Next <FiChevronRight size={15} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ⭐️ ဖြည့်စွက်ထားသော BulkEditRateModal အပိုင်း ⭐️ */}
+      <BulkEditRateModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        selectedZones={selectedZoneGroups}
+        onSuccess={() => {
+          setSelectedZoneGroups([]);
+          refetch();
+        }}
+      />
 
       <AddNewZoneModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
+
       {editingZone && (
         <EditZoneModal
           isOpen={!!editingZone}
