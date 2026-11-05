@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FiPackage,
   FiLayers,
@@ -39,17 +39,85 @@ export const VariantsPage: React.FC = () => {
   const [options, setOptions] = useState<VariationOption[]>([]);
   const [products, setProducts] = useState<ProductSummary[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'VARIANTS' | 'VARIATIONS'>('VARIANTS');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProductFilter, setSelectedProductFilter] = useState<string>('ALL');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramTab = (searchParams.get('tab') as 'VARIANTS' | 'VARIATIONS') || 'VARIANTS';
+  const paramSearch = searchParams.get('search') || '';
+  const paramStatus = searchParams.get('status') || 'ALL';
+  const paramProduct = searchParams.get('product') || 'ALL';
+  const paramPage = Number(searchParams.get('page')) || 1;
+
+  const [activeTab, setActiveTabState] = useState<'VARIANTS' | 'VARIATIONS'>(paramTab);
+  const [searchQuery, setSearchQueryState] = useState(paramSearch);
+  const [selectedProductFilter, setSelectedProductFilterState] = useState<string>(paramProduct);
+  const [statusFilter, setStatusFilterState] = useState<string>(paramStatus);
   const [sortBy, setSortBy] = useState<string>('newest');
+
+  const [page, setPageState] = useState(paramPage);
+
+  const updateVariantParams = (updates: { tab?: string; search?: string; status?: string; product?: string; page?: number }) => {
+    const next = new URLSearchParams(searchParams);
+    const nextTab = updates.tab !== undefined ? updates.tab : activeTab;
+    const nextSearch = updates.search !== undefined ? updates.search : searchQuery;
+    const nextStatus = updates.status !== undefined ? updates.status : statusFilter;
+    const nextProduct = updates.product !== undefined ? updates.product : selectedProductFilter;
+    const nextPage = updates.page !== undefined ? updates.page : 1;
+
+    if (nextTab && nextTab !== 'VARIANTS') next.set('tab', nextTab); else next.delete('tab');
+    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
+    if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus); else next.delete('status');
+    if (nextProduct && nextProduct !== 'ALL') next.set('product', nextProduct); else next.delete('product');
+    if (nextPage > 1) next.set('page', String(nextPage)); else next.delete('page');
+
+    setSearchParams(next, { replace: true });
+  };
+
+  const setActiveTab = (t: 'VARIANTS' | 'VARIATIONS') => {
+    setActiveTabState(t);
+    setPageState(1);
+    updateVariantParams({ tab: t, page: 1 });
+  };
+
+  const setSearchQuery = (q: string) => {
+    setSearchQueryState(q);
+    setPageState(1);
+    updateVariantParams({ search: q, page: 1 });
+  };
+
+  const setStatusFilter = (st: string) => {
+    setStatusFilterState(st);
+    setPageState(1);
+    updateVariantParams({ status: st, page: 1 });
+  };
+
+  const setSelectedProductFilter = (p: string) => {
+    setSelectedProductFilterState(p);
+    setPageState(1);
+    updateVariantParams({ product: p, page: 1 });
+  };
+
+  const setPage = (p: number) => {
+    setPageState(p);
+    updateVariantParams({ page: p });
+  };
+
+  useEffect(() => {
+    setActiveTabState((searchParams.get('tab') as 'VARIANTS' | 'VARIATIONS') || 'VARIANTS');
+    setSearchQueryState(searchParams.get('search') || '');
+    setStatusFilterState(searchParams.get('status') || 'ALL');
+    setSelectedProductFilterState(searchParams.get('product') || 'ALL');
+    setPageState(Number(searchParams.get('page')) || 1);
+  }, [searchParams]);
+
+
+
+
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Pagination states
-  const [page, setPage] = useState(1);
+
   const [pageSize, setPageSize] = useState(10);
 
   // Modals state

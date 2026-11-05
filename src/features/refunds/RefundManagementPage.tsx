@@ -1,5 +1,6 @@
 import { BackButton } from '../../components/common/BackButton';
 import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   FiInbox,
   FiSearch,
@@ -58,10 +59,62 @@ export function RefundManagementPage() {
   const [actionLoading, setActionLoading] = useState<boolean>(false);
 
   // Filters
-  const [search, setSearch] = useState<string>('');
-  const [status, setStatus] = useState<RefundStatusFilter>('ALL');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramStatus = (searchParams.get('status') as RefundStatusFilter) || 'ALL';
+  const paramSearch = searchParams.get('search') || '';
+  const paramStart = searchParams.get('start') || '';
+  const paramEnd = searchParams.get('end') || '';
+
+  const [search, setSearchState] = useState<string>(paramSearch);
+  const [status, setStatusState] = useState<RefundStatusFilter>(paramStatus);
+  const [startDate, setStartDateState] = useState<string>(paramStart);
+  const [endDate, setEndDateState] = useState<string>(paramEnd);
+
+  const updateRefundParams = (updates: { status?: RefundStatusFilter; search?: string; start?: string; end?: string }) => {
+    const next = new URLSearchParams(searchParams);
+    const nextStatus = updates.status !== undefined ? updates.status : status;
+    const nextSearch = updates.search !== undefined ? updates.search : search;
+    const nextStart = updates.start !== undefined ? updates.start : startDate;
+    const nextEnd = updates.end !== undefined ? updates.end : endDate;
+
+    if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus); else next.delete('status');
+    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
+    if (nextStart) next.set('start', nextStart); else next.delete('start');
+    if (nextEnd) next.set('end', nextEnd); else next.delete('end');
+
+    setSearchParams(next, { replace: true });
+  };
+
+  const setStatus = (st: RefundStatusFilter) => {
+    setStatusState(st);
+    updateRefundParams({ status: st });
+  };
+
+  const setSearch = (s: string) => {
+    setSearchState(s);
+    updateRefundParams({ search: s });
+  };
+
+  const setStartDate = (d: string) => {
+    setStartDateState(d);
+    updateRefundParams({ start: d });
+  };
+
+  const setEndDate = (d: string) => {
+    setEndDateState(d);
+    updateRefundParams({ end: d });
+  };
+
+  useEffect(() => {
+    setStatusState((searchParams.get('status') as RefundStatusFilter) || 'ALL');
+    setSearchState(searchParams.get('search') || '');
+    setStartDateState(searchParams.get('start') || '');
+    setEndDateState(searchParams.get('end') || '');
+  }, [searchParams]);
+
+
+
 
   // Column Selector state
   const [selectedExportColumns, setSelectedExportColumns] = useState<string[]>([

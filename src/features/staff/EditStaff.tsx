@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BackButton } from '../../components/common/BackButton';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FiEye, FiEyeOff, FiInfo } from 'react-icons/fi';
 import api from '../../utils/axiosConfig';
@@ -8,7 +8,9 @@ import { validatePasswordStrength } from '../../utils/passwordPolicy';
 import './EditStaff.css';
 
 export const EditStaff: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
+    const { id: pathId } = useParams<{ id: string }>();
+    const [searchParams] = useSearchParams();
+    const id = searchParams.get('id') || pathId;
     const navigate = useNavigate();
 
     const currentEmail = localStorage.getItem('email');

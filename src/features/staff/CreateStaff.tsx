@@ -1,6 +1,6 @@
 import { BackButton } from '../../components/common/BackButton';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../../store';
 import { FiEye, FiEyeOff, FiUserPlus, FiShield, FiInfo } from 'react-icons/fi';
@@ -14,11 +14,15 @@ export const CreateStaff: React.FC = () => {
     const isSuperAdmin = currentUser?.email === 'admin@ecommerce.com';
 
     // Option 2: Default password initialized as 'Staff@123' (or 'Admin@123') with custom edit support
+    const [searchParams] = useSearchParams();
+    const queryRole = searchParams.get('role')?.toUpperCase();
+    const initialRole = (queryRole === 'ADMIN' || queryRole === 'INVENTORY_STAFF' || queryRole === 'SALES_STAFF' || queryRole === 'ORDER_STAFF') ? queryRole : 'INVENTORY_STAFF';
+
     const [newStaff, setNewStaff] = useState({
         userName: '',
         email: '',
-        password: 'Staff@123',
-        roleName: 'INVENTORY_STAFF' 
+        password: initialRole === 'ADMIN' ? 'Admin@123' : 'Staff@123',
+        roleName: initialRole 
     });
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);

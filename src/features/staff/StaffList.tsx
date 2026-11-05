@@ -1,6 +1,6 @@
 import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../../store';
 import { FiEdit2, FiSlash, FiCheck, FiFilter, FiShield, FiUser } from 'react-icons/fi';
@@ -25,11 +25,70 @@ export const StaffList: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    const [activeTab, setActiveTab] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
-    const [selectedRole, setSelectedRole] = useState<string>('ALL');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    const [currentPage, setCurrentPage] = useState(1);
+    const paramTab = (searchParams.get('tab') as 'ALL' | 'ACTIVE' | 'INACTIVE') || 'ALL';
+    const paramRole = searchParams.get('role') || 'ALL';
+    const paramSearch = searchParams.get('search') || '';
+    const paramPage = Number(searchParams.get('page')) || 1;
+
+    const [activeTab, setActiveTabState] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>(paramTab);
+    const [selectedRole, setSelectedRoleState] = useState<string>(paramRole);
+    const [searchQuery, setSearchQueryState] = useState(paramSearch);
+    const [currentPage, setCurrentPageState] = useState(paramPage);
+
+    const updateQueryParams = (updates: { tab?: string; role?: string; search?: string; page?: number }) => {
+        const next = new URLSearchParams(searchParams);
+        const nextTab = updates.tab !== undefined ? updates.tab : activeTab;
+        const nextRole = updates.role !== undefined ? updates.role : selectedRole;
+        const nextSearch = updates.search !== undefined ? updates.search : searchQuery;
+        const nextPage = updates.page !== undefined ? updates.page : 1;
+
+        if (nextTab && nextTab !== 'ALL') next.set('tab', nextTab); else next.delete('tab');
+        if (nextRole && nextRole !== 'ALL') next.set('role', nextRole); else next.delete('role');
+        if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
+        if (nextPage > 1) next.set('page', String(nextPage)); else next.delete('page');
+
+        setSearchParams(next, { replace: true });
+    };
+
+    const setActiveTab = (tab: 'ALL' | 'ACTIVE' | 'INACTIVE') => {
+        setActiveTabState(tab);
+        setCurrentPageState(1);
+        updateQueryParams({ tab, page: 1 });
+    };
+
+    const setSelectedRole = (role: string) => {
+        setSelectedRoleState(role);
+        setCurrentPageState(1);
+        updateQueryParams({ role, page: 1 });
+    };
+
+    const setSearchQuery = (query: string) => {
+        setSearchQueryState(query);
+        setCurrentPageState(1);
+        updateQueryParams({ search: query, page: 1 });
+    };
+
+    const setCurrentPage = (page: number) => {
+        setCurrentPageState(page);
+        updateQueryParams({ page });
+    };
+
+    useEffect(() => {
+        const tab = (searchParams.get('tab') as 'ALL' | 'ACTIVE' | 'INACTIVE') || 'ALL';
+        const role = searchParams.get('role') || 'ALL';
+        const search = searchParams.get('search') || '';
+        const page = Number(searchParams.get('page')) || 1;
+        setActiveTabState(tab);
+        setSelectedRoleState(role);
+        setSearchQueryState(search);
+        setCurrentPageState(page);
+    }, [searchParams]);
+
+
+
+
     const itemsPerPage = 8;
 
     const [showModal, setShowModal] = useState(false);
@@ -135,7 +194,7 @@ export const StaffList: React.FC = () => {
     };
 
     const handleEdit = (id: number) => {
-        navigate(`/admin/staff/edit/${id}`);
+        navigate(`/admin/staff/edit?id=${id}`);
     };
 
     const openConfirmModal = (id: number, name: string, status: string, roleName: string, email: string) => {

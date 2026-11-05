@@ -1,6 +1,6 @@
 import { BackButton } from './common/BackButton';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../store';
 import api from '../utils/axiosConfig';
@@ -18,6 +18,18 @@ import {
 
 export const Profile = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const passwordInputRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'password' || searchParams.get('action') === 'change-password') {
+      setTimeout(() => {
+        passwordInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        passwordInputRef.current?.focus();
+      }, 200);
+    }
+  }, [searchParams]);
   const { username, email, role } = useSelector(
     (state: RootState) => state.auth
   );
@@ -247,6 +259,7 @@ export const Profile = () => {
             <div className={styles.passwordInputWrapper}>
               <input
                 type={showCurrentPassword ? 'text' : 'password'}
+                ref={passwordInputRef}
                 name="currentPassword"
                 placeholder="Enter current password"
                 value={passwords.currentPassword}

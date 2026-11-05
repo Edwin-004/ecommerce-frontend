@@ -18,6 +18,7 @@ import {
   FiSearch,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import { useSearchParams } from 'react-router-dom';
 
 const ORDER_EXPORT_COLUMNS = [
   { key: 'orderNo', label: 'Order No' },
@@ -29,11 +30,94 @@ const ORDER_EXPORT_COLUMNS = [
 ];
 
 export const AllOrders = () => {
-  const [currentPage, setCurrentPage] = useState(0);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('PENDING');
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramPage = Number(searchParams.get('page')) || 0;
+  const paramStatus = searchParams.get('status') || 'PENDING';
+  const paramSearch = searchParams.get('search') || '';
+  const paramStart = searchParams.get('start') || '';
+  const paramEnd = searchParams.get('end') || '';
+  const paramOrderNo = searchParams.get('orderNo') || null;
+
+  const [currentPage, setCurrentPageState] = useState(paramPage);
+  const [startDate, setStartDateState] = useState<string>(paramStart);
+  const [endDate, setEndDateState] = useState<string>(paramEnd);
+  const [statusFilter, setStatusFilterState] = useState<string>(paramStatus);
+  const [searchTerm, setSearchTermState] = useState<string>(paramSearch);
+  const [selectedOrderNo, setSelectedOrderNoState] = useState<string | null>(paramOrderNo);
+
+  const updateOrderQueryParams = (updates: {
+    page?: number;
+    status?: string;
+    search?: string;
+    start?: string;
+    end?: string;
+    orderNo?: string | null;
+  }) => {
+    const next = new URLSearchParams(searchParams);
+    const nextStatus = updates.status !== undefined ? updates.status : statusFilter;
+    const nextSearch = updates.search !== undefined ? updates.search : searchTerm;
+    const nextStart = updates.start !== undefined ? updates.start : startDate;
+    const nextEnd = updates.end !== undefined ? updates.end : endDate;
+    const nextPage = updates.page !== undefined ? updates.page : 0;
+    const nextOrderNo = updates.orderNo !== undefined ? updates.orderNo : selectedOrderNo;
+
+    if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus); else next.delete('status');
+    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
+    if (nextStart) next.set('start', nextStart); else next.delete('start');
+    if (nextEnd) next.set('end', nextEnd); else next.delete('end');
+    if (nextPage > 0) next.set('page', String(nextPage)); else next.delete('page');
+    if (nextOrderNo) next.set('orderNo', nextOrderNo); else next.delete('orderNo');
+
+    setSearchParams(next, { replace: true });
+  };
+
+  const setStatusFilter = (st: string) => {
+    setStatusFilterState(st);
+    setCurrentPageState(0);
+    updateOrderQueryParams({ status: st, page: 0 });
+  };
+
+  const setSearchTerm = (s: string) => {
+    setSearchTermState(s);
+    setCurrentPageState(0);
+    updateOrderQueryParams({ search: s, page: 0 });
+  };
+
+  const setStartDate = (d: string) => {
+    setStartDateState(d);
+    setCurrentPageState(0);
+    updateOrderQueryParams({ start: d, page: 0 });
+  };
+
+  const setEndDate = (d: string) => {
+    setEndDateState(d);
+    setCurrentPageState(0);
+    updateOrderQueryParams({ end: d, page: 0 });
+  };
+
+  const setCurrentPage = (p: number) => {
+    setCurrentPageState(p);
+    updateOrderQueryParams({ page: p });
+  };
+
+  const setSelectedOrderNo = (no: string | null) => {
+    setSelectedOrderNoState(no);
+    updateOrderQueryParams({ orderNo: no });
+  };
+
+  useEffect(() => {
+    setStatusFilterState(searchParams.get('status') || 'PENDING');
+    setSearchTermState(searchParams.get('search') || '');
+    setStartDateState(searchParams.get('start') || '');
+    setEndDateState(searchParams.get('end') || '');
+    setCurrentPageState(Number(searchParams.get('page')) || 0);
+    setSelectedOrderNoState(searchParams.get('orderNo') || null);
+  }, [searchParams]);
+
+
+
+
 
   // ➕ ထည့်ရမည့်အပိုင်း (Filter ပြောင်းတိုင်း Page 0 သို့ ပြန်သွားရန်)
   useEffect(() => {
@@ -54,7 +138,7 @@ export const AllOrders = () => {
   const orders = data?.content || [];
   const totalPages = data?.totalPages || 0;
 
-  const [selectedOrderNo, setSelectedOrderNo] = useState<string | null>(null);
+
   const { data: paymentInfo, isLoading: LoadingPaymentInfo } =
     useGetPaymentByOrderNoQuery(selectedOrderNo || '', {
       skip: !selectedOrderNo,

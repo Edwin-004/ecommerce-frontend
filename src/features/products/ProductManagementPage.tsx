@@ -877,7 +877,7 @@ export const ProductManagementPage: React.FC = () => {
                         <button
                           type="button"
                           className="table-btn-edit"
-                          onClick={() => navigate(`/admin/products/edit/${p.productId}`)}
+                          onClick={() => navigate(`/admin/products/edit?id=${p.productId}`)}
                           title="Edit Product"
                         >
                           <FiEdit2 size={12} />

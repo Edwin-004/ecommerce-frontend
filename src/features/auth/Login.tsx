@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { setCredentials } from './authSlice';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiLogIn, FiAlertCircle } from 'react-icons/fi';
@@ -19,6 +19,7 @@ export const Login: React.FC = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Listen for session expiry / kick-out messages from axios interceptor
   useEffect(() => {
@@ -107,7 +108,8 @@ export const Login: React.FC = () => {
         toast.info("Please set your new password before accessing the system.");
         navigate('/admin/force-change-password');
       } else if (['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF'].includes(data.role)) {
-        navigate('/admin/dashboard');
+        const redirectUrl = searchParams.get('redirect');
+        navigate(redirectUrl || '/admin/dashboard');
       } else {
         setGeneralError('Unauthorized account access.');
       }

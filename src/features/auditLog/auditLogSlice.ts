@@ -27,9 +27,16 @@ export const fetchAuditLogs = createAsyncThunk(
     try {
       let url = '/audit-logs';
       
-      // startDate နဲ့ endDate ပါလာခဲ့ရင် Query Parameter အနေနဲ့ တွဲပို့ပေးမည်
-      if (args?.startDate && args?.endDate) {
-        url += `?startDate=${args.startDate}&endDate=${args.endDate}`;
+      const params = new URLSearchParams();
+      if (args?.startDate && args.startDate.trim()) {
+        params.append('startDate', args.startDate.trim());
+      }
+      if (args?.endDate && args.endDate.trim()) {
+        params.append('endDate', args.endDate.trim());
+      }
+      const qs = params.toString();
+      if (qs) {
+        url += `?${qs}`;
       }
 
       const response = await axiosInstance.get<AuditLog[]>(url);

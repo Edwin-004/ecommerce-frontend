@@ -1,5 +1,6 @@
 import { BackButton } from '../../components/common/BackButton';
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   useGetZoneGroupsQuery,
   useToggleZoneStatusMutation,
@@ -24,9 +25,53 @@ import Swal from 'sweetalert2';
 export const ShippingRates = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingZone, setEditingZone] = useState<any | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramPage = Number(searchParams.get('page')) || 0;
+  const paramStatus = searchParams.get('status') || 'ALL';
+  const paramSearch = searchParams.get('search') || '';
+
+  const [currentPage, setCurrentPageState] = useState(paramPage);
+  const [searchTerm, setSearchTermState] = useState(paramSearch);
+  const [statusFilter, setStatusFilterState] = useState(paramStatus);
+
+  const updateShippingParams = (updates: { page?: number; status?: string; search?: string }) => {
+    const next = new URLSearchParams(searchParams);
+    const nextStatus = updates.status !== undefined ? updates.status : statusFilter;
+    const nextSearch = updates.search !== undefined ? updates.search : searchTerm;
+    const nextPage = updates.page !== undefined ? updates.page : 0;
+
+    if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus); else next.delete('status');
+    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
+    if (nextPage > 0) next.set('page', String(nextPage)); else next.delete('page');
+
+    setSearchParams(next, { replace: true });
+  };
+
+  const setStatusFilter = (st: string) => {
+    setStatusFilterState(st);
+    setCurrentPageState(0);
+    updateShippingParams({ status: st, page: 0 });
+  };
+
+  const setSearchTerm = (s: string) => {
+    setSearchTermState(s);
+    setCurrentPageState(0);
+    updateShippingParams({ search: s, page: 0 });
+  };
+
+  const setCurrentPage = (p: number) => {
+    setCurrentPageState(p);
+    updateShippingParams({ page: p });
+  };
+
+  useEffect(() => {
+    setStatusFilterState(searchParams.get('status') || 'ALL');
+    setSearchTermState(searchParams.get('search') || '');
+    setCurrentPageState(Number(searchParams.get('page')) || 0);
+  }, [searchParams]);
+
+
   const pageSize = 10;
 
   const { data: stats } = useGetZoneStatsQuery();
@@ -34,7 +79,7 @@ export const ShippingRates = () => {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   useEffect(() => {
-    setCurrentPage(0);
+    // Reset handled by updateShippingParams
   }, [searchTerm, statusFilter]);
 
   const {

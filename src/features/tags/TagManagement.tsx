@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { isAxiosError } from "axios";
 
 import { tagApi } from "./tagApi";
@@ -56,13 +57,45 @@ export default function TagManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Search input
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramPage = Number(searchParams.get("page")) || 0;
+  const paramSearch = searchParams.get("search") || "";
+
+  const [search, setSearchState] = useState(paramSearch);
+  const [page, setPageState] = useState(paramPage);
+
+  const updateTagParams = (updates: { page?: number; search?: string }) => {
+    const next = new URLSearchParams(searchParams);
+    const nextSearch = updates.search !== undefined ? updates.search : search;
+    const nextPage = updates.page !== undefined ? updates.page : 0;
+
+    if (nextSearch && nextSearch.trim()) next.set("search", nextSearch.trim()); else next.delete("search");
+    if (nextPage > 0) next.set("page", String(nextPage)); else next.delete("page");
+
+    setSearchParams(next, { replace: true });
+  };
+
+  const setSearch = (s: string) => {
+    setSearchState(s);
+    updateTagParams({ search: s, page: 0 });
+  };
+
+  const setPage = (p: number) => {
+    setPageState(p);
+    updateTagParams({ page: p });
+  };
+
+  useEffect(() => {
+    setSearchState(searchParams.get("search") || "");
+    setPageState(Number(searchParams.get("page")) || 0);
+  }, [searchParams]);
 
   // Debounced search value
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortBy, setSortBy] = useState<string>("tagId,desc");
 
-  const [page, setPage] = useState(0);
+
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 

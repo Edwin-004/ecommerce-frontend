@@ -1,7 +1,7 @@
 import { toast } from 'react-toastify';
 import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
 import { DatePicker } from '../../components/common/DatePicker';
 import {
@@ -37,8 +37,10 @@ import {
 
 
 export const EditProductPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: pathId } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const id = searchParams.get('id') || pathId;
   const productId = Number(id);
 
   // Loading & error

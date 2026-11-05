@@ -1,7 +1,7 @@
 import { toast } from 'react-toastify';
 import { BackButton } from '../../components/common/BackButton';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
 import { DatePicker } from '../../components/common/DatePicker';
 import {
@@ -122,8 +122,9 @@ export const CreateProductPage: React.FC = () => {
   // Categories & Brands
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [brands, setBrands] = useState<BrandItem[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedBrand, setSelectedBrand] = useState<string>('');
+  const [searchParams] = useSearchParams();
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || '');
+  const [selectedBrand, setSelectedBrand] = useState<string>(searchParams.get('brand') || '');
 
   // Expiration & Perishable tracking
   const [isPerishable, setIsPerishable] = useState<boolean>(false);

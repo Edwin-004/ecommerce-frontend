@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { 
@@ -21,6 +22,7 @@ import {
 import type { RootState, AppDispatch } from '../../store'; 
 import { fetchAuditLogs } from './auditLogSlice';
 import type { AuditLog as AuditLogType } from '../../types/auditLog';
+import { parseDate, formatDateTime } from '../../utils/dateUtils';
 import './AuditLog.css'; 
 
 const AuditLog: React.FC = () => {
@@ -28,18 +30,130 @@ const AuditLog: React.FC = () => {
   const { logs, loading, error } = useSelector((state: RootState) => state.auditLog);
 
   // Date Filter States
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
-  const [activePreset, setActivePreset] = useState<string>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const paramAction = searchParams.get('action') || 'ALL';
+  const paramModule = searchParams.get('module') || 'ALL';
+  const paramSearch = searchParams.get('search') || '';
+  const paramPreset = searchParams.get('preset') || 'all';
+  const paramStart = searchParams.get('start') || '';
+  const paramEnd = searchParams.get('end') || '';
+  const paramPage = Number(searchParams.get('page')) || 1;
+  const paramLimit = Number(searchParams.get('limit')) || 10;
+
+  const [startDate, setStartDateState] = useState<string>(paramStart);
+  const [endDate, setEndDateState] = useState<string>(paramEnd);
+  const [activePreset, setActivePresetState] = useState<string>(paramPreset);
+  const [selectedAction, setSelectedActionState] = useState<string>(paramAction);
+  const [selectedModule, setSelectedModuleState] = useState<string>(paramModule);
+  const [searchQuery, setSearchQueryState] = useState<string>(paramSearch);
+  const [currentPage, setCurrentPageState] = useState<number>(paramPage);
+  const [itemsPerPage, setItemsPerPageState] = useState<number>(paramLimit);
+
+  const updateAuditQueryParams = (updates: {
+    action?: string;
+    module?: string;
+    search?: string;
+    preset?: string;
+    start?: string;
+    end?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const next = new URLSearchParams(searchParams);
+    const nextAction = updates.action !== undefined ? updates.action : selectedAction;
+    const nextModule = updates.module !== undefined ? updates.module : selectedModule;
+    const nextSearch = updates.search !== undefined ? updates.search : searchQuery;
+    const nextPreset = updates.preset !== undefined ? updates.preset : activePreset;
+    const nextStart = updates.start !== undefined ? updates.start : startDate;
+    const nextEnd = updates.end !== undefined ? updates.end : endDate;
+    const nextPage = updates.page !== undefined ? updates.page : 1;
+    const nextLimit = updates.limit !== undefined ? updates.limit : itemsPerPage;
+
+    if (nextAction && nextAction !== 'ALL') next.set('action', nextAction); else next.delete('action');
+    if (nextModule && nextModule !== 'ALL') next.set('module', nextModule); else next.delete('module');
+    if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
+    if (nextPreset && nextPreset !== 'all') next.set('preset', nextPreset); else next.delete('preset');
+    if (nextStart) next.set('start', nextStart); else next.delete('start');
+    if (nextEnd) next.set('end', nextEnd); else next.delete('end');
+    if (nextPage > 1) next.set('page', String(nextPage)); else next.delete('page');
+    if (nextLimit && nextLimit !== 10) next.set('limit', String(nextLimit)); else next.delete('limit');
+
+    setSearchParams(next, { replace: true });
+  };
+
+  const setSelectedAction = (action: string) => {
+    setSelectedActionState(action);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ action, page: 1 });
+  };
+
+  const setSelectedModule = (mod: string) => {
+    setSelectedModuleState(mod);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ module: mod, page: 1 });
+  };
+
+  const setSearchQuery = (q: string) => {
+    setSearchQueryState(q);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ search: q, page: 1 });
+  };
+
+  const setStartDate = (d: string) => {
+    setStartDateState(d);
+    const newPreset = d || endDate ? 'custom' : 'all';
+    setActivePresetState(newPreset);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ start: d, preset: newPreset, page: 1 });
+  };
+
+  const setEndDate = (d: string) => {
+    setEndDateState(d);
+    const newPreset = d || startDate ? 'custom' : 'all';
+    setActivePresetState(newPreset);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ end: d, preset: newPreset, page: 1 });
+  };
+
+  const setActivePreset = (p: string) => {
+    setActivePresetState(p);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ preset: p, page: 1 });
+  };
+
+  const setCurrentPage = (p: number) => {
+    setCurrentPageState(p);
+    updateAuditQueryParams({ page: p });
+  };
+
+  const setItemsPerPage = (l: number) => {
+    setItemsPerPageState(l);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ limit: l, page: 1 });
+  };
+
+  useEffect(() => {
+    setSelectedActionState(searchParams.get('action') || 'ALL');
+    setSelectedModuleState(searchParams.get('module') || 'ALL');
+    setSearchQueryState(searchParams.get('search') || '');
+    setActivePresetState(searchParams.get('preset') || 'all');
+    setStartDateState(searchParams.get('start') || '');
+    setEndDateState(searchParams.get('end') || '');
+    setCurrentPageState(Number(searchParams.get('page')) || 1);
+    setItemsPerPageState(Number(searchParams.get('limit')) || 10);
+  }, [searchParams]);
+
+
 
   // Search & Action Filter States
-  const [selectedAction, setSelectedAction] = useState<string>('ALL');
-  const [selectedModule, setSelectedModule] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+
+
+
 
   // Pagination States
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+
+
 
   // Custom Modal State
   const [selectedLog, setSelectedLog] = useState<AuditLogType | null>(null);
@@ -58,7 +172,9 @@ const AuditLog: React.FC = () => {
   }, [logs]);
 
   useEffect(() => {
-    dispatch(fetchAuditLogs({}));
+    const initialStart = searchParams.get('start') || undefined;
+    const initialEnd = searchParams.get('end') || undefined;
+    dispatch(fetchAuditLogs({ startDate: initialStart, endDate: initialEnd }));
   }, [dispatch]);
 
   // Reset to first page whenever filters change
@@ -73,33 +189,39 @@ const AuditLog: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
-  const formatDateTimeDMY = (dateString?: string): string => {
-    if (!dateString) return '-';
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return '-';
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    let hours = d.getHours();
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    return `${day}/${month}/${year}, ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+  const formatDateTimeDMY = (dateVal?: any): string => {
+    if (!dateVal) return '-';
+    if (Array.isArray(dateVal)) {
+      const year = dateVal[0];
+      const month = String(dateVal[1]).padStart(2, '0');
+      const day = String(dateVal[2]).padStart(2, '0');
+      let hour = dateVal[3] || 0;
+      const min = String(dateVal[4] || 0).padStart(2, '0');
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12 || 12;
+      return `${day}/${month}/${year}, ${String(hour).padStart(2, '0')}:${min} ${ampm}`;
+    }
+    const formatted = formatDateTime(dateVal);
+    return formatted && formatted !== '-' ? formatted : '-';
   };
 
   // Quick Preset Handlers
   const handlePresetAll = () => {
-    setActivePreset('all');
-    setStartDate('');
-    setEndDate('');
+    setActivePresetState('all');
+    setStartDateState('');
+    setEndDateState('');
+    setCurrentPageState(1);
+    updateAuditQueryParams({ start: '', end: '', preset: 'all', page: 1 });
     dispatch(fetchAuditLogs({}));
   };
 
   const handlePresetToday = () => {
     const today = formatDateForInput(new Date());
-    setActivePreset('today');
-    setStartDate(today);
-    setEndDate(today);
+    setActivePresetState('today');
+    setStartDateState(today);
+    setEndDateState(today);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ start: today, end: today, preset: 'today', page: 1 });
     dispatch(fetchAuditLogs({ startDate: today, endDate: today }));
   };
 
@@ -110,9 +232,11 @@ const AuditLog: React.FC = () => {
     const startStr = formatDateForInput(start);
     const endStr = formatDateForInput(end);
 
-    setActivePreset('7days');
-    setStartDate(startStr);
-    setEndDate(endStr);
+    setActivePresetState('7days');
+    setStartDateState(startStr);
+    setEndDateState(endStr);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ start: startStr, end: endStr, preset: '7days', page: 1 });
     dispatch(fetchAuditLogs({ startDate: startStr, endDate: endStr }));
   };
 
@@ -123,9 +247,11 @@ const AuditLog: React.FC = () => {
     const startStr = formatDateForInput(start);
     const endStr = formatDateForInput(end);
 
-    setActivePreset('30days');
-    setStartDate(startStr);
-    setEndDate(endStr);
+    setActivePresetState('30days');
+    setStartDateState(startStr);
+    setEndDateState(endStr);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ start: startStr, end: endStr, preset: '30days', page: 1 });
     dispatch(fetchAuditLogs({ startDate: startStr, endDate: endStr }));
   };
 
@@ -136,17 +262,22 @@ const AuditLog: React.FC = () => {
       toast.warning('Start Date cannot be later than End Date.');
       return;
     }
-    setActivePreset('custom');
+    const newPreset = startDate || endDate ? 'custom' : 'all';
+    setActivePresetState(newPreset);
+    setCurrentPageState(1);
+    updateAuditQueryParams({ start: startDate, end: endDate, preset: newPreset, page: 1 });
     dispatch(fetchAuditLogs({ startDate, endDate }));
   };
 
   const handleReset = () => {
-    setActivePreset('all');
-    setStartDate('');
-    setEndDate('');
-    setSelectedAction('ALL');
-    setSelectedModule('ALL');
-    setSearchQuery('');
+    setActivePresetState('all');
+    setStartDateState('');
+    setEndDateState('');
+    setSelectedActionState('ALL');
+    setSelectedModuleState('ALL');
+    setSearchQueryState('');
+    setCurrentPageState(1);
+    setSearchParams(new URLSearchParams(), { replace: true });
     dispatch(fetchAuditLogs({}));
   };
 
@@ -332,13 +463,47 @@ const AuditLog: React.FC = () => {
     }
   };
 
-  // Helper to parse log timestamps safely
-  const parseLogTime = (dateStr?: string): number | null => {
-    if (!dateStr) return null;
-    let d = new Date(dateStr);
-    if (!isNaN(d.getTime())) return d.getTime();
-    d = new Date(dateStr.replace(' ', 'T'));
-    if (!isNaN(d.getTime())) return d.getTime();
+  // Helper to extract YYYY-MM-DD from any date representation safely
+  const getLogDateString = (dateVal: any): string | null => {
+    if (!dateVal) return null;
+
+    // 1. Array from Java Jackson [YYYY, MM, DD, ...]
+    if (Array.isArray(dateVal)) {
+      const y = dateVal[0];
+      const m = String(dateVal[1]).padStart(2, '0');
+      const d = String(dateVal[2]).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // 2. Direct string starting with YYYY-MM-DD
+    if (typeof dateVal === 'string') {
+      const ymdMatch = dateVal.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (ymdMatch) {
+        const y = ymdMatch[1];
+        const m = String(ymdMatch[2]).padStart(2, '0');
+        const d = String(ymdMatch[3]).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+    }
+
+    // 3. Global parseDate utility
+    const parsed = parseDate(dateVal);
+    if (parsed && !isNaN(parsed.getTime())) {
+      const y = parsed.getFullYear();
+      const m = String(parsed.getMonth() + 1).padStart(2, '0');
+      const d = String(parsed.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    // 4. Native Date fallback
+    const fallback = new Date(dateVal);
+    if (!isNaN(fallback.getTime())) {
+      const y = fallback.getFullYear();
+      const m = String(fallback.getMonth() + 1).padStart(2, '0');
+      const d = String(fallback.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
     return null;
   };
 
@@ -346,19 +511,10 @@ const AuditLog: React.FC = () => {
   const filteredLogs = logs.filter((log) => {
     // 1. Date Filter (Quick Presets or Custom Start/End Date)
     if (startDate || endDate) {
-      const logTime = parseLogTime(log.createdAt);
-      if (logTime !== null) {
-        if (startDate) {
-          const [sY, sM, sD] = startDate.split('-').map(Number);
-          const startBoundary = new Date(sY, sM - 1, sD, 0, 0, 0, 0).getTime();
-          if (logTime < startBoundary) return false;
-        }
-        if (endDate) {
-          const [eY, eM, eD] = endDate.split('-').map(Number);
-          const endBoundary = new Date(eY, eM - 1, eD, 23, 59, 59, 999).getTime();
-          if (logTime > endBoundary) return false;
-        }
-      }
+      const logDateStr = getLogDateString(log.createdAt);
+      if (!logDateStr) return false;
+      if (startDate && logDateStr < startDate) return false;
+      if (endDate && logDateStr > endDate) return false;
     }
     if (selectedAction !== 'ALL' && log.action?.toUpperCase() !== selectedAction) {
       return false;
