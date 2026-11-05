@@ -173,8 +173,9 @@ export const ShippingRates = () => {
 
   return (
     <div className={styles.container}>
+      {/* Header */}
       <div className={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <BackButton fallbackUrl="/admin/dashboard" />
           <div className={styles.titleArea}>
             <h1>
@@ -184,18 +185,6 @@ export const ShippingRates = () => {
               Configure regional delivery zones, shipping fees, and estimated
               transit times
             </p>
-            <div
-              style={{ marginTop: '8px', fontSize: '14px', color: '#64748b' }}
-            >
-              Total Zones:{' '}
-              <strong style={{ color: '#0f172a' }}>{stats?.total || 0}</strong>{' '}
-              &nbsp;|&nbsp; Active Zones:{' '}
-              <strong style={{ color: '#10b981' }}>{stats?.active || 0}</strong>{' '}
-              &nbsp;|&nbsp; Inactive Zones:{' '}
-              <strong style={{ color: '#ef4444' }}>
-                {stats?.inactive || 0}
-              </strong>
-            </div>
           </div>
         </div>
 
@@ -219,72 +208,88 @@ export const ShippingRates = () => {
         </div>
       )}
 
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: '16px',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {['ALL', 'ACTIVE', 'INACTIVE'].map((status) => (
+      {/* 3 Stat Cards Grid (Matching Categories & Brands Pages) */}
+      <div className={styles.statsGrid}>
+        <div
+          className={`${styles.statCard} ${statusFilter === "ALL" ? styles.statCardActive : ""}`}
+          onClick={() => setStatusFilter("ALL")}
+          title="Filter by All Delivery Zones"
+        >
+          <div className={styles.statInfo}>
+            <span className={styles.statLabel}>Total Zones</span>
+            <h3 className={styles.statValue}>{stats?.total ?? 0}</h3>
+          </div>
+          <div className={`${styles.statIconBox} ${styles.blue}`}>
+            <FiTruck size={20} />
+          </div>
+        </div>
+
+        <div
+          className={`${styles.statCard} ${statusFilter === "ACTIVE" ? styles.statCardActive : ""}`}
+          onClick={() => setStatusFilter("ACTIVE")}
+          title="Filter by Active Zones"
+        >
+          <div className={styles.statInfo}>
+            <span className={styles.statLabel}>Active Zones</span>
+            <h3 className={styles.statValue}>{stats?.active ?? 0}</h3>
+          </div>
+          <div className={`${styles.statIconBox} ${styles.green}`}>
+            <FiCheckCircle size={20} />
+          </div>
+        </div>
+
+        <div
+          className={`${styles.statCard} ${statusFilter === "INACTIVE" ? styles.statCardActive : ""}`}
+          onClick={() => setStatusFilter("INACTIVE")}
+          title="Filter by Inactive Zones"
+        >
+          <div className={styles.statInfo}>
+            <span className={styles.statLabel}>Inactive Zones</span>
+            <h3 className={styles.statValue}>{stats?.inactive ?? 0}</h3>
+          </div>
+          <div className={`${styles.statIconBox} ${styles.orange}`}>
+            <FiXCircle size={20} />
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Tabs & Search Toolbar */}
+      <div className={styles.toolbarCard}>
+        <div className={styles.statusTabs}>
+          {["ALL", "ACTIVE", "INACTIVE"].map((status) => (
             <button
               key={status}
+              type="button"
               onClick={() => setStatusFilter(status)}
-              style={{
-                padding: '6px 16px',
-                border: '1px solid #e2e8f0',
-                borderRadius: '6px',
-                background: statusFilter === status ? '#e0e7ff' : '#fff',
-                color: statusFilter === status ? '#4338ca' : '#475569',
-                fontWeight: statusFilter === status ? '600' : '400',
-                cursor: 'pointer',
-              }}
+              className={`${styles.statusTabBtn} ${
+                statusFilter === status ? styles.statusTabBtnActive : ""
+              }`}
             >
               {status}
             </button>
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           {selectedZoneGroups.length > 0 && (
             <button
+              type="button"
               onClick={() => setIsBulkModalOpen(true)}
-              style={{
-                backgroundColor: '#f59e0b',
-                color: '#fff',
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '600',
-              }}
+              className={styles.bulkUpdateBtn}
             >
-              <FiEdit2 style={{ display: 'inline', marginRight: '6px' }} />
+              <FiEdit2 size={13} />
               Bulk Update ({selectedZoneGroups.length})
             </button>
           )}
 
-          <div style={{ position: 'relative' }}>
-            <FiSearch
-              style={{
-                position: 'absolute',
-                top: '10px',
-                left: '12px',
-                color: '#94a3b8',
-              }}
-            />
+          <div className={styles.searchBox}>
+            <FiSearch className={styles.searchIcon} />
             <input
               type="text"
               placeholder="Search zones, cities..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                padding: '8px 12px 8px 36px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '6px',
-                width: '250px',
-              }}
+              className={styles.searchInput}
             />
           </div>
         </div>
