@@ -81,31 +81,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const formatRole = (roleStr: string | null): string => {
     if (roleStr === 'ADMIN') return 'System Admin';
     if (roleStr === 'INVENTORY_STAFF') return 'Inventory Staff';
-    if (roleStr === 'SALES_STAFF' || roleStr === 'ORDER_STAFF') return 'Order / Sales Staff';
+    if (roleStr === 'SALES_STAFF' || roleStr === 'ORDER_STAFF')
+      return 'Order / Sales Staff';
     return roleStr || 'Staff';
   };
 
   const getProfileSubtitle = (): string => {
     if (email && email.includes('@')) return email;
     const formatted = formatRole(role);
-    if (username && username.trim().toLowerCase() === formatted.trim().toLowerCase()) {
+    if (
+      username &&
+      username.trim().toLowerCase() === formatted.trim().toLowerCase()
+    ) {
       return 'Administrator';
     }
     return formatted;
   };
 
   const handleLogout = async () => {
-    try { await api.post('/auth/logout'); } catch {} finally { dispatch(logout()); navigate('/login'); }
-
+    try {
+      await api.post('/auth/logout');
+    } catch {
+    } finally {
+      dispatch(logout());
+      navigate('/login');
+    }
   };
 
   const isAdmin = role === 'ADMIN';
   const isInventoryStaff = role === 'INVENTORY_STAFF';
   const isOrderStaff = role === 'ORDER_STAFF' || role === 'SALES_STAFF';
 
-  const canAccessCatalog = isAdmin || isInventoryStaff || permissions?.includes('MANAGE_PRODUCT');
-  const canAccessInventory = isAdmin || isInventoryStaff || permissions?.includes('MANAGE_INVENTORY');
-  const canAccessOperations = isAdmin || isOrderStaff || permissions?.includes('VIEW_ORDERS') || permissions?.includes('MANAGE_ORDERS');
+  const canAccessCatalog =
+    isAdmin || isInventoryStaff || permissions?.includes('MANAGE_PRODUCT');
+  const canAccessInventory =
+    isAdmin || isInventoryStaff || permissions?.includes('MANAGE_INVENTORY');
+  const canAccessOperations =
+    isAdmin ||
+    isOrderStaff ||
+    permissions?.includes('VIEW_ORDERS') ||
+    permissions?.includes('MANAGE_ORDERS');
   const canAccessStaff = isAdmin || permissions?.includes('MANAGE_STAFF');
   const canAccessReports = isAdmin;
 
@@ -124,7 +139,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const isStaffActive = location.pathname.startsWith('/admin/staff');
 
-  const [catalogOpen, setCatalogOpen] = useState<boolean>(() => isCatalogActive);
+  const [catalogOpen, setCatalogOpen] = useState<boolean>(
+    () => isCatalogActive
+  );
   const [staffOpen, setStaffOpen] = useState<boolean>(() => isStaffActive);
 
   // Auto-expand active dropdown when path changes
@@ -158,7 +175,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     isActive ? `${styles.subLink} ${styles.subActive}` : styles.subLink;
 
   return (
-    <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}>
+    <aside
+      className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}
+    >
       {/* Upper Navigation Block */}
       <div className={styles.topSection}>
         {/* ==========================================================================
@@ -174,38 +193,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             {/* Modern Larger Dual-Tone Brand Logo */}
             <div className={styles.logoBadge} aria-label="Ecommerce Logo">
-              <svg
-                width="19"
-                height="19"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <defs>
-                  <linearGradient id="brandSparkGrad" x1="9" y1="11" x2="19" y2="19" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#2563eb" />
-                    <stop offset="1" stopColor="#7c3aed" />
-                  </linearGradient>
-                </defs>
-                {/* Modern Shopping Bag Form */}
-                <rect x="4" y="8" width="20" height="16" rx="4.5" fill="#ffffff" />
-                {/* Sleek Curved Handle */}
-                <path
-                  d="M10 8V6C10 3.79086 11.7909 2 14 2C16.2091 2 18 3.79086 18 6V8"
-                  stroke="#ffffff"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                />
-                {/* Dynamic Center Retail Spark */}
-                <path
-                  d="M14 11.5L14.9 14.1L17.5 15L14.9 15.9L14 18.5L13.1 15.9L10.5 15L13.1 14.1L14 11.5Z"
-                  fill="url(#brandSparkGrad)"
-                />
-              </svg>
+              <img
+                src="/logo.png"
+                alt="Sidebar Logo"
+                style={{
+                  width: '70px',
+                  height: '70px',
+                  objectFit: 'contain',
+                  borderRadius: '40%',
+                }}
+              />
             </div>
             {!isCollapsed && (
               <div className={styles.brandMeta}>
-                <span className={styles.brandName}>Ecommerce</span>
+                <span className={styles.brandName}>Gravity - 5</span>
                 <span className={styles.brandBadge}>Admin</span>
               </div>
             )}
@@ -220,7 +221,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              {isCollapsed ? <FiChevronsRight size={14} /> : <FiChevronsLeft size={14} />}
+              {isCollapsed ? (
+                <FiChevronsRight size={14} />
+              ) : (
+                <FiChevronsLeft size={14} />
+              )}
             </button>
           )}
 
@@ -330,7 +335,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         title="SKU &amp; Attributes"
                       >
                         <FiLayers className={styles.subIcon} />
-                        <span className={styles.subLabel}>SKU &amp; Attributes</span>
+                        <span className={styles.subLabel}>
+                          SKU &amp; Attributes
+                        </span>
                       </NavLink>
                     </div>
                   )}
@@ -339,7 +346,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Stock Management */}
               {canAccessInventory && (
-                <NavLink to="/admin/inventory" className={navClass} title="Stock Management">
+                <NavLink
+                  to="/admin/inventory"
+                  className={navClass}
+                  title="Stock Management"
+                >
                   <div className={styles.linkLeftGroup}>
                     <FiBox className={styles.linkIcon} />
                     <span className={styles.linkLabel}>Stock Management</span>
@@ -408,11 +419,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                 {staffOpen && !isCollapsed && (
                   <div className={styles.submenu}>
-                    <NavLink to="/admin/staff" end className={subNavClass} title="All Accounts">
+                    <NavLink
+                      to="/admin/staff"
+                      end
+                      className={subNavClass}
+                      title="All Accounts"
+                    >
                       <FiUsers size={13} className={styles.subIcon} />
                       <span>All Accounts</span>
                     </NavLink>
-                    <NavLink to="/admin/staff/new" className={subNavClass} title="Add New Account">
+                    <NavLink
+                      to="/admin/staff/new"
+                      className={subNavClass}
+                      title="Add New Account"
+                    >
                       <FiUserPlus size={13} className={styles.subIcon} />
                       <span>Add New Account</span>
                     </NavLink>
@@ -426,10 +446,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {canAccessReports && (
             <>
               <div className={styles.navSectionTitle}>Analytics</div>
-              <NavLink to="/admin/reports" className={navClass} title="Reports & Analytics">
+              <NavLink
+                to="/admin/reports"
+                className={navClass}
+                title="Reports & Analytics"
+              >
                 <div className={styles.linkLeftGroup}>
                   <FiBarChart2 className={styles.linkIcon} />
-                  <span className={styles.linkLabel}>Reports &amp; Analytics</span>
+                  <span className={styles.linkLabel}>
+                    Reports &amp; Analytics
+                  </span>
                 </div>
               </NavLink>
             </>
@@ -439,7 +465,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {isAdmin && (
             <>
               <div className={styles.navSectionTitle}>System</div>
-              <NavLink to="/admin/audit-logs" className={navClass} title="Audit Logs">
+              <NavLink
+                to="/admin/audit-logs"
+                className={navClass}
+                title="Audit Logs"
+              >
                 <div className={styles.linkLeftGroup}>
                   <FiFileText className={styles.linkIcon} />
                   <span className={styles.linkLabel}>Audit Logs</span>
@@ -447,8 +477,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </NavLink>
             </>
           )}
-
-
         </nav>
       </div>
 
@@ -466,13 +494,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className={styles.avatarLeft}>
               <div className={styles.avatarBox}>
                 {userAvatar ? (
-                  <img src={userAvatar} alt="Profile" className={styles.avatarImg} />
+                  <img
+                    src={userAvatar}
+                    alt="Profile"
+                    className={styles.avatarImg}
+                  />
                 ) : (
                   firstLetter
                 )}
               </div>
               <div className={styles.userMeta}>
-                <span className={styles.userName}>{username || 'System Admin'}</span>
+                <span className={styles.userName}>
+                  {username || 'System Admin'}
+                </span>
                 <span className={styles.userRole}>{getProfileSubtitle()}</span>
               </div>
             </div>
@@ -497,7 +531,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             title={`${username || 'Admin'} (${getProfileSubtitle()})`}
           >
             {userAvatar ? (
-              <img src={userAvatar} alt="Profile" className={styles.avatarImg} />
+              <img
+                src={userAvatar}
+                alt="Profile"
+                className={styles.avatarImg}
+              />
             ) : (
               firstLetter
             )}

@@ -348,3 +348,59 @@
   font-size: 14px;
   border: 1px solid #f87171;
 }
+
+/* ဖုန်းမှာ Table တွေကို ဘေးတိုက် Scroll ဆွဲလို့ရအောင် လုပ်ခြင်း */
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.orderTable {
+  width: 100%;
+  min-width: 800px; /* ဇယား အကျယ်ကို 800px ထက် မသေးစေရန် */
+}
+
+/* 📱 Mobile & Tablet Responsiveness (Screen size 768px နဲ့အောက် ရောက်သွားချိန်) */
+@media screen and (max-width: 768px) {
+  
+  /* ၁။ Filter Box များကို အောက်တစ်ကြောင်း ဆင်းစေခြင်း */
+  .filterSection {
+    flex-wrap: wrap; 
+  }
+  .rightFilterGroup, .searchContainer {
+    width: 100%;
+  }
+  .searchContainer input {
+    width: 100%;
+  }
+
+  /* ၂။ Order နှိပ်လိုက်လျှင်ပေါ်သော ဘယ်/ညာ Split View ကို အထက်/အောက် ပြောင်းစီခြင်း */
+  .splitContainer {
+    flex-direction: column; 
+  }
+  
+  /* ဘယ်ဘက်က Order List လေးကို အပေါ်မှာထားပြီး Scroll အတိုလေးဖြစ်အောင်လုပ်ခြင်း */
+  .listContainer {
+    width: 100%;
+    max-height: 250px; 
+    overflow-y: auto;
+  }
+  
+  /* ညာဘက်က Order Detail အပိုင်းကို အောက်ပို့ပြီး အပြည့်ယူစေခြင်း */
+  .detailContainer {
+    width: 100%;
+  }
+  .detailGrid {
+    flex-direction: column;
+  }
+  .actionColumn {
+    width: 100%;
+  }
+
+  /* ၃။ Modal Box (ဥပမာ- Shipment သွင်းသည့် Box) ကို မျက်နှာပြင်အပြည့်ပေါ်စေခြင်း */
+  .modalContent {
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}

@@ -621,103 +621,109 @@ export const AllOrders = () => {
 
       {!selectedOrderNo ? (
         <div className={styles.tableContainer}>
-          <table
-            className={`${styles.orderTable} ${orders.length > 0 ? 'table-with-data' : 'table-empty'}`}
-          >
-            <thead>
-              <tr>
-                <th
-                  className="text-center"
-                  style={{ width: '60px', textAlign: 'center' }}
-                >
-                  No.
-                </th>
-                <th>Order No</th>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Total Amount</th>
-                <th>Order Status</th>
-                <th>Payment</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
+          <div className={styles.tableResponsiveWrapper}>
+            <table
+              className={`${styles.orderTable} ${orders.length > 0 ? 'table-with-data' : 'table-empty'}`}
+            >
+              <thead>
                 <tr>
-                  <td colSpan={7} className={styles.tableCellCenter}>
-                    Loading orders...
-                  </td>
+                  <th
+                    className="text-center"
+                    style={{ width: '60px', textAlign: 'center' }}
+                  >
+                    No.
+                  </th>
+                  <th>Order No</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Total Amount</th>
+                  <th>Order Status</th>
+                  <th>Payment</th>
                 </tr>
-              ) : isError ? (
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', color: 'red' }}>
-                    Failed to load orders. Please try again.
-                  </td>
-                </tr>
-              ) : orders.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className={styles.tableCellCenter}>
-                    No orders found{' '}
-                    {statusFilter !== 'ALL' && `for status "${statusFilter}"`}.
-                  </td>
-                </tr>
-              ) : (
-                orders.map((order: any, index: number) => {
-                  const rowNumber = currentPage * pageSize + index + 1;
-                  return (
-                    <tr
-                      key={order.orderId}
-                      onClick={() => setSelectedOrderNo(order.orderNo)}
-                      className={styles.tableRow}
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7} className={styles.tableCellCenter}>
+                      Loading orders...
+                    </td>
+                  </tr>
+                ) : isError ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      style={{ textAlign: 'center', color: 'red' }}
                     >
-                      <td
-                        className="text-center"
-                        style={{
-                          fontWeight: 600,
-                          color: '#64748b',
-                          textAlign: 'center',
-                        }}
+                      Failed to load orders. Please try again.
+                    </td>
+                  </tr>
+                ) : orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className={styles.tableCellCenter}>
+                      No orders found{' '}
+                      {statusFilter !== 'ALL' && `for status "${statusFilter}"`}
+                      .
+                    </td>
+                  </tr>
+                ) : (
+                  orders.map((order: any, index: number) => {
+                    const rowNumber = currentPage * pageSize + index + 1;
+                    return (
+                      <tr
+                        key={order.orderId}
+                        onClick={() => setSelectedOrderNo(order.orderNo)}
+                        className={styles.tableRow}
                       >
-                        {rowNumber}
-                      </td>
-                      <td style={{ fontWeight: 'bold' }}>{order.orderNo}</td>
-                      <td>{formatDate(order.createdAt)}</td>
-                      <td>{order.customerName}</td>
-                      <td>{order.totalAmount?.toLocaleString()} MMK</td>
-                      <td>
-                        <span
-                          className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}
+                        <td
+                          className="text-center"
+                          style={{
+                            fontWeight: 600,
+                            color: '#64748b',
+                            textAlign: 'center',
+                          }}
                         >
-                          {order.orderStatus === 'DELIVERED' && (
-                            <span className={styles.statusDot}>✔</span>
-                          )}
-                          {order.orderStatus === 'SHIPPED' && (
-                            <span className={styles.statusDot}>🚚</span>
-                          )}
-                          {order.orderStatus === 'PROCESSING' && (
-                            <span className={styles.statusDot}>⚙</span>
-                          )}
-                          {order.orderStatus === 'CANCELLED' && (
-                            <span className={styles.statusDot}>✖</span>
-                          )}
-                          <span>{order.orderStatus}</span>
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={`${styles.paymentBadge} ${order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID' ? styles.paymentSuccess : order.paymentStatus === 'REFUNDED' || order.paymentStatus === 'PARTIALLY_REFUNDED' ? styles.paymentRefunded : styles.paymentPending}`}
-                        >
-                          {(order.paymentStatus === 'SUCCESS' ||
-                            order.paymentStatus === 'PAID') &&
-                            '✔ '}
-                          {order.paymentStatus}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                          {rowNumber}
+                        </td>
+                        <td style={{ fontWeight: 'bold' }}>{order.orderNo}</td>
+                        <td>{formatDate(order.createdAt)}</td>
+                        <td>{order.customerName}</td>
+                        <td>{order.totalAmount?.toLocaleString()} MMK</td>
+                        <td>
+                          <span
+                            className={`${styles.badge} ${getStatusBadgeClass(order.orderStatus)}`}
+                          >
+                            {order.orderStatus === 'DELIVERED' && (
+                              <span className={styles.statusDot}>✔</span>
+                            )}
+                            {order.orderStatus === 'SHIPPED' && (
+                              <span className={styles.statusDot}>🚚</span>
+                            )}
+                            {order.orderStatus === 'PROCESSING' && (
+                              <span className={styles.statusDot}>⚙</span>
+                            )}
+                            {order.orderStatus === 'CANCELLED' && (
+                              <span className={styles.statusDot}>✖</span>
+                            )}
+                            <span>{order.orderStatus}</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`${styles.paymentBadge} ${order.paymentStatus === 'SUCCESS' || order.paymentStatus === 'PAID' ? styles.paymentSuccess : order.paymentStatus === 'REFUNDED' || order.paymentStatus === 'PARTIALLY_REFUNDED' ? styles.paymentRefunded : styles.paymentPending}`}
+                          >
+                            {(order.paymentStatus === 'SUCCESS' ||
+                              order.paymentStatus === 'PAID') &&
+                              '✔ '}
+                            {order.paymentStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
           {orders.length > 0 && totalPages > 0 && (
             <div className={styles.paginationContainer}>
               <span className={styles.pageInfoText}>
@@ -745,7 +751,9 @@ export const AllOrders = () => {
           )}
         </div>
       ) : (
-        <div className={styles.splitContainer}>
+        <div
+          className={`${styles.splitContainer} ${selectedOrderNo ? styles.detailActive : ''}`}
+        >
           <div className={styles.listContainer}>
             {orders.map((order: any) => (
               <div
