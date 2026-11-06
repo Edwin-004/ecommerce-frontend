@@ -5,15 +5,11 @@ import {
   FiAlertTriangle,
   FiSlash,
   FiClock,
-  FiPlus,
   FiArrowRight,
-  FiLayers,
-  FiTrendingUp,
   FiRefreshCw,
   FiCheckCircle,
 } from 'react-icons/fi';
 import { inventoryApi } from '../../features/inventory/inventoryApi';
-import { productManagementApi, type ProductItem } from '../../features/products/productManagementApi';
 import type { InventoryItem, InventoryTransaction } from '../../types/inventory';
 import styles from '../AdminDashboard.module.css';
 
@@ -23,22 +19,19 @@ export const InventoryDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [inventoryList, setInventoryList] = useState<InventoryItem[]>([]);
   const [lowStockList, setLowStockList] = useState<InventoryItem[]>([]);
-  const [products, setProducts] = useState<ProductItem[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [invData, lowData, prodData, txData] = await Promise.allSettled([
+      const [invData, lowData, txData] = await Promise.allSettled([
         inventoryApi.getAllInventory(),
         inventoryApi.getLowStockAlerts(),
-        productManagementApi.getProducts(),
         inventoryApi.getTransactionHistory('ALL'),
       ]);
 
       if (invData.status === 'fulfilled') setInventoryList(invData.value || []);
       if (lowData.status === 'fulfilled') setLowStockList(lowData.value || []);
-      if (prodData.status === 'fulfilled') setProducts(prodData.value || []);
       if (txData.status === 'fulfilled') setTransactions(txData.value?.slice(0, 8) || []);
     } catch (err) {
       console.error('Error loading inventory dashboard:', err);
@@ -59,18 +52,7 @@ export const InventoryDashboard: React.FC = () => {
   );
   const lowStockCount = lowStockList.length;
 
-  const totalPhysicalUnits = useMemo(
-    () => inventoryList.reduce((acc, item) => acc + (item.quantity || 0), 0),
-    [inventoryList]
-  );
 
-  const totalValuation = useMemo(() => {
-    return inventoryList.reduce((acc, item) => {
-      const price = Number(item.variant?.price) || 0;
-      const qty = item.quantity || 0;
-      return acc + price * qty;
-    }, 0);
-  }, [inventoryList]);
 
   // Batch expiry counts
   const expiringSoonCount = useMemo(() => {
@@ -85,9 +67,7 @@ export const InventoryDashboard: React.FC = () => {
     }).length;
   }, [inventoryList]);
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US').format(Math.round(val)) + ' MMK';
-  };
+
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '—';
@@ -114,13 +94,6 @@ export const InventoryDashboard: React.FC = () => {
           </p>
         </div>
         <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={styles.primaryBtn}
-            onClick={() => navigate('/admin/products/new')}
-          >
-            <FiPlus size={16} /> Add Product
-          </button>
           <button
             type="button"
             className={styles.primaryBtn}
@@ -229,79 +202,6 @@ export const InventoryDashboard: React.FC = () => {
           <div className={styles.cardBottom}>
             <p className={styles.cardLabel}>Expiring Batches</p>
             <h3 className={styles.cardValue}>{expiringSoonCount}</h3>
-          </div>
-        </div>
-      </div>
-
-      {/* Stock Health & Valuation Highlights Banner */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-          color: '#ffffff',
-          borderRadius: '16px',
-          padding: '24px 28px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '28px',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.25)',
-        }}
-      >
-        <div>
-          <span
-            style={{
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#94a3b8',
-            }}
-          >
-            Warehouse Stock Valuation
-          </span>
-          <h2 style={{ fontSize: '26px', fontWeight: 700, margin: '6px 0 2px 0', color: '#38bdf8' }}>
-            {formatCurrency(totalValuation)}
-          </h2>
-          <p style={{ margin: 0, fontSize: '12.5px', color: '#cbd5e1' }}>
-            Total physical inventory units on shelf:{' '}
-            <strong style={{ color: '#ffffff' }}>{totalPhysicalUnits.toLocaleString()} units</strong>
-          </p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              padding: '12px 18px',
-              borderRadius: '12px',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-            }}
-          >
-            <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase' }}>
-              Catalog Products
-            </p>
-            <p style={{ margin: '4px 0 0 0', fontSize: '18px', fontWeight: 700, color: '#f8fafc' }}>
-              {products.length} Products
-            </p>
-          </div>
-
-          <div
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              padding: '12px 18px',
-              borderRadius: '12px',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-            }}
-          >
-            <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase' }}>
-              Stock Availability Rate
-            </p>
-            <p style={{ margin: '4px 0 0 0', fontSize: '18px', fontWeight: 700, color: '#4ade80' }}>
-              {totalVariants > 0
-                ? `${Math.round(((totalVariants - outOfStockCount) / totalVariants) * 100)}%`
-                : '100%'}
-            </p>
           </div>
         </div>
       </div>

@@ -29,12 +29,12 @@ import {
   FiChevronDown,
   FiChevronUp,
 } from 'react-icons/fi';
-import { apiFetch } from '../../utils/api';
+
 
 import styles from './Brands.module.css';
-import api from '../../utils/axiosConfig';
+import api, { API_BASE_URL } from '../../utils/axiosConfig';
 
-const API_BASE_URL = 'http://localhost:8080';
+
 const PAGE_SIZE = 10;
 
 const EXPORT_COLUMNS = [
@@ -70,9 +70,8 @@ const getLogoUrl = (
 // =====================================================
 
 const getCategories = async (): Promise<Category[]> => {
-  const response = await apiFetch<any>(
-    '/api/backoffice/categories?page=0&size=1000&sort=categoryName,asc'
-  );
+  const res = await api.get<any>('/categories?page=0&size=1000&sort=categoryName,asc');
+  const response = res.data;
 
   if (Array.isArray(response)) {
     return response;

@@ -16,6 +16,7 @@ import {
   FiCheckCircle,
 } from 'react-icons/fi';
 import { productManagementApi, type CategoryItem, type BrandItem } from './productManagementApi';
+import { API_BASE_URL } from '../../utils/axiosConfig';
 
 interface ExcelImportModalProps {
   isOpen: boolean;
@@ -250,7 +251,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({
       await productManagementApi.downloadExcelTemplate();
 
       // 2. Launch Microsoft Excel desktop app via Windows Office URI Protocol
-      const templateUrl = 'http://localhost:8080/api/backoffice/products/excel-template.xlsx';
+      const templateUrl = `${API_BASE_URL}/api/backoffice/products/excel-template.xlsx`;
       window.location.href = `ms-excel:ofe|u|${templateUrl}`;
     } catch (err: any) {
       console.error(err);

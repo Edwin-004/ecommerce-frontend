@@ -9,6 +9,7 @@ import {
   useGetOrderStatusHistoryQuery,
 } from './orderApi';
 import styles from './AllOrders.module.css';
+import api from '../../utils/axiosConfig';
 import { DatePicker } from '../../components/common/DatePicker';
 import { formatDate, formatDateTime } from '../../utils/dateUtils';
 import { useEffect, useState, useRef } from 'react';
@@ -218,31 +219,21 @@ export const AllOrders = () => {
         return;
       }
 
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
+      const params: Record<string, any> = {};
       if (statusFilter && statusFilter !== 'ALL') {
-        params.append('status', statusFilter);
+        params['status'] = statusFilter;
       }
       if (searchTerm && searchTerm.trim()) {
-        params.append('search', searchTerm.trim());
+        params['search'] = searchTerm.trim();
       }
-      params.append('columns', selectedExportColumns.join(','));
+      params['columns'] = selectedExportColumns.join(',');
 
-      const response = await fetch(
-        `http://localhost:8080/api/v1/reports/orders/export/${format}?${params.toString()}`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
+      const response = await api.get(`/reports/orders/export/${format}`, {
+        params,
+        responseType: 'blob',
+      });
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Export failed');
-        throw new Error(
-          errorText || `Export failed with status ${response.status}`
-        );
-      }
-
-      const blob = await response.blob();
+      const blob = response.data as Blob;
       const ext = format === 'excel' ? 'xlsx' : 'pdf';
       const filename = `orders-report.${ext}`;
       const url = window.URL.createObjectURL(blob);

@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { setCredentials } from './authSlice';
+import api from '../../utils/axiosConfig';
 import {
   FiMail,
   FiLock,
@@ -76,30 +77,30 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        'http://localhost:8080/api/backoffice/auth/login',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: emailTrimmed, password }),
+      let data: any;
+      try {
+        const response = await api.post('/auth/login', {
+          email: emailTrimmed,
+          password,
+        });
+        data = response.data;
+      } catch (err: any) {
+        const errorData = err.response?.data;
+        if (errorData) {
+          if (errorData.blocked) {
+            setGeneralError(errorData.message);
+            setPasswordError(errorData.message);
+            toast.error(errorData.message, { autoClose: 7000 });
+          } else if (errorData.field === 'email') {
+            setEmailError(errorData.message || 'Email not registered.');
+          } else if (errorData.field === 'password') {
+            setPasswordError(errorData.message || 'Incorrect password.');
+          } else {
+            setGeneralError(errorData.message || 'Login failed. Please try again.');
+          }
+          return;
         }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (data.blocked) {
-          setGeneralError(data.message);
-          setPasswordError(data.message);
-          toast.error(data.message, { autoClose: 7000 });
-        } else if (data.field === 'email') {
-          setEmailError(data.message || 'Email not registered.');
-        } else if (data.field === 'password') {
-          setPasswordError(data.message || 'Incorrect password.');
-        } else {
-          setGeneralError(data.message || 'Login failed. Please try again.');
-        }
-        return;
+        throw err;
       }
 
       dispatch(

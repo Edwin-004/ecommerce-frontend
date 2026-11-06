@@ -286,55 +286,57 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
             </button>
           </div>
 
-          {/* B. "+ Create" Button: Clean modern SaaS action button matching website UI */}
-          <div className="relative" ref={quickActionRef}>
-            <button
-              type="button"
-              onClick={() => setQuickOpen(!quickOpen)}
-              className={styles.createBtn}
-              title="Quick actions"
-            >
-              <Plus size={14} />
-              <span>Create</span>
-              <ChevronDown size={12} style={{ opacity: 0.8 }} />
-            </button>
+          {/* B. "+ Create" Button: Hidden on Dashboard */}
+          {!breadcrumbTrail.isDashboard && (
+            <div className="relative" ref={quickActionRef}>
+              <button
+                type="button"
+                onClick={() => setQuickOpen(!quickOpen)}
+                className={styles.createBtn}
+                title="Quick actions"
+              >
+                <Plus size={14} />
+                <span>Create</span>
+                <ChevronDown size={12} style={{ opacity: 0.8 }} />
+              </button>
 
-            {/* Dropdown Menu (Z-index 50) */}
-            {quickOpen && (
-              <div className={styles.createMenu}>
-                {(role === 'ADMIN' || role === 'INVENTORY_STAFF') && (
-                <Link
-                  to="/admin/products/new"
-                  onClick={() => setQuickOpen(false)}
-                  className={styles.createMenuItem}
-                >
-                  <Package className={styles.createMenuIcon} />
-                  <span>Add New Product</span>
-                </Link>
-                )}
-                {(role === 'ADMIN' || role === 'INVENTORY_STAFF') && (
-                <Link
-                  to="/admin/categories?create=true"
-                  onClick={() => setQuickOpen(false)}
-                  className={styles.createMenuItem}
-                >
-                  <FolderPlus className={styles.createMenuIcon} />
-                  <span>Create Category</span>
-                </Link>
-                )}
-                {role === 'ADMIN' && (
-                <Link
-                  to="/admin/staff/new"
-                  onClick={() => setQuickOpen(false)}
-                  className={styles.createMenuItem}
-                >
-                  <UserPlus className={styles.createMenuIcon} />
-                  <span>Add Staff Member</span>
-                </Link>
-                )}
-              </div>
-            )}
-          </div>
+              {/* Dropdown Menu (Z-index 50) */}
+              {quickOpen && (
+                <div className={styles.createMenu}>
+                  {(role === 'ADMIN' || role === 'INVENTORY_STAFF') && (
+                  <Link
+                    to="/admin/products/new"
+                    onClick={() => setQuickOpen(false)}
+                    className={styles.createMenuItem}
+                  >
+                    <Package className={styles.createMenuIcon} />
+                    <span>Add New Product</span>
+                  </Link>
+                  )}
+                  {(role === 'ADMIN' || role === 'INVENTORY_STAFF') && (
+                  <Link
+                    to="/admin/categories?create=true"
+                    onClick={() => setQuickOpen(false)}
+                    className={styles.createMenuItem}
+                  >
+                    <FolderPlus className={styles.createMenuIcon} />
+                    <span>Create Category</span>
+                  </Link>
+                  )}
+                  {role === 'ADMIN' && (
+                  <Link
+                    to="/admin/staff/new"
+                    onClick={() => setQuickOpen(false)}
+                    className={styles.createMenuItem}
+                  >
+                    <UserPlus className={styles.createMenuIcon} />
+                    <span>Add Staff Member</span>
+                  </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* C. Notification Bell Icon: Prominent high-contrast button matching UI design tokens */}
           {hasNotificationAccess && (

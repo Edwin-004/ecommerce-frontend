@@ -1,23 +1,13 @@
-import axios from "axios";
-
+import api from "../../utils/axiosConfig";
 import type {
   TagRequestDto,
   TagResponseDto,
   PageResponse,
 } from "../../types/tag";
 
-const API_BASE_URL =
-  "http://localhost:8080/api/backoffice/tags";
-
-const getHeaders = () => {
-  const token = localStorage.getItem("token");
-
-  return token
-    ? {
-        Authorization: `Bearer ${token}`,
-      }
-    : {};
-};
+// =========================================================
+// TAG API (Centered via axiosConfig)
+// =========================================================
 
 export const tagApi = {
   getAllTags: async (
@@ -26,52 +16,28 @@ export const tagApi = {
     sort = "tagName,asc",
     search = ""
   ): Promise<PageResponse<TagResponseDto>> => {
-
-    const response =
-      await axios.get<PageResponse<TagResponseDto>>(
-        API_BASE_URL,
-        {
-          params: {
-            page,
-            size,
-            sort,
-            search: search.trim() || undefined,
-          },
-          headers: getHeaders(),
-        }
-      );
-
+    const response = await api.get<PageResponse<TagResponseDto>>('/tags', {
+      params: {
+        page,
+        size,
+        sort,
+        search: search.trim() || undefined,
+      },
+    });
     return response.data;
   },
 
   getTagById: async (
     id: number
   ): Promise<TagResponseDto> => {
-
-    const response =
-      await axios.get<TagResponseDto>(
-        `${API_BASE_URL}/${id}`,
-        {
-          headers: getHeaders(),
-        }
-      );
-
+    const response = await api.get<TagResponseDto>(`/tags/${id}`);
     return response.data;
   },
 
   createTag: async (
     data: TagRequestDto
   ): Promise<TagResponseDto> => {
-
-    const response =
-      await axios.post<TagResponseDto>(
-        API_BASE_URL,
-        data,
-        {
-          headers: getHeaders(),
-        }
-      );
-
+    const response = await api.post<TagResponseDto>('/tags', data);
     return response.data;
   },
 
@@ -79,28 +45,13 @@ export const tagApi = {
     id: number,
     data: TagRequestDto
   ): Promise<TagResponseDto> => {
-
-    const response =
-      await axios.put<TagResponseDto>(
-        `${API_BASE_URL}/${id}`,
-        data,
-        {
-          headers: getHeaders(),
-        }
-      );
-
+    const response = await api.put<TagResponseDto>(`/tags/${id}`, data);
     return response.data;
   },
 
   deleteTag: async (
     id: number
   ): Promise<void> => {
-
-    await axios.delete(
-      `${API_BASE_URL}/${id}`,
-      {
-        headers: getHeaders(),
-      }
-    );
+    await api.delete(`/tags/${id}`);
   },
 };

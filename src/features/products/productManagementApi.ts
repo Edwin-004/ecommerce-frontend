@@ -1,5 +1,4 @@
-import { apiFetch } from '../../utils/api';
-import api from '../../utils/axiosConfig';
+import api, { API_BASE_URL } from '../../utils/axiosConfig';
 
 export interface ProductItem {
   productId: number;
@@ -35,26 +34,25 @@ export const getAssetUrl = (url?: string): string => {
     return url;
   }
   const clean = url.startsWith('/') ? url : `/${url}`;
-  return `http://localhost:8080${clean}`;
+  return `${API_BASE_URL}${clean}`;
 };
 
 export const productManagementApi = {
-  // Get all products (with pagination or full list, latest first)
-    // Get all products (latest first)
+  // Get all products (latest first)
   getProducts: async (): Promise<ProductItem[]> => {
     try {
-      const response = await apiFetch<any>(
-        '/api/backoffice/products?sort=productId,desc&size=10000&page=0'
+      const response = await api.get<any>(
+        '/products?sort=productId,desc&size=10000&page=0'
       );
 
       // Spring Boot Page response
-      if (response && Array.isArray(response.content)) {
-        return response.content;
+      if (response.data && Array.isArray(response.data.content)) {
+        return response.data.content;
       }
 
       // Direct array response
-      if (Array.isArray(response)) {
-        return response;
+      if (Array.isArray(response.data)) {
+        return response.data;
       }
 
       return [];
@@ -65,10 +63,13 @@ export const productManagementApi = {
   },
 
   // Get single product
-  getProductById: (id: number) => apiFetch<ProductItem>(`/api/backoffice/products/${id}`),
+  getProductById: async (id: number): Promise<ProductItem> => {
+    const response = await api.get<ProductItem>(`/products/${id}`);
+    return response.data;
+  },
 
   // Create product
-  createProduct: (payload: {
+  createProduct: async (payload: {
     productName: string;
     description?: string;
     status: string;
@@ -76,14 +77,13 @@ export const productManagementApi = {
     brandId?: number;
     userId: number;
     isPerishable?: boolean;
-  }) =>
-    apiFetch<ProductItem>('/api/backoffice/products', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
+  }): Promise<ProductItem> => {
+    const response = await api.post<ProductItem>('/products', payload);
+    return response.data;
+  },
 
   // Update product
-  updateProduct: (
+  updateProduct: async (
     id: number,
     payload: {
       productName: string;
@@ -94,25 +94,28 @@ export const productManagementApi = {
       userId: number;
       isPerishable?: boolean;
     }
-  ) =>
-    apiFetch<ProductItem>(`/api/backoffice/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    }),
+  ): Promise<ProductItem> => {
+    const response = await api.put<ProductItem>(`/products/${id}`, payload);
+    return response.data;
+  },
 
   // Delete product
-  deleteProduct: (id: number) =>
-    apiFetch<void>(`/api/backoffice/products/${id}`, {
-      method: 'DELETE',
-    }),
+  deleteProduct: async (id: number): Promise<void> => {
+    await api.delete<void>(`/products/${id}`);
+  },
 
+  // Update product status
+  updateProductStatus: async (id: number, status: string): Promise<any> => {
+    const response = await api.patch<any>(`/products/${id}/status?status=${status}`);
+    return response.data;
+  },
 
   // Categories
   getCategories: async (): Promise<CategoryItem[]> => {
     try {
-      const response = await apiFetch<any>('/api/backoffice/categories');
-      if (response && Array.isArray(response.content)) return response.content;
-      if (Array.isArray(response)) return response;
+      const response = await api.get<any>('/categories');
+      if (response.data && Array.isArray(response.data.content)) return response.data.content;
+      if (Array.isArray(response.data)) return response.data;
       return [];
     } catch {
       return [];
@@ -122,9 +125,9 @@ export const productManagementApi = {
   // Brands
   getBrands: async (): Promise<BrandItem[]> => {
     try {
-      const response = await apiFetch<any>('/api/backoffice/brands');
-      if (response && Array.isArray(response.content)) return response.content;
-      if (Array.isArray(response)) return response;
+      const response = await api.get<any>('/brands');
+      if (response.data && Array.isArray(response.data.content)) return response.data.content;
+      if (Array.isArray(response.data)) return response.data;
       return [];
     } catch {
       return [];
@@ -132,68 +135,82 @@ export const productManagementApi = {
   },
 
   // Product Images
-  getProductImages: (productId: number) =>
-    apiFetch<any[]>(`/api/backoffice/product-images/product/${productId}`),
+  getProductImages: async (productId: number): Promise<any[]> => {
+    const response = await api.get<any[]>(`/product-images/product/${productId}`);
+    return response.data;
+  },
 
-  uploadProductImage: async (productId: number, file: File, isPrimary = true) => {
+  uploadProductImage: async (productId: number, file: File, isPrimary = true): Promise<any> => {
     const formData = new FormData();
     formData.append('productId', String(productId));
     formData.append('file', file);
     formData.append('isPrimary', String(isPrimary));
     formData.append('userId', '5'); // Active admin ID fallback
 
-    const token = localStorage.getItem('token');
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const res = await fetch('http://localhost:8080/api/backoffice/product-images/upload', {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-    if (!res.ok) throw new Error('Image upload failed');
-    return res.json();
+    const response = await api.post('/product-images/upload', formData);
+    return response.data;
   },
 
-  deleteProductImage: (imageId: number) =>
-    apiFetch<void>(`/api/backoffice/product-images/${imageId}`, {
-      method: 'DELETE',
-    }),
+  deleteProductImage: async (imageId: number): Promise<void> => {
+    await api.delete<void>(`/product-images/${imageId}`);
+  },
 
-  setPrimaryProductImage: (imageId: number, userId = 1) =>
-    apiFetch<any>(`/api/backoffice/product-images/${imageId}/primary?userId=${userId}`, {
-      method: 'PATCH',
-    }),
+  setPrimaryProductImage: async (imageId: number, userId = 1): Promise<any> => {
+    const response = await api.patch<any>(`/product-images/${imageId}/primary?userId=${userId}`);
+    return response.data;
+  },
 
   // Variations & Options
-  getVariations: () => apiFetch<any[]>('/api/backoffice/variations'),
-  createVariation: (name: string) =>
-    apiFetch<any>('/api/backoffice/variations', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    }),
-  deleteVariation: (id: number) =>
-    apiFetch<string>(`/api/backoffice/variations/${id}`, { method: 'DELETE' }),
+  getVariations: async (): Promise<any[]> => {
+    const response = await api.get<any[]>('/variations');
+    return response.data;
+  },
 
-  getVariationOptions: () => apiFetch<any[]>('/api/backoffice/variation-options'),
-  createVariationOption: (variationId: number, value: string) =>
-    apiFetch<any>('/api/backoffice/variation-options', {
-      method: 'POST',
-      body: JSON.stringify({ variation: { variationId }, value }),
-    }),
-  deleteVariationOption: (id: number) =>
-    apiFetch<string>(`/api/backoffice/variation-options/${id}`, { method: 'DELETE' }),
+  createVariation: async (name: string): Promise<any> => {
+    const response = await api.post<any>('/variations', { name });
+    return response.data;
+  },
+
+  deleteVariation: async (id: number): Promise<string> => {
+    const response = await api.delete<string>(`/variations/${id}`);
+    return response.data;
+  },
+
+  getVariationOptions: async (): Promise<any[]> => {
+    const response = await api.get<any[]>('/variation-options');
+    return response.data;
+  },
+
+  createVariationOption: async (variationId: number, value: string): Promise<any> => {
+    const response = await api.post<any>('/variation-options', {
+      variation: { variationId },
+      value,
+    });
+    return response.data;
+  },
+
+  deleteVariationOption: async (id: number): Promise<string> => {
+    const response = await api.delete<string>(`/variation-options/${id}`);
+    return response.data;
+  },
 
   // Variants & Inventory
-  getProductVariants: () => apiFetch<any[]>('/api/backoffice/product-variants'),
-  getVariantsByProductId: (productId: number) =>
-    apiFetch<any[]>(`/api/backoffice/product-variants/product/${productId}`),
-  createProductVariant: (payload: any) =>
-    apiFetch<any>('/api/backoffice/product-variants', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-  createProductVariantWithOptions: (payload: {
+  getProductVariants: async (): Promise<any[]> => {
+    const response = await api.get<any[]>('/product-variants');
+    return response.data;
+  },
+
+  getVariantsByProductId: async (productId: number): Promise<any[]> => {
+    const response = await api.get<any[]>(`/product-variants/product/${productId}`);
+    return response.data;
+  },
+
+  createProductVariant: async (payload: any): Promise<any> => {
+    const response = await api.post<any>('/product-variants', payload);
+    return response.data;
+  },
+
+  createProductVariantWithOptions: async (payload: {
     productId: number;
     sku?: string;
     sellingPrice: number;
@@ -204,68 +221,53 @@ export const productManagementApi = {
     expiryDate?: string;
     batchNumber?: string;
     isPerishable?: boolean;
-  }) =>
-    apiFetch<any>('/api/backoffice/product-variants/create-with-options', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-  assignOptionToVariant: (variantId: number, optionId: number) =>
-    apiFetch<any>('/api/backoffice/variant-option-values', {
-      method: 'POST',
-      body: JSON.stringify({ variant: { variantId }, option: { optionId } }),
-    }),
+  }): Promise<any> => {
+    const response = await api.post<any>('/product-variants/create-with-options', payload);
+    return response.data;
+  },
+
+  assignOptionToVariant: async (variantId: number, optionId: number): Promise<any> => {
+    const response = await api.post<any>('/variant-option-values', {
+      variant: { variantId },
+      option: { optionId },
+    });
+    return response.data;
+  },
 
   // Product Tags Mapping
-  getProductTags: (productId: number) =>
-    apiFetch<any[]>(`/api/backoffice/product-tags/product/${productId}`),
+  getProductTags: async (productId: number): Promise<any[]> => {
+    const response = await api.get<any[]>(`/product-tags/product/${productId}`);
+    return response.data;
+  },
 
-  assignProductTags: (productId: number, tagIds: number[]) =>
-    apiFetch<any[]>(`/api/backoffice/product-tags/product/${productId}`, {
-      method: 'POST',
-      body: JSON.stringify(tagIds),
-    }),
+  assignProductTags: async (productId: number, tagIds: number[]): Promise<any[]> => {
+    const response = await api.post<any[]>(`/product-tags/product/${productId}`, tagIds);
+    return response.data;
+  },
 
   // Product Variant Images
-  uploadProductVariantImage: async (variantId: number, file: File, isPrimary = false) => {
+  uploadProductVariantImage: async (variantId: number, file: File, isPrimary = false): Promise<any> => {
     const formData = new FormData();
     formData.append('variantId', String(variantId));
     formData.append('file', file);
     formData.append('isPrimary', String(isPrimary));
     formData.append('userId', '5'); // Active admin ID fallback
 
-    const token = localStorage.getItem('token');
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const res = await fetch('http://localhost:8080/api/backoffice/product-variant-images/upload', {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-    if (!res.ok) {
-      let errorMsg = `Upload failed (${res.status})`;
-      try {
-        const errorJson = await res.json();
-        errorMsg = errorJson.message || errorJson.error || JSON.stringify(errorJson);
-      } catch {
-        const errorText = await res.text().catch(() => '');
-        if (errorText) errorMsg = errorText;
-      }
-      throw new Error(errorMsg);
-    }
-    return res.json();
+    const response = await api.post('/product-variant-images/upload', formData);
+    return response.data;
   },
 
-  getVariantImages: (variantId: number) =>
-    apiFetch<any[]>(`/api/backoffice/product-variant-images/variant/${variantId}`),
+  getVariantImages: async (variantId: number): Promise<any[]> => {
+    const response = await api.get<any[]>(`/product-variant-images/variant/${variantId}`);
+    return response.data;
+  },
 
-  deleteVariantImage: (imageId: number) =>
-    apiFetch<void>(`/api/backoffice/product-variant-images/${imageId}`, {
-      method: 'DELETE',
-    }),
+  deleteVariantImage: async (imageId: number): Promise<void> => {
+    await api.delete<void>(`/product-variant-images/${imageId}`);
+  },
 
   // Excel Bulk Import & Template
-  downloadExcelTemplate: async () => {
+  downloadExcelTemplate: async (): Promise<void> => {
     const response = await api.get('/products/excel-template', {
       responseType: 'blob',
     });
