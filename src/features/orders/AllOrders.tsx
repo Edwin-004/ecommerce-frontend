@@ -91,7 +91,7 @@ export const AllOrders = () => {
     setSearchTermState(s);
     setCurrentPageState(0);
     setSelectedOrderNoState(null);
-    updateOrderQueryParams({ status: s, page: 0, orderNo: null });
+    updateOrderQueryParams({ search: s, page: 0, orderNo: null });
   };
 
   const setStartDate = (d: string) => {
@@ -372,7 +372,6 @@ export const AllOrders = () => {
       }
       setShowShipmentModal(false);
       setTrackingNumber('');
-      toast.success('Order status updated successfully.');
     } catch (error) {
       toast.error('Failed to update order status. Please try again.');
     }
@@ -464,6 +463,35 @@ export const AllOrders = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={styles.searchInput}
+            />
+          </div>
+
+          <div className={styles.datePickerContainer}>
+            <DatePicker
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              title="Start Date"
+              style={{ width: '135px' }}
+              inputStyle={{
+                border: 'none',
+                padding: '4px 22px 4px 0',
+                fontSize: '12px',
+                background: 'transparent',
+              }}
+            />
+            <span className={styles.dateSeparator}>-</span>
+            <DatePicker
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              title="End Date"
+              align="right"
+              style={{ width: '135px' }}
+              inputStyle={{
+                border: 'none',
+                padding: '4px 22px 4px 0',
+                fontSize: '12px',
+                background: 'transparent',
+              }}
             />
           </div>
 
@@ -576,35 +604,6 @@ export const AllOrders = () => {
                 </button>
               </div>
             )}
-          </div>
-
-          <div className={styles.datePickerContainer}>
-            <DatePicker
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              title="Start Date"
-              style={{ width: '135px' }}
-              inputStyle={{
-                border: 'none',
-                padding: '4px 22px 4px 0',
-                fontSize: '12px',
-                background: 'transparent',
-              }}
-            />
-            <span className={styles.dateSeparator}>-</span>
-            <DatePicker
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              title="End Date"
-              align="right"
-              style={{ width: '135px' }}
-              inputStyle={{
-                border: 'none',
-                padding: '4px 22px 4px 0',
-                fontSize: '12px',
-                background: 'transparent',
-              }}
-            />
           </div>
         </div>
       </div>

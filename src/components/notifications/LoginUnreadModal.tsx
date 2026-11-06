@@ -36,7 +36,12 @@ export const LoginUnreadModal: React.FC<LoginUnreadModalProps> = ({
     if (isRefundNotif(item)) {
       navigate('/admin/refunds');
     } else if (item.link && item.link !== '/admin/refunds') {
-      navigate(item.link);
+      if (item.link.startsWith('/admin/orders/')) {
+        const extractedOrderNo = item.link.split('/').pop();
+        navigate(`/admin/orders?orderNo=${extractedOrderNo}`);
+      } else {
+        navigate(item.link);
+      }
     }
   };
 
@@ -52,7 +57,8 @@ export const LoginUnreadModal: React.FC<LoginUnreadModalProps> = ({
             <div>
               <h3 className={styles.modalTitle}>Unread Notifications</h3>
               <p className={styles.modalSubtitle}>
-                You have <strong>{unreadCount}</strong> unread notification{unreadCount !== 1 ? 's' : ''} awaiting review.
+                You have <strong>{unreadCount}</strong> unread notification
+                {unreadCount !== 1 ? 's' : ''} awaiting review.
               </p>
             </div>
           </div>
@@ -98,11 +104,7 @@ export const LoginUnreadModal: React.FC<LoginUnreadModalProps> = ({
 
         {/* Footer Actions */}
         <div className={styles.modalFooter}>
-          <button
-            type="button"
-            className={styles.btnDismiss}
-            onClick={onClose}
-          >
+          <button type="button" className={styles.btnDismiss} onClick={onClose}>
             Dismiss
           </button>
           <button

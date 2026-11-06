@@ -28,7 +28,10 @@ export const SalesOrderDashboard: React.FC = () => {
     page: 0,
     size: 200,
   });
-  const orders: OrderResponseDto[] = useMemo(() => orderData?.content || [], [orderData]);
+  const orders: OrderResponseDto[] = useMemo(
+    () => orderData?.content || [],
+    [orderData]
+  );
 
   // Fetch Refund Stats
   const [refundStats, setRefundStats] = useState<RefundStats | null>(null);
@@ -54,19 +57,29 @@ export const SalesOrderDashboard: React.FC = () => {
   }, [refetchOrders]);
 
   // Compute Metrics
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr =
+    orders.length > 0 && orders[0].createdAt
+      ? orders[0].createdAt.split('T')[0]
+      : new Date().toISOString().split('T')[0];
 
   const todayOrders = useMemo(() => {
-    return orders.filter((o) => o.createdAt && o.createdAt.startsWith(todayStr));
+    return orders.filter(
+      (o) => o.createdAt && o.createdAt.startsWith(todayStr)
+    );
   }, [orders, todayStr]);
 
   const todayRevenue = useMemo(() => {
-    return todayOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+    return todayOrders.reduce(
+      (sum, o) => sum + (Number(o.totalAmount) || 0),
+      0
+    );
   }, [todayOrders]);
 
   const totalRevenue = useMemo(() => {
     return orders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
   }, [orders]);
+  console.log('Fetched Orders:', orders);
+  console.log('Today String:', todayStr);
 
   // Lifecycle status counts - using orderStatus from OrderResponseDto
   const pendingCount = useMemo(
@@ -130,9 +143,13 @@ export const SalesOrderDashboard: React.FC = () => {
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
-      const hours = String(d.getHours()).padStart(2, '0');
+      let hoursNum = d.getHours();
+      const ampm = hoursNum >= 12 ? 'PM' : 'AM';
+      hoursNum = hoursNum % 12;
+      hoursNum = hoursNum ? hoursNum : 12;
+      const hours = String(hoursNum).padStart(2, '0');
       const mins = String(d.getMinutes()).padStart(2, '0');
-      return `${day}/${month}/${year} ${hours}:${mins}`;
+      return `${day}/${month}/${year}, ${hours}:${mins} ${ampm}`;
     } catch {
       return dateStr;
     }
@@ -164,7 +181,8 @@ export const SalesOrderDashboard: React.FC = () => {
             <h1 className={styles.headerTitle}>Order &amp; Sales Operations</h1>
           </div>
           <p className={styles.headerSubtitle}>
-            Process customer orders, monitor fulfillment pipelines, and handle return requests
+            Process customer orders, monitor fulfillment pipelines, and handle
+            return requests
           </p>
         </div>
         <div className={styles.headerActions}>

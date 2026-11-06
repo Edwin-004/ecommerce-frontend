@@ -18,15 +18,15 @@ import { BrandsPage } from './features/brand/BrandsPage';
 import TagManagement from './features/tags/TagManagement';
 import { StaffList } from './features/staff/StaffList';
 import { CreateStaff } from './features/staff/CreateStaff';
-import { EditStaff } from './features/staff/EditStaff'; 
+import { EditStaff } from './features/staff/EditStaff';
 
 import { Profile } from './components/Profile';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { RefundManagementPage } from './features/refunds/RefundManagementPage';
 import './App.css';
 import { ShippingRates } from './features/shipping/ShippingRates';
-import AuditLog from './features/auditLog/AuditLog'; 
-import { ToastContainer } from 'react-toastify'; 
+import AuditLog from './features/auditLog/AuditLog';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
@@ -39,18 +39,31 @@ function App() {
         <Route
           element={
             <ProtectedRoute
-              allowedRoles={['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF']}
+              allowedRoles={[
+                'ADMIN',
+                'INVENTORY_STAFF',
+                'SALES_STAFF',
+                'ORDER_STAFF',
+              ]}
             />
           }
         >
-          <Route path="/admin/force-change-password" element={<FirstTimePassword />} />
+          <Route
+            path="/admin/force-change-password"
+            element={<FirstTimePassword />}
+          />
         </Route>
 
         {/* Back-office authenticated users check */}
         <Route
           element={
             <ProtectedRoute
-              allowedRoles={['ADMIN', 'INVENTORY_STAFF', 'SALES_STAFF', 'ORDER_STAFF']}
+              allowedRoles={[
+                'ADMIN',
+                'INVENTORY_STAFF',
+                'SALES_STAFF',
+                'ORDER_STAFF',
+              ]}
             />
           }
         >
@@ -62,14 +75,18 @@ function App() {
             {/* Product Catalog & Stock (ADMIN & INVENTORY_STAFF) */}
             <Route
               element={
-                <ProtectedRoute
-                  allowedRoles={['ADMIN', 'INVENTORY_STAFF']}
-                />
+                <ProtectedRoute allowedRoles={['ADMIN', 'INVENTORY_STAFF']} />
               }
             >
-              <Route path="/admin/products" element={<ProductManagementPage />} />
+              <Route
+                path="/admin/products"
+                element={<ProductManagementPage />}
+              />
               <Route path="/productlist" element={<ProductManagementPage />} />
-              <Route path="/admin/products/new" element={<CreateProductPage />} />
+              <Route
+                path="/admin/products/new"
+                element={<CreateProductPage />}
+              />
               <Route
                 path="/admin/products/edit/:id"
                 element={<EditProductPage />}
@@ -82,7 +99,10 @@ function App() {
               <Route path="/admin/variants" element={<VariantsPage />} />
               <Route path="/admin/variations" element={<VariantsPage />} />
               <Route path="/admin/inventory" element={<InventoryPage />} />
-              <Route path="/admin/categories" element={<CategoryManagement />} />
+              <Route
+                path="/admin/categories"
+                element={<CategoryManagement />}
+              />
               <Route path="/admin/brands" element={<BrandsPage />} />
               <Route path="/admin/tags" element={<TagManagement />} />
             </Route>
@@ -101,18 +121,12 @@ function App() {
             </Route>
 
             {/* Admin-only Routes: Staff Management, Reports & Audit Logs */}
-            <Route
-              element={
-                <ProtectedRoute
-                  allowedRoles={['ADMIN']}
-                />
-              }
-            >
+            <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
               <Route path="/admin/staff" element={<StaffList />} />
               <Route path="/admin/staff/new" element={<CreateStaff />} />
               <Route path="/admin/staff/edit/:id" element={<EditStaff />} />
               <Route path="/admin/reports" element={<ReportsPage />} />
-              <Route path="/admin/audit-logs" element={<AuditLog />} /> 
+              <Route path="/admin/audit-logs" element={<AuditLog />} />
             </Route>
 
             {/* Direct /admin redirects to dashboard */}
