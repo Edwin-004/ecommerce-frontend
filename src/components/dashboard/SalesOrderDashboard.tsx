@@ -15,7 +15,7 @@ import {
   FiLayers,
   FiPieChart,
 } from 'react-icons/fi';
-import { useGetOrdersQuery } from '../../features/orders/orderApi';
+import { useGetOrdersQuery, useGetOrderStatusCountsQuery } from '../../features/orders/orderApi';
 import type { OrderResponseDto } from '../../types/order';
 import { getRefundStats, type RefundStats } from '../../features/refunds/refundApi';
 import styles from './SalesOrderDashboard.module.css';
@@ -23,7 +23,7 @@ import styles from './SalesOrderDashboard.module.css';
 export const SalesOrderDashboard: React.FC = () => {
   const navigate = useNavigate();
 
-  // Fetch Orders
+  // Fetch Orders (Real-time recent list)
   const { data: orderData, refetch: refetchOrders } = useGetOrdersQuery({
     page: 0,
     size: 200,
@@ -32,6 +32,17 @@ export const SalesOrderDashboard: React.FC = () => {
     () => orderData?.content || [],
     [orderData]
   );
+
+  // Fetch Exact Aggregated Counts Across ALL Orders in System
+  const { data: statusCountsData, refetch: refetchStatusCounts } = useGetOrderStatusCountsQuery();
+
+  // Total count of ALL orders
+  const totalAllOrders = useMemo(() => {
+    if (statusCountsData?.TOTAL !== undefined) {
+      return Number(statusCountsData.TOTAL);
+    }
+    return orderData?.totalElements ?? orders.length;
+  }, [statusCountsData, orderData, orders]);
 
   // Fetch Refund Stats
   const [refundStats, setRefundStats] = useState<RefundStats | null>(null);
@@ -50,11 +61,12 @@ export const SalesOrderDashboard: React.FC = () => {
   useEffect(() => {
     const handleGlobalRefresh = () => {
       refetchOrders();
+      refetchStatusCounts();
       fetchRefunds();
     };
     window.addEventListener('admin:refresh', handleGlobalRefresh);
     return () => window.removeEventListener('admin:refresh', handleGlobalRefresh);
-  }, [refetchOrders]);
+  }, [refetchOrders, refetchStatusCounts]);
 
   // Compute Metrics
   const todayStr =
@@ -81,55 +93,70 @@ export const SalesOrderDashboard: React.FC = () => {
   console.log('Fetched Orders:', orders);
   console.log('Today String:', todayStr);
 
-  // Lifecycle status counts - using orderStatus from OrderResponseDto
-  const pendingCount = useMemo(
-    () =>
-      orders.filter((o) => {
-        const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
-        return s === 'PENDING' || s === 'PLACED';
-      }).length,
-    [orders]
-  );
+  // Lifecycle status counts across ALL orders (matches All Orders tabs: PENDING, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED)
+  const pendingCount = useMemo(() => {
+    if (statusCountsData) {
+      return (Number(statusCountsData.PENDING) || 0) + (Number(statusCountsData.PLACED) || 0);
+    }
+    return orders.filter((o) => {
+      const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
+      return s === 'PENDING' || s === 'PLACED';
+    }).length;
+  }, [statusCountsData, orders]);
 
-  const processingCount = useMemo(
-    () =>
-      orders.filter((o) => {
-        const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
-        return s === 'PROCESSING' || s === 'CONFIRMED';
-      }).length,
-    [orders]
-  );
+  const paidCount = useMemo(() => {
+    if (statusCountsData) {
+      return Number(statusCountsData.PAID) || 0;
+    }
+    return orders.filter((o) => {
+      const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
+      return s === 'PAID';
+    }).length;
+  }, [statusCountsData, orders]);
 
-  const shippedCount = useMemo(
-    () =>
-      orders.filter((o) => {
-        const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
-        return s === 'SHIPPED' || s === 'IN_TRANSIT';
-      }).length,
-    [orders]
-  );
+  const processingCount = useMemo(() => {
+    if (statusCountsData) {
+      return (Number(statusCountsData.PROCESSING) || 0) + (Number(statusCountsData.CONFIRMED) || 0);
+    }
+    return orders.filter((o) => {
+      const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
+      return s === 'PROCESSING' || s === 'CONFIRMED';
+    }).length;
+  }, [statusCountsData, orders]);
 
-  const deliveredCount = useMemo(
-    () =>
-      orders.filter((o) => {
-        const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
-        return s === 'DELIVERED';
-      }).length,
-    [orders]
-  );
+  const shippedCount = useMemo(() => {
+    if (statusCountsData) {
+      return (Number(statusCountsData.SHIPPED) || 0) + (Number(statusCountsData.IN_TRANSIT) || 0);
+    }
+    return orders.filter((o) => {
+      const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
+      return s === 'SHIPPED' || s === 'IN_TRANSIT';
+    }).length;
+  }, [statusCountsData, orders]);
 
-  const cancelledCount = useMemo(
-    () =>
-      orders.filter((o) => {
-        const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
-        return s === 'CANCELLED' || s === 'RETURNED';
-      }).length,
-    [orders]
-  );
+  const deliveredCount = useMemo(() => {
+    if (statusCountsData) {
+      return Number(statusCountsData.DELIVERED) || 0;
+    }
+    return orders.filter((o) => {
+      const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
+      return s === 'DELIVERED';
+    }).length;
+  }, [statusCountsData, orders]);
+
+  const cancelledCount = useMemo(() => {
+    if (statusCountsData) {
+      return (Number(statusCountsData.CANCELLED) || 0) + (Number(statusCountsData.RETURNED) || 0);
+    }
+    return orders.filter((o) => {
+      const s = (o.orderStatus || (o as unknown as { status?: string }).status || '').toUpperCase();
+      return s === 'CANCELLED' || s === 'RETURNED';
+    }).length;
+  }, [statusCountsData, orders]);
 
   // Non-redundant operational aggregates
-  const activeQueueCount = pendingCount + processingCount + shippedCount;
-  const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
+  const activeQueueCount = pendingCount + paidCount + processingCount + shippedCount;
+  const avgOrderValue = totalAllOrders > 0 ? (totalRevenue / (orders.length || 1)) : 0;
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-US').format(Math.round(val)) + ' MMK';
@@ -158,6 +185,7 @@ export const SalesOrderDashboard: React.FC = () => {
   const getStatusBadgeClass = (status: string) => {
     const s = (status || '').toUpperCase();
     if (s === 'DELIVERED' || s === 'COMPLETED') return styles.statusDelivered;
+    if (s === 'PAID') return styles.statusDelivered;
     if (s === 'PROCESSING' || s === 'CONFIRMED') return styles.statusProcessing;
     if (s === 'SHIPPED' || s === 'IN_TRANSIT') return styles.statusShipped;
     if (s === 'CANCELLED' || s === 'FAILED' || s === 'RETURNED') return styles.statusCancelled;
@@ -165,8 +193,8 @@ export const SalesOrderDashboard: React.FC = () => {
   };
 
   const getSharePercent = (count: number) => {
-    if (orders.length === 0) return 0;
-    return Math.round((count / orders.length) * 100);
+    if (totalAllOrders === 0) return 0;
+    return Math.round((count / totalAllOrders) * 100);
   };
 
   return (
@@ -262,7 +290,7 @@ export const SalesOrderDashboard: React.FC = () => {
               </span>
             ) : (
               <span className={`${styles.statTrend} ${styles.statTrendBlue}`}>
-                <FiLayers size={12} /> {pendingCount} pending • {processingCount} prep
+                <FiLayers size={12} /> {pendingCount} pending • {paidCount + processingCount} in-flight
               </span>
             )}
             <div className={`${styles.statIconBox} ${styles.iconBlue}`}>
@@ -288,7 +316,7 @@ export const SalesOrderDashboard: React.FC = () => {
           </div>
           <div className={styles.statBottomRow}>
             <span className={`${styles.statTrend} ${styles.statTrendPurple}`}>
-              <FiPieChart size={12} /> Across {orders.length} total order{orders.length === 1 ? '' : 's'}
+              <FiPieChart size={12} /> Across {totalAllOrders} total order{totalAllOrders === 1 ? '' : 's'}
             </span>
             <div className={`${styles.statIconBox} ${styles.iconPurple}`}>
               <FiTrendingUp size={14} />
@@ -357,7 +385,7 @@ export const SalesOrderDashboard: React.FC = () => {
             </div>
           </div>
           <span className={styles.pipelineBadge}>
-            Total Orders: {orders.length}
+            Total Orders: {totalAllOrders}
           </span>
         </div>
 
@@ -390,7 +418,35 @@ export const SalesOrderDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Step 2: PROCESSING */}
+          {/* Step 2: PAID */}
+          <div
+            className={`${styles.stepCard} ${styles.stepPaid}`}
+            onClick={() => navigate('/admin/orders?status=PAID')}
+            title="Click to view paid orders"
+          >
+            <div className={styles.stepTopRow}>
+              <span className={`${styles.stepTag} ${styles.tagPaid}`}>
+                <FiCheckCircle size={12} /> 2. PAID
+              </span>
+              <span className={styles.stepShare}>
+                {getSharePercent(paidCount)}%
+              </span>
+            </div>
+            <h4 className={styles.stepCount}>
+              {paidCount}
+            </h4>
+            <span className={styles.stepDesc}>
+              Payment verified &amp; ready
+            </span>
+            <div className={styles.stepProgressTrack}>
+              <div
+                className={styles.stepProgressFill}
+                style={{ width: `${getSharePercent(paidCount)}%`, background: '#06b6d4' }}
+              />
+            </div>
+          </div>
+
+          {/* Step 3: PROCESSING */}
           <div
             className={`${styles.stepCard} ${styles.stepProcessing}`}
             onClick={() => navigate('/admin/orders?status=PROCESSING')}
@@ -398,7 +454,7 @@ export const SalesOrderDashboard: React.FC = () => {
           >
             <div className={styles.stepTopRow}>
               <span className={`${styles.stepTag} ${styles.tagProcessing}`}>
-                <FiPackage size={12} /> 2. PROCESSING
+                <FiPackage size={12} /> 3. PROCESSING
               </span>
               <span className={styles.stepShare}>
                 {getSharePercent(processingCount)}%
@@ -418,7 +474,7 @@ export const SalesOrderDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Step 3: SHIPPED */}
+          {/* Step 4: SHIPPED */}
           <div
             className={`${styles.stepCard} ${styles.stepShipped}`}
             onClick={() => navigate('/admin/orders?status=SHIPPED')}
@@ -426,7 +482,7 @@ export const SalesOrderDashboard: React.FC = () => {
           >
             <div className={styles.stepTopRow}>
               <span className={`${styles.stepTag} ${styles.tagShipped}`}>
-                <FiTruck size={12} /> 3. SHIPPED
+                <FiTruck size={12} /> 4. SHIPPED
               </span>
               <span className={styles.stepShare}>
                 {getSharePercent(shippedCount)}%
@@ -446,7 +502,7 @@ export const SalesOrderDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Step 4: DELIVERED */}
+          {/* Step 5: DELIVERED */}
           <div
             className={`${styles.stepCard} ${styles.stepDelivered}`}
             onClick={() => navigate('/admin/orders?status=DELIVERED')}
@@ -454,7 +510,7 @@ export const SalesOrderDashboard: React.FC = () => {
           >
             <div className={styles.stepTopRow}>
               <span className={`${styles.stepTag} ${styles.tagDelivered}`}>
-                <FiCheckCircle size={12} /> 4. DELIVERED
+                <FiCheckCircle size={12} /> 5. DELIVERED
               </span>
               <span className={styles.stepShare}>
                 {getSharePercent(deliveredCount)}%
@@ -474,7 +530,7 @@ export const SalesOrderDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Step 5: CANCELLED */}
+          {/* Step 6: CANCELLED */}
           <div
             className={`${styles.stepCard} ${styles.stepCancelled}`}
             onClick={() => navigate('/admin/orders?status=CANCELLED')}
@@ -482,7 +538,7 @@ export const SalesOrderDashboard: React.FC = () => {
           >
             <div className={styles.stepTopRow}>
               <span className={`${styles.stepTag} ${styles.tagCancelled}`}>
-                <FiXCircle size={12} /> 5. CANCELLED
+                <FiXCircle size={12} /> 6. CANCELLED
               </span>
               <span className={styles.stepShare}>
                 {getSharePercent(cancelledCount)}%
@@ -523,7 +579,7 @@ export const SalesOrderDashboard: React.FC = () => {
             className={styles.headerLinkBtn}
             onClick={() => navigate('/admin/orders')}
           >
-            View All Orders ({orders.length}) <FiArrowRight size={13} />
+            View All Orders ({totalAllOrders}) <FiArrowRight size={13} />
           </button>
         </div>
 
