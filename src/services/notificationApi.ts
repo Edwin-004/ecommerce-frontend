@@ -1,4 +1,4 @@
-import { apiFetch } from '../utils/api';
+import { rootApi } from '../utils/axiosConfig';
 
 export interface AdminNotificationItem {
   notificationId: number;
@@ -21,27 +21,24 @@ export interface UnreadSummaryResponse {
 }
 
 export async function getRecentNotifications(): Promise<AdminNotificationItem[]> {
-  return apiFetch<AdminNotificationItem[]>('/api/v1/admin/notifications');
+  const response = await rootApi.get<AdminNotificationItem[]>('/v1/admin/notifications');
+  return response.data;
 }
 
 export async function getUnreadSummary(): Promise<UnreadSummaryResponse> {
-  return apiFetch<UnreadSummaryResponse>('/api/v1/admin/notifications/unread-count');
+  const response = await rootApi.get<UnreadSummaryResponse>('/v1/admin/notifications/unread-count');
+  return response.data;
 }
 
 export async function markNotificationAsRead(notificationId: number): Promise<void> {
-  await apiFetch<void>(`/api/v1/admin/notifications/${notificationId}/read`, {
-    method: 'PUT',
-  });
+  await rootApi.put<void>(`/v1/admin/notifications/${notificationId}/read`);
 }
 
 export async function markAllNotificationsAsRead(): Promise<void> {
-  await apiFetch<void>('/api/v1/admin/notifications/read-all', {
-    method: 'PUT',
-  });
+  await rootApi.put<void>('/v1/admin/notifications/read-all');
 }
 
 export async function triggerTestRefundNotification(): Promise<AdminNotificationItem> {
-  return apiFetch<AdminNotificationItem>('/api/v1/admin/notifications/test-refund', {
-    method: 'POST',
-  });
+  const response = await rootApi.post<AdminNotificationItem>('/v1/admin/notifications/test-refund');
+  return response.data;
 }

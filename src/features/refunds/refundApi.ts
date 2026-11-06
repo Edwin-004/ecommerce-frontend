@@ -1,4 +1,4 @@
-import { apiFetch } from '../../utils/api';
+import api, { rootApi } from '../../utils/axiosConfig';
 
 export type RefundStatusFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -34,40 +34,42 @@ export async function getRefunds(params: {
   startDate?: string;
   endDate?: string;
 }): Promise<RefundRequestItem[]> {
-  const query = new URLSearchParams();
-  if (params.search?.trim()) query.append('search', params.search.trim());
-  if (params.status && params.status !== 'ALL') query.append('status', params.status);
-  if (params.startDate) query.append('startDate', params.startDate);
-  if (params.endDate) query.append('endDate', params.endDate);
+  const queryParams: Record<string, any> = {};
+  if (params.search?.trim()) queryParams['search'] = params.search.trim();
+  if (params.status && params.status !== 'ALL') queryParams['status'] = params.status;
+  if (params.startDate) queryParams['startDate'] = params.startDate;
+  if (params.endDate) queryParams['endDate'] = params.endDate;
 
-  const qs = query.toString() ? `?${query.toString()}` : '';
-  return apiFetch<RefundRequestItem[]>(`/api/v1/admin/refunds${qs}`);
+  const response = await rootApi.get<RefundRequestItem[]>('/v1/admin/refunds', {
+    params: queryParams,
+  });
+  return response.data;
 }
 
 export async function getRefundStats(): Promise<RefundStats> {
-  return apiFetch<RefundStats>('/api/v1/admin/refunds/stats');
+  const response = await rootApi.get<RefundStats>('/v1/admin/refunds/stats');
+  return response.data;
 }
 
 export async function approveRefund(
   refundId: number,
   adminNote?: string
 ): Promise<RefundRequestItem> {
-  return apiFetch<RefundRequestItem>(`/api/v1/admin/refunds/${refundId}/approve`, {
-    method: 'PUT',
-    body: JSON.stringify({ adminNote: adminNote || '' }),
+  const response = await rootApi.put<RefundRequestItem>(`/v1/admin/refunds/${refundId}/approve`, {
+    adminNote: adminNote || '',
   });
+  return response.data;
 }
 
 export async function rejectRefund(
   refundId: number,
   adminNote: string
 ): Promise<RefundRequestItem> {
-  return apiFetch<RefundRequestItem>(`/api/v1/admin/refunds/${refundId}/reject`, {
-    method: 'PUT',
-    body: JSON.stringify({ adminNote }),
+  const response = await rootApi.put<RefundRequestItem>(`/v1/admin/refunds/${refundId}/reject`, {
+    adminNote,
   });
+  return response.data;
 }
-
 
 export async function exportRefundReport(
   format: 'pdf' | 'excel',
@@ -89,22 +91,17 @@ export async function exportRefundReport(
     }
   }
 
-  const token = localStorage.getItem('token');
-  const query = new URLSearchParams();
-  if (params.search?.trim()) query.append('search', params.search.trim());
-  if (params.status && params.status !== 'ALL') query.append('status', params.status);
-  if (params.startDate) query.append('startDate', params.startDate);
-  if (params.endDate) query.append('endDate', params.endDate);
-  if (params.columns?.length) query.append('columns', params.columns.join(','));
+  const queryParams: Record<string, any> = {};
+  if (params.search?.trim()) queryParams['search'] = params.search.trim();
+  if (params.status && params.status !== 'ALL') queryParams['status'] = params.status;
+  if (params.startDate) queryParams['startDate'] = params.startDate;
+  if (params.endDate) queryParams['endDate'] = params.endDate;
+  if (params.columns?.length) queryParams['columns'] = params.columns.join(',');
 
-  const url = `http://localhost:8080/api/v1/reports/refunds/export/${format}?${query.toString()}`;
-  const response = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  const response = await api.get(`/reports/refunds/export/${format}`, {
+    params: queryParams,
+    responseType: 'blob',
   });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Export failed');
-    throw new Error(errorText || `Export failed with status ${response.status}`);
-  }
-  return response.blob();
+  return response.data as Blob;
 }

@@ -1,5 +1,4 @@
-
-import { apiFetch } from '../../utils/api';
+import api from '../../utils/axiosConfig';
 
 // =====================================================
 // TYPES
@@ -15,20 +14,12 @@ export type BrandStatus =
 
 export interface Brand {
   brandId: number;
-
   brandName: string;
-
   brandLogoUrl: string | null;
-
   description: string | null;
-
   status: BrandStatus;
-
   createdAt: string;
-
   modifiedAt: string;
-
-  // Brand -> Categories
   categoryIds: number[];
 }
 
@@ -38,14 +29,9 @@ export interface Brand {
 
 export interface BrandRequest {
   brandName: string;
-
   brandLogoUrl: string;
-
   description: string;
-
   status: BrandStatus;
-
-  // Selected category IDs
   categoryIds: number[];
 }
 
@@ -55,26 +41,14 @@ export interface BrandRequest {
 
 export interface PageResponse<T> {
   content: T[];
-
   totalElements: number;
-
   totalPages: number;
-
   size: number;
-
   number: number;
 }
 
 // =====================================================
-// ENDPOINT
-// =====================================================
-
-const ENDPOINT =
-  '/api/backoffice/brands';
-
-// =====================================================
-// GET BRANDS
-// SEARCH + STATUS + PAGINATION
+// GET BRANDS (SEARCH + STATUS + PAGINATION)
 // =====================================================
 
 export async function getBrands(
@@ -85,58 +59,19 @@ export async function getBrands(
   sortBy = 'brandName',
   sortDir: 'asc' | 'desc' = 'asc'
 ): Promise<PageResponse<Brand>> {
+  const trimmedKeyword = keyword.trim();
 
-  const params =
-    new URLSearchParams();
+  const response = await api.get<PageResponse<Brand>>('/brands', {
+    params: {
+      page,
+      size,
+      sort: `${sortBy},${sortDir}`,
+      keyword: trimmedKeyword || undefined,
+      status: (status && status !== 'ALL') ? status : undefined,
+    },
+  });
 
-  params.set(
-    'page',
-    String(page)
-  );
-
-  params.set(
-    'size',
-    String(size)
-  );
-
-  // Spring Data format:
-  // sort=columnName,direction
-
-  params.set(
-    'sort',
-    `${sortBy},${sortDir}`
-  );
-
-  const trimmedKeyword =
-    keyword.trim();
-
-  if (trimmedKeyword) {
-
-    params.set(
-      'keyword',
-      trimmedKeyword
-    );
-  }
-
-  if (status && status !== 'ALL') {
-
-    params.set(
-      'status',
-      status
-    );
-  }
-
-  const url =
-    `${ENDPOINT}?${params.toString()}`;
-
-  console.log(
-    'GET BRANDS:',
-    url
-  );
-
-  return apiFetch<
-    PageResponse<Brand>
-  >(url);
+  return response.data;
 }
 
 // =====================================================
@@ -147,51 +82,21 @@ export async function createBrand(
   data: BrandRequest,
   file: File | null
 ): Promise<Brand> {
-
-  const formData =
-    new FormData();
-
-  // Backend:
-  // @RequestPart("request")
+  const formData = new FormData();
 
   formData.append(
     'request',
-    new Blob(
-      [
-        JSON.stringify(data),
-      ],
-      {
-        type: 'application/json',
-      }
-    )
+    new Blob([JSON.stringify(data)], {
+      type: 'application/json',
+    })
   );
-
-  // Backend:
-  // @RequestPart(
-  //     value = "file",
-  //     required = false
-  // )
 
   if (file) {
-
-    formData.append(
-      'file',
-      file
-    );
+    formData.append('file', file);
   }
 
-  console.log(
-    'CREATE BRAND REQUEST:',
-    data
-  );
-
-  return apiFetch<Brand>(
-    ENDPOINT,
-    {
-      method: 'POST',
-      body: formData,
-    }
-  );
+  const response = await api.post<Brand>('/brands', formData);
+  return response.data;
 }
 
 // =====================================================
@@ -203,42 +108,19 @@ export async function updateBrand(
   data: BrandRequest,
   file: File | null
 ): Promise<Brand> {
-
-  const formData =
-    new FormData();
+  const formData = new FormData();
 
   formData.append(
     'request',
-    new Blob(
-      [
-        JSON.stringify(data),
-      ],
-      {
-        type: 'application/json',
-      }
-    )
+    new Blob([JSON.stringify(data)], {
+      type: 'application/json',
+    })
   );
 
   if (file) {
-
-    formData.append(
-      'file',
-      file
-    );
+    formData.append('file', file);
   }
 
-  console.log(
-    'UPDATE BRAND:',
-    brandId,
-    data
-  );
-
-  return apiFetch<Brand>(
-    `${ENDPOINT}/${brandId}`,
-    {
-      method: 'PUT',
-      body: formData,
-    }
-  );
+  const response = await api.put<Brand>(`/brands/${brandId}`, formData);
+  return response.data;
 }
-

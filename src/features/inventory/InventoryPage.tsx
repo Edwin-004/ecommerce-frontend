@@ -21,6 +21,7 @@ import {
 import styles from './Inventory.module.css';
 import { formatDateTime } from '../../utils/dateUtils';
 import { inventoryApi } from './inventoryApi';
+import { API_BASE_URL } from '../../utils/axiosConfig';
 import type { InventoryItem, InventoryTransaction } from '../../types/inventory';
 import {
   RestockModal,
@@ -714,7 +715,7 @@ export const InventoryPage: React.FC = () => {
                           <div className={styles.productThumb} style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                             {item.imageUrl ? (
                               <img
-                                src={item.imageUrl.startsWith('http') ? item.imageUrl : `http://localhost:8080${item.imageUrl}`}
+                                src={item.imageUrl.startsWith('http') ? item.imageUrl : `${API_BASE_URL}${item.imageUrl}`}
                                 alt={item.productName || 'Product'}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 onError={(e) => {

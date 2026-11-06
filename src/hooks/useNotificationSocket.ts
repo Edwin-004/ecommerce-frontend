@@ -114,7 +114,10 @@ export function useNotificationSocket() {
       }
 
       // Connect to Spring Boot WebSocket endpoint
-      const wsUrl = 'ws://localhost:8080/ws/notifications';
+            const baseHost = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080')
+        .replace(/^http:\/\//, 'ws://')
+        .replace(/^https:\/\//, 'wss://');
+      const wsUrl = `${baseHost}/ws/notifications`;
       const ws = new WebSocket(wsUrl);
       socketRef.current = ws;
 

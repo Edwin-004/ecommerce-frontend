@@ -429,7 +429,7 @@ export const ProductManagementPage: React.FC = () => {
           : 'It will become active and available for customer purchases.'
       }`,
       confirmText: isCurrentlyActive ? 'Deactivate Product' : 'Activate Product',
-      variant: isCurrentlyActive ? 'danger' : 'primary',
+      variant: isCurrentlyActive ? 'danger' : 'info',
       onConfirm: async () => {
         try {
           await productManagementApi.updateProductStatus(productId, newStatus);

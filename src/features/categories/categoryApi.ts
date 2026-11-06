@@ -1,31 +1,12 @@
-
-import axios from "axios";
-
+import api from "../../utils/axiosConfig";
 import {
-  type  CategoryRequestDto,
+  type CategoryRequestDto,
   type CategoryResponseDto,
   type PageResponse,
 } from "../../types/category";
 
-const API_BASE_URL =
-  "http://localhost:8080/api/backoffice/categories";
-
 // =========================================================
-// AUTHORIZATION HEADER
-// =========================================================
-
-const getHeaders = () => {
-  const token = localStorage.getItem("token");
-
-  return token
-    ? {
-        Authorization: `Bearer ${token}`,
-      }
-    : {};
-};
-
-// =========================================================
-// CATEGORY API
+// CATEGORY API (Centered via axiosConfig)
 // =========================================================
 
 export const categoryApi = {
@@ -33,15 +14,7 @@ export const categoryApi = {
   createCategory: async (
     data: CategoryRequestDto
   ): Promise<CategoryResponseDto> => {
-    const response =
-      await axios.post<CategoryResponseDto>(
-        API_BASE_URL,
-        data,
-        {
-          headers: getHeaders(),
-        }
-      );
-
+    const response = await api.post<CategoryResponseDto>('/categories', data);
     return response.data;
   },
 
@@ -50,35 +23,20 @@ export const categoryApi = {
     page = 0,
     size = 20,
     sort = "categoryId,desc"
-  ): Promise<
-    PageResponse<CategoryResponseDto>
-  > => {
-    const response =
-      await axios.get<
-        PageResponse<CategoryResponseDto>
-      >(API_BASE_URL, {
-        params: {
-          page,
-          size,
-          sort,
-        },
-        headers: getHeaders(),
-      });
-
+  ): Promise<PageResponse<CategoryResponseDto>> => {
+    const response = await api.get<PageResponse<CategoryResponseDto>>('/categories', {
+      params: {
+        page,
+        size,
+        sort,
+      },
+    });
     return response.data;
   },
 
   // Get Category Tree
-  getCategoryTree: async (): Promise<
-    CategoryResponseDto[]
-  > => {
-    const response =
-      await axios.get<
-        CategoryResponseDto[]
-      >(`${API_BASE_URL}/tree`, {
-        headers: getHeaders(),
-      });
-
+  getCategoryTree: async (): Promise<CategoryResponseDto[]> => {
+    const response = await api.get<CategoryResponseDto[]>('/categories/tree');
     return response.data;
   },
 
@@ -86,14 +44,7 @@ export const categoryApi = {
   getCategoryById: async (
     id: number
   ): Promise<CategoryResponseDto> => {
-    const response =
-      await axios.get<CategoryResponseDto>(
-        `${API_BASE_URL}/${id}`,
-        {
-          headers: getHeaders(),
-        }
-      );
-
+    const response = await api.get<CategoryResponseDto>(`/categories/${id}`);
     return response.data;
   },
 
@@ -102,15 +53,7 @@ export const categoryApi = {
     id: number,
     data: CategoryRequestDto
   ): Promise<CategoryResponseDto> => {
-    const response =
-      await axios.put<CategoryResponseDto>(
-        `${API_BASE_URL}/${id}`,
-        data,
-        {
-          headers: getHeaders(),
-        }
-      );
-
+    const response = await api.put<CategoryResponseDto>(`/categories/${id}`, data);
     return response.data;
   },
 
@@ -118,12 +61,6 @@ export const categoryApi = {
   deleteCategory: async (
     id: number
   ): Promise<void> => {
-    await axios.delete(
-      `${API_BASE_URL}/${id}`,
-      {
-        headers: getHeaders(),
-      }
-    );
+    await api.delete(`/categories/${id}`);
   },
 };
-

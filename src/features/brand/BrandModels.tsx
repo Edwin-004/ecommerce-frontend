@@ -14,7 +14,7 @@ import {
 } from './brandApi';
 import { FiImage, FiUpload, FiCheck } from 'react-icons/fi';
 
-const API_BASE_URL = 'http://localhost:8080';
+import { API_BASE_URL } from '../../utils/axiosConfig';
 
 export interface Category {
   categoryId: number;
