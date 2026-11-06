@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../store';
+import { API_BASE_URL } from '../utils/axiosConfig';
 import {
   getRecentNotifications,
   getUnreadSummary,
@@ -114,7 +115,7 @@ export function useNotificationSocket() {
       }
 
       // Connect to Spring Boot WebSocket endpoint
-            const baseHost = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080')
+            const baseHost = API_BASE_URL
         .replace(/^http:\/\//, 'ws://')
         .replace(/^https:\/\//, 'wss://');
       const wsUrl = `${baseHost}/ws/notifications`;

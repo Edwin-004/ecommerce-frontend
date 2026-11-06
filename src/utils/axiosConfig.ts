@@ -5,7 +5,7 @@ import { store } from '../store';
 import { logout } from '../features/auth/authSlice';
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8004';
 
 // Attach authorization header interceptor
 const attachAuthInterceptor = (instance: AxiosInstance) => {
