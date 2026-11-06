@@ -118,6 +118,15 @@ export const ProductManagementPage: React.FC = () => {
     fetchInitialData();
   }, []);
 
+  // Listen to Global Topbar Refresh Event
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      fetchInitialData();
+    };
+    window.addEventListener('admin:refresh', handleGlobalRefresh);
+    return () => window.removeEventListener('admin:refresh', handleGlobalRefresh);
+  }, []);
+
   useEffect(() => {
     if (viewProduct?.productId) {
       setActiveImageIdx(0);

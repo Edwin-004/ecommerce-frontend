@@ -16,6 +16,17 @@ const attachAuthInterceptor = (instance: AxiosInstance) => {
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
       }
+      // If data is FormData, remove 'Content-Type' so Axios & the browser can set multipart/form-data with the correct boundary
+      if (config.data instanceof FormData) {
+        if (config.headers) {
+          delete config.headers['Content-Type'];
+          delete config.headers['content-type'];
+          if (typeof (config.headers as any).delete === 'function') {
+            (config.headers as any).delete('Content-Type');
+            (config.headers as any).delete('content-type');
+          }
+        }
+      }
       return config;
     },
     (error) => Promise.reject(error)
