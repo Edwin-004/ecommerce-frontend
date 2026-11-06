@@ -91,7 +91,7 @@ export const AdminDashboard = () => {
   const [chartType, setChartType] = useState<'bar' | 'area'>('bar');
 
   // Real-time Orders & Revenue from Backend
-  const { data: orderData } = useGetOrdersQuery(
+  const { data: orderData, refetch: refetchOrders } = useGetOrdersQuery(
     { page: 0, size: 200 },
     { skip: !canAccessOperations }
   );
@@ -107,16 +107,14 @@ export const AdminDashboard = () => {
     }, 0);
   }, [orders]);
 
-  useEffect(() => {
-    // 1. Fetch Low Stock Alerts (Admin, Inventory, Sales)
+  const fetchAdminData = () => {
+    refetchOrders?.();
     if (canAccessInventory) {
       inventoryApi
         .getLowStockAlerts()
         .then((data) => setLowStockCount(data.length))
         .catch(() => setLowStockCount(0));
     }
-
-    // 2. Fetch Staff Count (Strictly ADMIN only)
     if (isAdmin) {
       api
         .get('/staff')
@@ -127,15 +125,26 @@ export const AdminDashboard = () => {
         })
         .catch(() => setStaffCount(0));
     }
-
-    // 3. Fetch Products for Category Analysis (ADMIN and INVENTORY_STAFF only)
     if (canAccessCatalog) {
       productManagementApi
         .getProducts()
         .then((data) => setProducts(data))
         .catch(() => setProducts([]));
     }
+  };
+
+  useEffect(() => {
+    fetchAdminData();
   }, [isAdmin, canAccessCatalog, canAccessInventory]);
+
+  // Listen to Global Topbar Refresh Event
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      fetchAdminData();
+    };
+    window.addEventListener('admin:refresh', handleGlobalRefresh);
+    return () => window.removeEventListener('admin:refresh', handleGlobalRefresh);
+  }, [isAdmin, canAccessCatalog, canAccessInventory, refetchOrders]);
 
   // =========================================================
   // 1. REVENUE & ORDERS TREND GRAPH DATA
