@@ -9,6 +9,7 @@ import {
   FiLock,
   FiSave,
   FiCheckCircle,
+  FiCheck,
   FiAlertCircle,
   FiInfo,
   FiEye,
@@ -129,23 +130,61 @@ export const Profile = () => {
     }
   };
 
+  // Real-time Password Validation Criteria
+  const newPw = passwords.newPassword;
+  const currPw = passwords.currentPassword;
+  const confirmPw = passwords.confirmPassword;
+
+  const hasMinLength = newPw.length >= 8;
+  const hasUppercase = /[A-Z]/.test(newPw);
+  const hasLowercase = /[a-z]/.test(newPw);
+  const hasNumber = /[0-9]/.test(newPw);
+  const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPw);
+  const isDifferent = currPw.length > 0 && newPw.length > 0 && newPw !== currPw;
+  const isMatch = confirmPw.length > 0 && newPw === confirmPw;
+  const isAllCriteriaMet = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecial && (currPw.length === 0 || isDifferent);
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
 
-    if (passwords.newPassword.length < 6) {
-      setMessage({
-        type: 'error',
-        text: 'New password must be at least 6 characters long.',
-      });
+    if (!passwords.currentPassword) {
+      setMessage({ type: 'error', text: 'Current password is required.' });
+      return;
+    }
+
+    if (!hasMinLength) {
+      setMessage({ type: 'error', text: 'New password must be at least 8 characters long.' });
+      return;
+    }
+
+    if (!hasUppercase) {
+      setMessage({ type: 'error', text: 'New password must contain at least one uppercase letter (A-Z).' });
+      return;
+    }
+
+    if (!hasLowercase) {
+      setMessage({ type: 'error', text: 'New password must contain at least one lowercase letter (a-z).' });
+      return;
+    }
+
+    if (!hasNumber) {
+      setMessage({ type: 'error', text: 'New password must contain at least one number (0-9).' });
+      return;
+    }
+
+    if (!hasSpecial) {
+      setMessage({ type: 'error', text: 'New password must contain at least one special character (e.g. !@#$%^&*).' });
+      return;
+    }
+
+    if (passwords.newPassword === passwords.currentPassword) {
+      setMessage({ type: 'error', text: 'New password must be different from current password.' });
       return;
     }
 
     if (passwords.newPassword !== passwords.confirmPassword) {
-      setMessage({
-        type: 'error',
-        text: 'New password and confirm password do not match.',
-      });
+      setMessage({ type: 'error', text: 'New password and confirm password do not match.' });
       return;
     }
 
@@ -284,7 +323,7 @@ export const Profile = () => {
               <input
                 type={showNewPassword ? 'text' : 'password'}
                 name="newPassword"
-                placeholder="Enter new password (min. 6 characters)"
+                placeholder="Enter new password (min. 8 characters)"
                 value={passwords.newPassword}
                 onChange={handleInputChange}
                 required
@@ -298,6 +337,37 @@ export const Profile = () => {
               >
                 {showNewPassword ? <FiEyeOff /> : <FiEye />}
               </button>
+            </div>
+
+            {/* Real-time Password Requirements Checklist */}
+            <div className={styles.requirementsContainer}>
+              <span className={styles.requirementsHeader}>Password Requirements:</span>
+              <div className={`${styles.requirementItem} ${hasMinLength ? styles.requirementValid : ''}`}>
+                {hasMinLength ? <FiCheck size={13} /> : <span className={styles.reqDot} />}
+                <span>At least 8 characters long</span>
+              </div>
+              <div className={`${styles.requirementItem} ${hasUppercase ? styles.requirementValid : ''}`}>
+                {hasUppercase ? <FiCheck size={13} /> : <span className={styles.reqDot} />}
+                <span>At least one uppercase letter (A-Z)</span>
+              </div>
+              <div className={`${styles.requirementItem} ${hasLowercase ? styles.requirementValid : ''}`}>
+                {hasLowercase ? <FiCheck size={13} /> : <span className={styles.reqDot} />}
+                <span>At least one lowercase letter (a-z)</span>
+              </div>
+              <div className={`${styles.requirementItem} ${hasNumber ? styles.requirementValid : ''}`}>
+                {hasNumber ? <FiCheck size={13} /> : <span className={styles.reqDot} />}
+                <span>At least one number (0-9)</span>
+              </div>
+              <div className={`${styles.requirementItem} ${hasSpecial ? styles.requirementValid : ''}`}>
+                {hasSpecial ? <FiCheck size={13} /> : <span className={styles.reqDot} />}
+                <span>At least one special character (!@#$%^&*)</span>
+              </div>
+              {currPw.length > 0 && (
+                <div className={`${styles.requirementItem} ${isDifferent ? styles.requirementValid : ''}`}>
+                  {isDifferent ? <FiCheck size={13} /> : <span className={styles.reqDot} />}
+                  <span>Different from current password</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -322,6 +392,17 @@ export const Profile = () => {
                 {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
+            {confirmPw.length > 0 && (
+              isMatch ? (
+                <div className={styles.matchBadgeSuccess}>
+                  <FiCheck size={13} /> Passwords match
+                </div>
+              ) : (
+                <div className={styles.matchBadgeError}>
+                  <FiAlertCircle size={13} /> Passwords do not match
+                </div>
+              )
+            )}
           </div>
 
           <button

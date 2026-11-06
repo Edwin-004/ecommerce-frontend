@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../../store';
+import { toast } from 'react-toastify';
 import { FiEdit2, FiSlash, FiCheck, FiFilter, FiShield, FiUser } from 'react-icons/fi';
 import api from '../../utils/axiosConfig'; 
 import './StaffList.css';
@@ -52,13 +53,11 @@ export const StaffList: React.FC = () => {
     const setSearchQuery = (query: string) => updateQueryParams({ search: query, page: 1 });
     const setCurrentPage = (page: number) => updateQueryParams({ page });
 
-
-
-
     const itemsPerPage = 8;
 
     const [showModal, setShowModal] = useState(false);
     const [selectedStaff, setSelectedStaff] = useState<{ id: number; name: string; status: string; roleName: string } | null>(null);
+    const [actionLoading, setActionLoading] = useState(false);
 
     const fetchStaff = async () => {
         try {
@@ -68,7 +67,9 @@ export const StaffList: React.FC = () => {
             setError(null);
         } catch (err: any) {
             console.error("Error fetching staff data:", err);
-            setError(err.response?.data?.message || "Failed to load staff accounts.");
+            const msg = err.response?.data?.message || "Failed to load staff accounts.";
+            setError(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
@@ -102,8 +103,6 @@ export const StaffList: React.FC = () => {
             null
         );
     };
-
-    // Page reset handled directly inside updateQueryParams
 
     const formatDateTimeDMY = (dateString?: string): string => {
         if (!dateString) return '—';
@@ -157,26 +156,30 @@ export const StaffList: React.FC = () => {
         }
     };
 
-    const handleEdit = (id: number) => {
+    const handleEdit = (id: number, email?: string) => {
+        if (email?.toLowerCase() === 'admin@ecommerce.com' && !isCurrentSuperAdmin) {
+            toast.warning("You do not have permission to view or edit the Super Administrator account.");
+            return;
+        }
         navigate(`/admin/staff/edit/${id}`);
     };
 
     const openConfirmModal = (id: number, name: string, status: string, roleName: string, email: string) => {
         // Prevent modifying own status
-        if (currentUser.email === email || currentUser.username === name) {
-            alert("You cannot change the status of your own logged-in account.");
+        if (currentUser.email?.toLowerCase() === email?.toLowerCase() || currentUser.username === name) {
+            toast.warning("You cannot change the status of your own logged-in account.");
             return;
         }
 
         // Super Admin account can never be deactivated
         if (email?.toLowerCase() === 'admin@ecommerce.com') {
-            alert("The primary Super Administrator account can never be suspended.");
+            toast.error("The primary Super Administrator account can never be suspended.");
             return;
         }
 
         // Administrator accounts can only be suspended or deactivated by Super Administrator
         if (roleName?.toUpperCase() === 'ADMIN' && !isCurrentSuperAdmin) {
-            alert("Only the primary Super Administrator can suspend or deactivate another administrator.");
+            toast.error("Only the primary Super Administrator can suspend or deactivate another administrator.");
             return;
         }
 
@@ -187,21 +190,30 @@ export const StaffList: React.FC = () => {
     const handleConfirmAction = async () => {
         if (!selectedStaff) return;
 
-        const { id, status } = selectedStaff;
+        const { id, name, status } = selectedStaff;
         const newStatus = status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
+        setActionLoading(true);
         try {
             await api.put(`/staff/${id}/status`, null, {
                 params: { status: newStatus }
             });
 
             setStaffList(prevList => prevList.map(staff => staff.userId === id ? { ...staff, status: newStatus } : staff));
+            
+            if (newStatus === 'INACTIVE') {
+                toast.success(`Account for "${name}" has been suspended.`);
+            } else {
+                toast.success(`Account for "${name}" has been activated.`);
+            }
             setShowModal(false);
             setSelectedStaff(null);
         } catch (err: any) {
             console.error("Error updating account status:", err);
-            alert(err.response?.data?.message || "Failed to update account status.");
+            toast.error(err.response?.data?.message || "Failed to update account status.");
             setShowModal(false);
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -342,7 +354,7 @@ export const StaffList: React.FC = () => {
                                     const rowNumber = startIndex + index + 1;
                                     const isSuperAdminUser = staff.email?.toLowerCase() === 'admin@ecommerce.com';
                                     const isAdminRole = staff.roleName?.toUpperCase() === 'ADMIN';
-                                    const isSelf = currentUser.email === staff.email || currentUser.username === staff.userName;
+                                    const isSelf = currentUser.email?.toLowerCase() === staff.email?.toLowerCase() || currentUser.username === staff.userName;
                                     const canManageTarget = isCurrentSuperAdmin || !isAdminRole;
 
                                     return (
@@ -418,15 +430,18 @@ export const StaffList: React.FC = () => {
                                             {/* Actions - Modern Compact Soft Pills */}
                                             <td style={{ textAlign: 'center' }}>
                                                 <div className="action-pill-group">
-                                                    <button
-                                                        type="button"
-                                                        className="action-pill action-pill-edit"
-                                                        onClick={() => handleEdit(staff.userId)}
-                                                        title="Edit account details"
-                                                    >
-                                                        <FiEdit2 size={12} style={{ flexShrink: 0 }} />
-                                                        <span>Edit</span>
-                                                    </button>
+                                                    {/* Hide Edit button if this is Super Admin and logged-in user is NOT Super Admin */}
+                                                    {(!isSuperAdminUser || isCurrentSuperAdmin) && (
+                                                        <button
+                                                            type="button"
+                                                            className="action-pill action-pill-edit"
+                                                            onClick={() => handleEdit(staff.userId, staff.email)}
+                                                            title="Edit account details"
+                                                        >
+                                                            <FiEdit2 size={12} style={{ flexShrink: 0 }} />
+                                                            <span>Edit</span>
+                                                        </button>
+                                                    )}
 
                                                     {isSuperAdminUser ? (
                                                         <span className="action-pill-protected" title="Primary Super Administrator cannot be suspended">
@@ -521,50 +536,81 @@ export const StaffList: React.FC = () => {
                 </div>
             </div>
 
+            {/* Modern Status Confirmation Modal */}
             {showModal && selectedStaff && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-                    backdropFilter: 'blur(4px)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1000
-                }}>
-                    <div style={{
-                        backgroundColor: '#ffffff',
-                        padding: '28px',
-                        borderRadius: '14px',
-                        width: '420px',
-                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                        textAlign: 'center'
-                    }}>
-                        <h3 style={{ marginBottom: '10px', fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
+                <div 
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(15, 23, 42, 0.45)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 1000
+                    }}
+                    onClick={() => !actionLoading && setShowModal(false)}
+                >
+                    <div 
+                        style={{
+                            backgroundColor: '#ffffff',
+                            padding: '30px 28px',
+                            borderRadius: '16px',
+                            width: '420px',
+                            maxWidth: '90%',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            textAlign: 'center',
+                            position: 'relative'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div style={{
+                            width: '56px',
+                            height: '56px',
+                            borderRadius: '50%',
+                            backgroundColor: selectedStaff.status === 'ACTIVE' ? '#fee2e2' : '#dcfce7',
+                            border: `2px solid ${selectedStaff.status === 'ACTIVE' ? '#fecaca' : '#bbf7d0'}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 16px',
+                            fontSize: '24px'
+                        }}>
+                            {selectedStaff.status === 'ACTIVE' ? '⚠️' : '✅'}
+                        </div>
+
+                        <h3 style={{ marginBottom: '8px', fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>
                             {selectedStaff.status === 'ACTIVE' ? 'Confirm Account Suspension' : 'Confirm Account Activation'}
                         </h3>
-                        <p style={{ marginBottom: '22px', color: '#475569', fontSize: '13.5px', lineHeight: '1.5' }}>
-                            Are you sure you want to <b>{selectedStaff.status === 'ACTIVE' ? 'suspend' : 'activate'}</b> the account for <b>{selectedStaff.name}</b>?
-                            {selectedStaff.status === 'ACTIVE' && (
-                                <span style={{ display: 'block', marginTop: '6px', color: '#dc2626', fontSize: '12px' }}>
-                                    Suspended users will lose access to the system immediately.
+
+                        <p style={{ marginBottom: '20px', color: '#475569', fontSize: '13.5px', lineHeight: '1.6' }}>
+                            Are you sure you want to <strong>{selectedStaff.status === 'ACTIVE' ? 'suspend' : 'activate'}</strong> the account for <strong style={{ color: '#0f172a' }}>{selectedStaff.name}</strong>?
+                            {selectedStaff.status === 'ACTIVE' ? (
+                                <span style={{ display: 'block', marginTop: '8px', color: '#dc2626', fontSize: '12.5px', backgroundColor: '#fef2f2', padding: '8px 12px', borderRadius: '8px', border: '1px solid #fee2e2' }}>
+                                    🔒 Suspended users will lose their active session and be blocked from signing in immediately.
+                                </span>
+                            ) : (
+                                <span style={{ display: 'block', marginTop: '8px', color: '#15803d', fontSize: '12.5px', backgroundColor: '#f0fdf4', padding: '8px 12px', borderRadius: '8px', border: '1px solid #dcfce7' }}>
+                                    🔓 Active users will be granted full access according to their assigned role permissions.
                                 </span>
                             )}
                         </p>
+
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                             <button 
                                 type="button"
+                                disabled={actionLoading}
                                 onClick={() => setShowModal(false)}
                                 style={{
-                                    padding: '9px 18px',
+                                    padding: '9.5px 20px',
                                     backgroundColor: '#f1f5f9',
                                     color: '#475569',
                                     border: '1px solid #cbd5e1',
                                     borderRadius: '8px',
-                                    cursor: 'pointer',
+                                    cursor: actionLoading ? 'not-allowed' : 'pointer',
                                     fontWeight: '600',
                                     fontSize: '13px'
                                 }}
@@ -573,20 +619,21 @@ export const StaffList: React.FC = () => {
                             </button>
                             <button 
                                 type="button"
+                                disabled={actionLoading}
                                 onClick={handleConfirmAction}
                                 style={{
-                                    padding: '9px 20px',
+                                    padding: '9.5px 22px',
                                     backgroundColor: selectedStaff.status === 'ACTIVE' ? '#dc2626' : '#16a34a',
                                     color: '#ffffff',
                                     border: 'none',
                                     borderRadius: '8px',
-                                    cursor: 'pointer',
+                                    cursor: actionLoading ? 'not-allowed' : 'pointer',
                                     fontWeight: '600',
                                     fontSize: '13px',
-                                    boxShadow: selectedStaff.status === 'ACTIVE' ? '0 2px 8px rgba(220, 38, 38, 0.3)' : '0 2px 8px rgba(22, 163, 74, 0.3)'
+                                    boxShadow: selectedStaff.status === 'ACTIVE' ? '0 4px 12px rgba(220, 38, 38, 0.25)' : '0 4px 12px rgba(22, 163, 74, 0.25)'
                                 }}
                             >
-                                Confirm {selectedStaff.status === 'ACTIVE' ? 'Suspension' : 'Activation'}
+                                {actionLoading ? 'Updating...' : `Yes, ${selectedStaff.status === 'ACTIVE' ? 'Suspend Account' : 'Activate Account'}`}
                             </button>
                         </div>
                     </div>
@@ -595,3 +642,5 @@ export const StaffList: React.FC = () => {
         </div>
     );
 };
+
+export default StaffList;

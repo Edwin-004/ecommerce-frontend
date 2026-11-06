@@ -70,7 +70,15 @@ const authSlice = createSlice({
       state.role = null;
       state.permissions = [];
       state.mustChangePassword = false;
-      localStorage.clear();
+
+      // Remove authentication session keys only - PRESERVE user avatars and local settings
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      localStorage.removeItem('email');
+      localStorage.removeItem('role');
+      localStorage.removeItem('permissions');
+      localStorage.removeItem('mustChangePassword');
+      localStorage.removeItem('currentUserAvatar');
     },
   },
 });

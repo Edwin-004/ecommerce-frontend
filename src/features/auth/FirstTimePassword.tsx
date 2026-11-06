@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { logout } from './authSlice';
 import { type RootState } from '../../store';
 import api from '../../utils/axiosConfig';
+import { validatePasswordStrength } from '../../utils/passwordPolicy';
 import { FiLock, FiEye, FiEyeOff, FiCheck, FiLogOut, FiShield, FiAlertCircle } from 'react-icons/fi';
 import './FirstTimePassword.css';
 
@@ -21,7 +22,7 @@ export const FirstTimePassword: React.FC = () => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Field-specific Custom Error States (No browser default balloons)
+  // Field-specific Custom Error States
   const [currentPasswordError, setCurrentPasswordError] = useState('');
   const [newPasswordError, setNewPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
@@ -29,10 +30,16 @@ export const FirstTimePassword: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
 
-  // Real-time Validation Criteria
-  const hasMinLength = newPassword.length >= 6;
+  // Real-time 5-Point Password Policy Criteria
+  const hasMinLength = newPassword.length >= 8;
+  const hasUppercase = /[A-Z]/.test(newPassword);
+  const hasLowercase = /[a-z]/.test(newPassword);
+  const hasNumber = /[0-9]/.test(newPassword);
+  const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
   const isDifferentFromCurrent = currentPassword.length > 0 && newPassword.length > 0 && newPassword !== currentPassword;
   const isMatching = confirmPassword.length > 0 && newPassword === confirmPassword;
+
+  const isAllValid = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecial && isDifferentFromCurrent;
 
   const handleLogout = async () => {
     try {
@@ -66,12 +73,15 @@ export const FirstTimePassword: React.FC = () => {
     if (!newPassword.trim()) {
       setNewPasswordError('New secret password is required.');
       hasError = true;
-    } else if (newPassword.length < 6) {
-      setNewPasswordError('New password must be at least 6 characters long.');
-      hasError = true;
-    } else if (newPassword === currentPassword) {
-      setNewPasswordError('New password must be different from your temporary password.');
-      hasError = true;
+    } else {
+      const passwordPolicyError = validatePasswordStrength(newPassword.trim());
+      if (passwordPolicyError) {
+        setNewPasswordError(passwordPolicyError);
+        hasError = true;
+      } else if (newPassword === currentPassword) {
+        setNewPasswordError('New password must be different from your temporary password.');
+        hasError = true;
+      }
     }
 
     // 3. Confirm Password Validation
@@ -95,7 +105,7 @@ export const FirstTimePassword: React.FC = () => {
         newPassword: newPassword.trim(),
       });
 
-      toast.success('Your secret password has been set successfully! Please log in with your new password.');
+      toast.success('Your secret password has been set successfully! Please log in with your new password.', { autoClose: 6000 });
       
       // Clear temporary session and redirect to login
       dispatch(logout());
@@ -127,7 +137,7 @@ export const FirstTimePassword: React.FC = () => {
 
         <h2 className="first-time-title">Set Your Secret Password</h2>
         <p className="first-time-subtitle">
-          Welcome <strong>{username || email || 'Staff Member'}</strong>! For security protection, please replace your temporary administrator-issued password with your own secret password.
+          Welcome <strong>{username || email || 'Staff Member'}</strong>! For security protection, please replace your temporary administrator-issued password with your own secure secret password.
         </p>
 
         {generalError ? (
@@ -142,7 +152,6 @@ export const FirstTimePassword: React.FC = () => {
           </div>
         )}
 
-        {/* noValidate attribute prevents Chrome/Google default browser tooltip popups */}
         <form onSubmit={handleSubmit} className="first-time-form" noValidate>
           {/* Current Password Field */}
           <div className="first-time-input-group">
@@ -186,7 +195,7 @@ export const FirstTimePassword: React.FC = () => {
               <input
                 type={showNew ? 'text' : 'password'}
                 className="first-time-input"
-                placeholder="Enter secret new password (min. 6 characters)"
+                placeholder="Enter new secret password"
                 value={newPassword}
                 onChange={(e) => {
                   setNewPassword(e.target.value);
@@ -211,14 +220,33 @@ export const FirstTimePassword: React.FC = () => {
               </span>
             )}
 
-            {/* Password Criteria Checklist */}
+            {/* Live Password Criteria Checklist Box */}
             <div className="first-time-rules-list">
+              <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#475569', marginBottom: '2px', display: 'block' }}>
+                Password Requirements:
+              </span>
               <div className={`first-time-rule-item ${hasMinLength ? 'valid' : ''}`}>
-                <FiCheck size={13} />
-                <span>At least 6 characters long</span>
+                {hasMinLength ? <FiCheck size={13} /> : <span className="first-time-req-dot" />}
+                <span>At least 8 characters long</span>
+              </div>
+              <div className={`first-time-rule-item ${hasUppercase ? 'valid' : ''}`}>
+                {hasUppercase ? <FiCheck size={13} /> : <span className="first-time-req-dot" />}
+                <span>At least one uppercase letter (A-Z)</span>
+              </div>
+              <div className={`first-time-rule-item ${hasLowercase ? 'valid' : ''}`}>
+                {hasLowercase ? <FiCheck size={13} /> : <span className="first-time-req-dot" />}
+                <span>At least one lowercase letter (a-z)</span>
+              </div>
+              <div className={`first-time-rule-item ${hasNumber ? 'valid' : ''}`}>
+                {hasNumber ? <FiCheck size={13} /> : <span className="first-time-req-dot" />}
+                <span>At least one number (0-9)</span>
+              </div>
+              <div className={`first-time-rule-item ${hasSpecial ? 'valid' : ''}`}>
+                {hasSpecial ? <FiCheck size={13} /> : <span className="first-time-req-dot" />}
+                <span>At least one special character (!@#$%^&*)</span>
               </div>
               <div className={`first-time-rule-item ${isDifferentFromCurrent ? 'valid' : ''}`}>
-                <FiCheck size={13} />
+                {isDifferentFromCurrent ? <FiCheck size={13} /> : <span className="first-time-req-dot" />}
                 <span>Different from temporary password</span>
               </div>
             </div>
@@ -255,10 +283,16 @@ export const FirstTimePassword: React.FC = () => {
               <span className="first-time-error-text">
                 <FiAlertCircle size={13} /> {confirmPasswordError}
               </span>
-            ) : isMatching ? (
-              <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
-                <FiCheck size={13} /> Passwords match perfectly
-              </span>
+            ) : confirmPassword.length > 0 ? (
+              isMatching ? (
+                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
+                  <FiCheck size={13} /> Passwords match
+                </span>
+              ) : (
+                <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
+                  <FiAlertCircle size={13} /> Passwords do not match
+                </span>
+              )
             ) : null}
           </div>
 
@@ -292,3 +326,5 @@ export const FirstTimePassword: React.FC = () => {
     </div>
   );
 };
+
+export default FirstTimePassword;
