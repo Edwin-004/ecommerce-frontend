@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { orderApi } from "../features/orders/orderApi";
+import { shippingApi } from "../features/shipping/shippingApi";
 import {
   FiChevronRight as ChevronRight,
   FiRefreshCw as RefreshCw,
@@ -31,6 +33,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
 
   // Redux auth state
   const { username, role } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
 
   // Notifications via WebSocket Hook
   const {
@@ -92,6 +95,10 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
     setIsRefreshing(true);
     setSyncText("Syncing...");
     // Trigger global refresh event for any active page listeners
+    // 1. Invalidate RTK Query caches across the app
+    dispatch(orderApi.util.invalidateTags(['Order']));
+    dispatch(shippingApi.util.invalidateTags(['ShippingZone']));
+    // 2. Trigger global refresh event for any active page listeners
     window.dispatchEvent(new CustomEvent("admin:refresh"));
     setTimeout(() => {
       setIsRefreshing(false);

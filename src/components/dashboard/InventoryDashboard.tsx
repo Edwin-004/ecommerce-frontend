@@ -6,17 +6,16 @@ import {
   FiSlash,
   FiClock,
   FiArrowRight,
-  FiRefreshCw,
   FiCheckCircle,
 } from 'react-icons/fi';
 import { inventoryApi } from '../../features/inventory/inventoryApi';
 import type { InventoryItem, InventoryTransaction } from '../../types/inventory';
-import styles from '../AdminDashboard.module.css';
+import styles from './InventoryDashboard.module.css';
 
 export const InventoryDashboard: React.FC = () => {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState<boolean>(true);
+  const [, setLoading] = useState<boolean>(true);
   const [inventoryList, setInventoryList] = useState<InventoryItem[]>([]);
   const [lowStockList, setLowStockList] = useState<InventoryItem[]>([]);
   const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
@@ -44,6 +43,15 @@ export const InventoryDashboard: React.FC = () => {
     fetchData();
   }, []);
 
+  // Listen to Global Topbar Refresh Event
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      fetchData();
+    };
+    window.addEventListener('admin:refresh', handleGlobalRefresh);
+    return () => window.removeEventListener('admin:refresh', handleGlobalRefresh);
+  }, []);
+
   // Compute Metrics
   const totalVariants = inventoryList.length;
   const outOfStockCount = useMemo(
@@ -51,8 +59,6 @@ export const InventoryDashboard: React.FC = () => {
     [inventoryList]
   );
   const lowStockCount = lowStockList.length;
-
-
 
   // Batch expiry counts
   const expiringSoonCount = useMemo(() => {
@@ -67,26 +73,38 @@ export const InventoryDashboard: React.FC = () => {
     }).length;
   }, [inventoryList]);
 
-
-
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '—';
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
     } catch {
       return dateStr;
     }
   };
 
+  const getTxnBadgeStyle = (txnType?: string) => {
+    const t = (txnType || '').toUpperCase();
+    if (t === 'RESTOCK') return { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' };
+    if (t === 'WRITE_OFF') return { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' };
+    if (t === 'SALE') return { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' };
+    if (t === 'RETURN') return { bg: '#faf5ff', color: '#7c3aed', border: '#e9d5ff' };
+    return { bg: '#fffbeb', color: '#d97706', border: '#fde68a' };
+  };
+
   return (
     <div className={styles.dashboardContainer}>
-      {/* Header */}
+      {/* 1. Header Section (Refresh button removed since topbar already has it) */}
       <div className={styles.headerSection}>
         <div className={styles.headerLeft}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>📦</span>
+          <div className={styles.headerTitleRow}>
+            <div className={styles.headerIconBadge}>
+              <FiPackage size={18} />
+            </div>
             <h1 className={styles.headerTitle}>Inventory &amp; Stock Operations</h1>
           </div>
           <p className={styles.headerSubtitle}>
@@ -97,171 +115,195 @@ export const InventoryDashboard: React.FC = () => {
           <button
             type="button"
             className={styles.primaryBtn}
-            style={{ background: '#059669' }}
             onClick={() => navigate('/admin/inventory')}
           >
-            <FiPackage size={16} /> Manage Inventory
-          </button>
-          <button
-            type="button"
-            className={styles.chartToggleBtn}
-            onClick={fetchData}
-            title="Refresh Stock Data"
-          >
-            <FiRefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <FiPackage size={14} /> Manage Inventory
           </button>
         </div>
       </div>
 
-      {/* Top 4 KPI Cards */}
+      {/* 2. Top 4 Clean KPI Stat Cards */}
       <div className={styles.statsGrid}>
-        {/* Card 1: Total SKUs */}
-        <div className={styles.statCard} onClick={() => navigate('/admin/variants')}>
-          <div className={styles.cardHeader}>
-            <div className={`${styles.iconWrap} ${styles.iconWrapBlue}`}>
-              <FiPackage size={20} />
-            </div>
-            <span className={styles.cardTrendNeutral}>Active SKUs</span>
+        {/* Card 1: Total Active SKUs */}
+        <div
+          className={styles.statCard}
+          onClick={() => navigate('/admin/inventory')}
+          title="View active catalog inventory"
+        >
+          <div className={styles.statTopRow}>
+            <span className={styles.statLabel}>Active Catalog</span>
+            <span className={`${styles.pillBadge} ${styles.pillBlue}`}>
+              <span className={`${styles.statDot} ${styles.dotBlue}`} /> Monitored
+            </span>
           </div>
-          <div className={styles.cardBottom}>
-            <p className={styles.cardLabel}>Total Variants &amp; SKUs</p>
-            <h3 className={styles.cardValue}>{totalVariants}</h3>
+          <div className={styles.statValue}>
+            {totalVariants}
+          </div>
+          <div className={styles.statBottomRow}>
+            <span className={`${styles.statTrend} ${styles.statTrendBlue}`}>
+              <FiPackage size={12} /> {totalVariants} trackable SKU{totalVariants === 1 ? '' : 's'}
+            </span>
+            <div className={`${styles.statIconBox} ${styles.iconBlue}`}>
+              <FiPackage size={14} />
+            </div>
           </div>
         </div>
 
-        {/* Card 2: Low Stock Warnings */}
+        {/* Card 2: Low Stock Alerts */}
         <div
           className={styles.statCard}
-          style={lowStockCount > 0 ? { borderColor: 'rgba(245, 158, 11, 0.6)' } : {}}
+          style={lowStockCount > 0 ? { borderColor: 'rgba(245, 158, 11, 0.6)' } : undefined}
           onClick={() => navigate('/admin/inventory')}
+          title="Items requiring stock replenishment"
         >
-          <div className={styles.cardHeader}>
-            <div className={`${styles.iconWrap} ${styles.iconWrapAmber}`}>
-              <FiAlertTriangle size={20} />
-            </div>
-            <span
-              className={styles.cardTrendWarning}
-              style={{ background: 'rgba(254, 243, 199, 0.8)', color: '#b45309' }}
-            >
-              Reorder Needed
-            </span>
+          <div className={styles.statTopRow}>
+            <span className={styles.statLabel}>Low Stock Alerts</span>
+            {lowStockCount > 0 ? (
+              <span className={`${styles.pillBadge} ${styles.pillAmber}`}>
+                <span className={`${styles.statDot} ${styles.dotAmber}`} /> Reorder Needed
+              </span>
+            ) : (
+              <span className={`${styles.pillBadge} ${styles.pillGreen}`}>
+                <span className={`${styles.statDot} ${styles.dotGreen}`} /> Optimal
+              </span>
+            )}
           </div>
-          <div className={styles.cardBottom}>
-            <p className={styles.cardLabel}>Low Stock Alerts</p>
-            <h3 className={styles.cardValue} style={lowStockCount > 0 ? { color: '#d97706' } : {}}>
-              {lowStockCount}
-            </h3>
+          <div
+            className={styles.statValue}
+            style={lowStockCount > 0 ? { color: '#d97706' } : undefined}
+          >
+            {lowStockCount}
+          </div>
+          <div className={styles.statBottomRow}>
+            {lowStockCount > 0 ? (
+              <span className={`${styles.statTrend} ${styles.statTrendAmber}`}>
+                <FiAlertTriangle size={12} /> Requires replenishment
+              </span>
+            ) : (
+              <span className={`${styles.statTrend} ${styles.statTrendGreen}`}>
+                <FiCheckCircle size={12} /> Stock levels healthy
+              </span>
+            )}
+            <div className={`${styles.statIconBox} ${styles.iconAmber}`}>
+              <FiAlertTriangle size={14} />
+            </div>
           </div>
         </div>
 
         {/* Card 3: Out of Stock */}
         <div
           className={styles.statCard}
-          style={outOfStockCount > 0 ? { borderColor: 'rgba(239, 68, 68, 0.6)' } : {}}
+          style={outOfStockCount > 0 ? { borderColor: 'rgba(239, 68, 68, 0.6)' } : undefined}
           onClick={() => navigate('/admin/inventory')}
+          title="Items currently out of stock"
         >
-          <div className={styles.cardHeader}>
-            <div className={`${styles.iconWrap} ${styles.iconWrapRose}`}>
-              <FiSlash size={20} />
-            </div>
-            <span
-              className={styles.cardTrendDanger}
-              style={{ background: 'rgba(254, 226, 226, 0.8)', color: '#b91c1c' }}
-            >
-              Critical
-            </span>
+          <div className={styles.statTopRow}>
+            <span className={styles.statLabel}>Out of Stock</span>
+            {outOfStockCount > 0 ? (
+              <span className={`${styles.pillBadge} ${styles.pillRed}`}>
+                <span className={`${styles.statDot} ${styles.dotRed}`} /> Critical
+              </span>
+            ) : (
+              <span className={`${styles.pillBadge} ${styles.pillGreen}`}>
+                <span className={`${styles.statDot} ${styles.dotGreen}`} /> All In Stock
+              </span>
+            )}
           </div>
-          <div className={styles.cardBottom}>
-            <p className={styles.cardLabel}>Out of Stock</p>
-            <h3 className={styles.cardValue} style={outOfStockCount > 0 ? { color: '#dc2626' } : {}}>
-              {outOfStockCount}
-            </h3>
+          <div
+            className={styles.statValue}
+            style={outOfStockCount > 0 ? { color: '#dc2626' } : undefined}
+          >
+            {outOfStockCount}
+          </div>
+          <div className={styles.statBottomRow}>
+            {outOfStockCount > 0 ? (
+              <span className={`${styles.statTrend} ${styles.statTrendRed}`}>
+                <FiSlash size={12} /> Immediate restock required
+              </span>
+            ) : (
+              <span className={`${styles.statTrend} ${styles.statTrendGreen}`}>
+                <FiCheckCircle size={12} /> Zero stockouts detected
+              </span>
+            )}
+            <div className={`${styles.statIconBox} ${outOfStockCount > 0 ? styles.iconRed : styles.iconGreen}`}>
+              <FiSlash size={14} />
+            </div>
           </div>
         </div>
 
         {/* Card 4: Expiring Soon */}
         <div
           className={styles.statCard}
-          style={expiringSoonCount > 0 ? { borderColor: 'rgba(234, 88, 12, 0.6)' } : {}}
+          style={expiringSoonCount > 0 ? { borderColor: 'rgba(234, 88, 12, 0.6)' } : undefined}
           onClick={() => navigate('/admin/inventory')}
+          title="Batches approaching expiration date"
         >
-          <div className={styles.cardHeader}>
-            <div
-              className={styles.iconWrap}
-              style={{ background: 'rgba(255, 237, 213, 0.8)', color: '#c2410c' }}
-            >
-              <FiClock size={20} />
-            </div>
-            <span
-              className={styles.cardTrendWarning}
-              style={{ background: 'rgba(255, 247, 237, 0.9)', color: '#c2410c' }}
-            >
-              &lt; 30 Days
-            </span>
+          <div className={styles.statTopRow}>
+            <span className={styles.statLabel}>Expiring Soon</span>
+            {expiringSoonCount > 0 ? (
+              <span className={`${styles.pillBadge} ${styles.pillOrange}`}>
+                <span className={`${styles.statDot} ${styles.dotOrange}`} /> &lt; 30 Days
+              </span>
+            ) : (
+              <span className={`${styles.pillBadge} ${styles.pillGreen}`}>
+                <span className={`${styles.statDot} ${styles.dotGreen}`} /> Fresh
+              </span>
+            )}
           </div>
-          <div className={styles.cardBottom}>
-            <p className={styles.cardLabel}>Expiring Batches</p>
-            <h3 className={styles.cardValue}>{expiringSoonCount}</h3>
+          <div className={styles.statValue}>
+            {expiringSoonCount}
+          </div>
+          <div className={styles.statBottomRow}>
+            {expiringSoonCount > 0 ? (
+              <span className={`${styles.statTrend} ${styles.statTrendOrange}`}>
+                <FiClock size={12} /> Batches expiring soon
+              </span>
+            ) : (
+              <span className={`${styles.statTrend} ${styles.statTrendNeutral}`}>
+                <FiCheckCircle size={12} /> No expiring batches
+              </span>
+            )}
+            <div className={`${styles.statIconBox} ${styles.iconOrange}`}>
+              <FiClock size={14} />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Two Columns: Low Stock Attention List + Recent Transactions */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '20px' }}>
-        {/* Left Column: Low Stock Items Table */}
-        <div
-          style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            border: '1px solid rgba(226, 232, 240, 0.9)',
-            padding: '20px 24px',
-            boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
-            }}
-          >
-            <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#0f172a', margin: 0 }}>
-                ⚠️ Low &amp; Critical Stock Attention
-              </h3>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0 0' }}>
-                Items below threshold that require immediate replenishment
-              </p>
+      {/* 3. Main 2 Columns: Low Stock Attention List + Recent Transactions */}
+      <div className={styles.mainGrid}>
+        {/* Left Card: Low & Critical Stock Attention */}
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitleGroup}>
+              <div className={`${styles.sectionIconBadge} ${styles.iconBadgeAmber}`}>
+                <FiAlertTriangle size={16} />
+              </div>
+              <div>
+                <h3 className={styles.sectionTitle}>Low &amp; Critical Stock Attention</h3>
+                <p className={styles.sectionSubtitle}>
+                  Items below threshold that require immediate replenishment
+                </p>
+              </div>
             </div>
             <button
               type="button"
+              className={styles.headerLinkBtn}
               onClick={() => navigate('/admin/inventory')}
-              style={{
-                fontSize: '12px',
-                color: '#2563eb',
-                fontWeight: 500,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
             >
               View All ({lowStockList.length}) <FiArrowRight size={13} />
             </button>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b', textAlign: 'left' }}>
-                  <th style={{ padding: '10px 8px', fontWeight: 600 }}>Product / SKU</th>
-                  <th style={{ padding: '10px 8px', fontWeight: 600, textAlign: 'center' }}>In Stock</th>
-                  <th style={{ padding: '10px 8px', fontWeight: 600, textAlign: 'center' }}>Reorder Level</th>
-                  <th style={{ padding: '10px 8px', fontWeight: 600, textAlign: 'center' }}>Status</th>
-                  <th style={{ padding: '10px 8px', fontWeight: 600, textAlign: 'right' }}>Action</th>
+                <tr>
+                  <th>Product / SKU</th>
+                  <th style={{ textAlign: 'center' }}>In Stock</th>
+                  <th style={{ textAlign: 'center' }}>Reorder Level</th>
+                  <th style={{ textAlign: 'center' }}>Status</th>
+                  <th style={{ textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -272,63 +314,43 @@ export const InventoryDashboard: React.FC = () => {
                     const isOut = currentQty <= 0;
 
                     return (
-                      <tr
-                        key={item.inventoryId || idx}
-                        style={{
-                          borderBottom: '1px solid #f1f5f9',
-                          transition: 'background 0.15s ease',
-                        }}
-                      >
-                        <td style={{ padding: '12px 8px' }}>
-                          <div style={{ fontWeight: 600, color: '#1e293b' }}>
-                            {item.variant?.product?.name || item.productName || 'Product'}
+                      <tr key={item.inventoryId || idx}>
+                        <td>
+                          <div className={styles.productName}>
+                            {item.productName || (item as unknown as { variant?: { product?: { name?: string } } }).variant?.product?.name || 'Product'}
                           </div>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>
-                            SKU: {item.variant?.skuCode || item.skuCode || '—'}
+                          <div className={styles.skuTag}>
+                            SKU: {item.sku || (item as unknown as { variant?: { skuCode?: string } }).variant?.skuCode || '—'}
                           </div>
                         </td>
                         <td
+                          className={styles.unitsCell}
                           style={{
-                            padding: '12px 8px',
                             textAlign: 'center',
-                            fontWeight: 700,
                             color: isOut ? '#dc2626' : '#d97706',
                           }}
                         >
                           {currentQty} units
                         </td>
-                        <td style={{ padding: '12px 8px', textAlign: 'center', color: '#64748b' }}>
+                        <td
+                          className={styles.unitsCell}
+                          style={{ textAlign: 'center', color: '#64748b' }}
+                        >
                           {reorderLevel} units
                         </td>
-                        <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                        <td style={{ textAlign: 'center' }}>
                           <span
-                            style={{
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                              borderRadius: '9999px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              background: isOut ? '#fee2e2' : '#fef3c7',
-                              color: isOut ? '#991b1b' : '#92400e',
-                            }}
+                            className={`${styles.statusBadge} ${isOut ? styles.statusOutOfStock : styles.statusLowStock}`}
                           >
                             {isOut ? 'OUT OF STOCK' : 'LOW STOCK'}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 8px', textAlign: 'right' }}>
+                        <td style={{ textAlign: 'right' }}>
                           <button
                             type="button"
+                            className={styles.actionBtn}
                             onClick={() => navigate('/admin/inventory')}
-                            style={{
-                              padding: '5px 12px',
-                              fontSize: '11.5px',
-                              fontWeight: 500,
-                              color: '#ffffff',
-                              background: '#2563eb',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                            }}
+                            title="Restock this item"
                           >
                             Restock
                           </button>
@@ -338,11 +360,15 @@ export const InventoryDashboard: React.FC = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={5} style={{ padding: '32px 0', textAlign: 'center', color: '#10b981' }}>
-                      <FiCheckCircle size={28} style={{ margin: '0 auto 8px auto', display: 'block' }} />
-                      <div style={{ fontWeight: 600 }}>All stock levels are healthy!</div>
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>
-                        No low stock or out-of-stock items detected.
+                    <td colSpan={5}>
+                      <div className={styles.emptyState}>
+                        <div className={styles.emptyIcon}>
+                          <FiCheckCircle size={22} />
+                        </div>
+                        <h4 className={styles.emptyTitle}>All stock levels are healthy!</h4>
+                        <p className={styles.emptyDesc}>
+                          No low stock or out-of-stock items detected.
+                        </p>
                       </div>
                     </td>
                   </tr>
@@ -352,112 +378,79 @@ export const InventoryDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Recent Inventory Activity / Transactions */}
-        <div
-          style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            border: '1px solid rgba(226, 232, 240, 0.9)',
-            padding: '20px 24px',
-            boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
-            }}
-          >
-            <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#0f172a', margin: 0 }}>
-                📋 Recent Stock Adjustments
-              </h3>
-              <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0 0' }}>
-                Latest inventory ledger entries
-              </p>
+        {/* Right Card: Recent Stock Adjustments / Activity */}
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitleGroup}>
+              <div className={`${styles.sectionIconBadge} ${styles.iconBadgeBlue}`}>
+                <FiClock size={16} />
+              </div>
+              <div>
+                <h3 className={styles.sectionTitle}>Recent Stock Activity</h3>
+                <p className={styles.sectionSubtitle}>
+                  Latest inventory ledger entries
+                </p>
+              </div>
             </div>
             <button
               type="button"
+              className={styles.headerLinkBtn}
               onClick={() => navigate('/admin/inventory')}
-              style={{
-                fontSize: '12px',
-                color: '#2563eb',
-                fontWeight: 500,
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-              }}
             >
-              View Ledger
+              View Ledger <FiArrowRight size={13} />
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className={styles.activityList}>
             {transactions.length > 0 ? (
               transactions.map((tx, idx) => {
-                const isPositive = (tx.quantityChange || 0) > 0;
-                const badgeColor =
-                  tx.transactionType === 'RESTOCK'
-                    ? '#059669'
-                    : tx.transactionType === 'WRITE_OFF'
-                    ? '#dc2626'
-                    : '#2563eb';
+                const txnType = tx.txnType || (tx as unknown as { transactionType?: string }).transactionType || 'ADJUST';
+                const isRestock = txnType === 'RESTOCK' || txnType === 'RETURN';
+                const isDeduction = txnType === 'WRITE_OFF' || txnType === 'SALE';
+                const changeAmount = tx.qty ?? (tx as unknown as { quantityChange?: number }).quantityChange ?? 0;
+                const isPositive = isRestock || (!isDeduction && changeAmount > 0);
+                const badgeStyle = getTxnBadgeStyle(txnType);
 
                 return (
-                  <div
-                    key={tx.transactionId || idx}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 12px',
-                      background: '#f8fafc',
-                      borderRadius: '10px',
-                      border: '1px solid #f1f5f9',
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div key={tx.txnId || (tx as unknown as { transactionId?: number }).transactionId || idx} className={styles.activityItem}>
+                    <div className={styles.activityLeft}>
+                      <div className={styles.activityTopRow}>
                         <span
+                          className={styles.activityBadge}
                           style={{
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            background: `${badgeColor}15`,
-                            color: badgeColor,
+                            background: badgeStyle.bg,
+                            color: badgeStyle.color,
+                            border: `1px solid ${badgeStyle.border}`,
                           }}
                         >
-                          {tx.transactionType || 'ADJUST'}
+                          {txnType}
                         </span>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>
-                          SKU: {tx.variant?.skuCode || 'Item'}
+                        <span className={styles.activityName}>
+                          {tx.productName || 'Inventory Item'}
                         </span>
                       </div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                        {formatDate(tx.createdAt)}
+                      <div className={styles.activityMeta}>
+                        SKU: {tx.sku || (tx as unknown as { variant?: { skuCode?: string } }).variant?.skuCode || '—'} • {formatDate(tx.createdAt)}
                       </div>
                     </div>
 
-                    <div style={{ textAlign: 'right' }}>
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          fontSize: '13px',
-                          color: isPositive ? '#059669' : '#dc2626',
-                        }}
-                      >
-                        {isPositive ? `+${tx.quantityChange}` : tx.quantityChange} units
-                      </span>
+                    <div
+                      className={`${styles.activityQty} ${isPositive ? styles.qtyPositive : isDeduction ? styles.qtyNegative : styles.qtyNeutral}`}
+                    >
+                      {isPositive ? `+${changeAmount}` : isDeduction ? `-${changeAmount}` : changeAmount} units
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div style={{ padding: '24px 0', textAlign: 'center', color: '#94a3b8', fontSize: '12.5px' }}>
-                No recent stock transactions recorded.
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>
+                  <FiCheckCircle size={22} />
+                </div>
+                <h4 className={styles.emptyTitle}>No recent activity</h4>
+                <p className={styles.emptyDesc}>
+                  Stock ledger logs will appear here when inventory is updated.
+                </p>
               </div>
             )}
           </div>

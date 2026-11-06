@@ -314,6 +314,18 @@ export const InventoryPage: React.FC = () => {
     }
   }, [activeTab, txnTypeFilter]);
 
+
+  // Listen to Global Topbar Refresh Event
+  useEffect(() => {
+    const handleGlobalRefresh = () => {
+      loadData();
+      if (activeTab === 'TRANSACTIONS') {
+        loadTransactions(txnTypeFilter);
+      }
+    };
+    window.addEventListener('admin:refresh', handleGlobalRefresh);
+    return () => window.removeEventListener('admin:refresh', handleGlobalRefresh);
+  }, [activeTab, txnTypeFilter]);
   // Handle modal success
   const handleModalSuccess = () => {
     setActiveModal(null);
