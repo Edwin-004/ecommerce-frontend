@@ -52,7 +52,7 @@ export const Login: React.FC = () => {
     let hasClientError = false;
 
     // Email validation
-    const emailTrimmed = email.trim();
+    const emailTrimmed = email.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailTrimmed) {
       setEmailError('Email is required.');
@@ -113,6 +113,17 @@ export const Login: React.FC = () => {
         })
       );
 
+      // Restore user avatar from localStorage if previously configured
+      const savedAvatar =
+        localStorage.getItem(`avatar_${data.email?.toLowerCase()}`) ||
+        localStorage.getItem(`avatar_${data.email}`) ||
+        localStorage.getItem(`avatar_${data.username?.toLowerCase()}`) ||
+        localStorage.getItem(`avatar_${data.username}`);
+      if (savedAvatar) {
+        localStorage.setItem('currentUserAvatar', savedAvatar);
+      }
+      window.dispatchEvent(new Event('avatarChange'));
+
       // First-time login / Force password change check
       if (data.mustChangePassword) {
         toast.info('Please set your new password before accessing the system.');
@@ -167,7 +178,6 @@ export const Login: React.FC = () => {
         {/* Brand Header */}
         <div className="login-brand-meta">
           <h1 className="login-brand-title">
-            {/* Ecommerce <span className="login-brand-badge">Admin</span> */}
             Inventory Management System
           </h1>
           <p className="login-subtitle">
@@ -200,10 +210,11 @@ export const Login: React.FC = () => {
                 placeholder="admin@ecommerce.com"
                 value={email}
                 onChange={(e) => {
-                  setEmail(e.target.value);
+                  setEmail(e.target.value.toLowerCase().replace(/\s+/g, ''));
                   if (emailError) setEmailError('');
                   if (generalError) setGeneralError('');
                 }}
+                onBlur={() => setEmail((prev) => prev.trim().toLowerCase())}
                 className="login-input"
                 autoComplete="email"
               />

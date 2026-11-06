@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { type RootState } from '../../store';
-import { FiEye, FiEyeOff, FiUserPlus, FiShield, FiInfo } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiUserPlus, FiShield, FiInfo, FiCheck } from 'react-icons/fi';
 import api from '../../utils/axiosConfig';
 import { validatePasswordStrength } from '../../utils/passwordPolicy';
 import './CreateStaff.css'; 
@@ -73,13 +73,28 @@ export const CreateStaff: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
+        const trimmedEmail = newStaff.email.trim().toLowerCase();
+        const trimmedUserName = newStaff.userName.trim();
+        const trimmedPassword = newStaff.password.trim();
+
+        if (!trimmedUserName) {
+            showModal("Please enter full name.", 'warning');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+            showModal("Please enter a valid email address.", 'warning');
+            return;
+        }
+
         if (newStaff.roleName === 'ADMIN' && !isSuperAdmin) {
             showModal("Only Super Administrator (admin@ecommerce.com) can create Administrator accounts.", 'warning');
             return;
         }
 
         // Validate password strength against backend complexity policy
-        const passwordError = validatePasswordStrength(newStaff.password);
+        const passwordError = validatePasswordStrength(trimmedPassword);
         if (passwordError) {
             showModal(passwordError, 'warning');
             return;
@@ -87,9 +102,15 @@ export const CreateStaff: React.FC = () => {
 
         setLoading(true);
         try {
-            await api.post('/staff', newStaff);
+            const payload = {
+                userName: trimmedUserName,
+                email: trimmedEmail,
+                roleName: newStaff.roleName,
+                password: trimmedPassword
+            };
+            await api.post('/staff', payload);
             showModal(
-                `Account created successfully for "${newStaff.userName}". Initial password: "${newStaff.password}". The user will be required to create their own secret password upon first login.`,
+                `Account created successfully for "${trimmedUserName}". Initial password: "${trimmedPassword}". The user will be required to create their own secret password upon first login.`,
                 'success'
             );
         } catch (err: any) {
@@ -100,6 +121,14 @@ export const CreateStaff: React.FC = () => {
             setLoading(false);
         }
     };
+
+    // Real-time password criteria
+    const pw = newStaff.password || '';
+    const hasMinLength = pw.length >= 8;
+    const hasUppercase = /[A-Z]/.test(pw);
+    const hasLowercase = /[a-z]/.test(pw);
+    const hasNumber = /[0-9]/.test(pw);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw);
 
     const currentRoleDefault = getDefaultPasswordForRole(newStaff.roleName);
 
@@ -129,6 +158,7 @@ export const CreateStaff: React.FC = () => {
                                 placeholder="e.g. John Doe"
                                 value={newStaff.userName} 
                                 onChange={e => setNewStaff({...newStaff, userName: e.target.value})} 
+                                onBlur={() => setNewStaff(prev => ({ ...prev, userName: prev.userName.trim() }))}
                             />
                         </div>
                         
@@ -140,7 +170,8 @@ export const CreateStaff: React.FC = () => {
                                 required 
                                 placeholder="e.g. staff@ecommerce.com"
                                 value={newStaff.email} 
-                                onChange={e => setNewStaff({...newStaff, email: e.target.value})} 
+                                onChange={e => setNewStaff({...newStaff, email: e.target.value.toLowerCase().replace(/\s+/g, '')})} 
+                                onBlur={() => setNewStaff(prev => ({ ...prev, email: prev.email.trim().toLowerCase() }))}
                             />
                         </div>
 
@@ -172,7 +203,7 @@ export const CreateStaff: React.FC = () => {
                                     type={showPassword ? 'text' : 'password'} 
                                     className="form-input" 
                                     required 
-                                    placeholder="Enter initial password (min. 8 characters)"
+                                    placeholder="Enter initial password"
                                     value={newStaff.password} 
                                     onChange={e => setNewStaff({...newStaff, password: e.target.value})} 
                                     style={{ paddingRight: '40px' }}
@@ -202,6 +233,7 @@ export const CreateStaff: React.FC = () => {
                                 marginTop: '7px', 
                                 display: 'flex', 
                                 alignItems: 'center', 
+                                justifyItems: 'center',
                                 justifyContent: 'space-between', 
                                 fontSize: '12px', 
                                 color: '#475569' 
@@ -230,6 +262,31 @@ export const CreateStaff: React.FC = () => {
                                 <FiInfo size={12} />
                                 Staff member will be forced to set their own secret password upon first login.
                             </p>
+
+                            {/* Real-time Password Requirements Checklist */}
+                            <div className="pw-requirements-box">
+                                <span className="pw-requirements-header">Password Requirements:</span>
+                                <div className={`pw-req-item ${hasMinLength ? 'valid' : ''}`}>
+                                    {hasMinLength ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                    <span>At least 8 characters long</span>
+                                </div>
+                                <div className={`pw-req-item ${hasUppercase ? 'valid' : ''}`}>
+                                    {hasUppercase ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                    <span>At least one uppercase letter (A-Z)</span>
+                                </div>
+                                <div className={`pw-req-item ${hasLowercase ? 'valid' : ''}`}>
+                                    {hasLowercase ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                    <span>At least one lowercase letter (a-z)</span>
+                                </div>
+                                <div className={`pw-req-item ${hasNumber ? 'valid' : ''}`}>
+                                    {hasNumber ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                    <span>At least one number (0-9)</span>
+                                </div>
+                                <div className={`pw-req-item ${hasSpecial ? 'valid' : ''}`}>
+                                    {hasSpecial ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                    <span>At least one special character (!@#$%^&*)</span>
+                                </div>
+                            </div>
                         </div>
                         
                         <hr className="divider" />
@@ -305,3 +362,5 @@ export const CreateStaff: React.FC = () => {
         </div>
     );
 };
+
+export default CreateStaff;

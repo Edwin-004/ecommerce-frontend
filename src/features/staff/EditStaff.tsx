@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BackButton } from '../../components/common/BackButton';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FiEye, FiEyeOff, FiInfo } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiInfo, FiCheck } from 'react-icons/fi';
 import api from '../../utils/axiosConfig';
 import { validatePasswordStrength } from '../../utils/passwordPolicy';
 import './EditStaff.css';
@@ -27,6 +27,7 @@ export const EditStaff: React.FC = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [initialStatus, setInitialStatus] = useState('ACTIVE');
     const [initialRoleName, setInitialRoleName] = useState('SALES_STAFF');
+    const [initialEmail, setInitialEmail] = useState('');
     const [showRoleConfirmModal, setShowRoleConfirmModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -45,6 +46,14 @@ export const EditStaff: React.FC = () => {
     // Subordinate admins cannot edit Super Admin or fellow Admins
     const isEditingRestricted = (!isCurrentSuperAdmin && !isCurrentLoggedInUser && isTargetAdmin) || 
                                 (isTargetSuperAdmin && !isCurrentSuperAdmin);
+
+    // Real-time password reset criteria
+    const resetPw = formData.password || '';
+    const hasResetMinLength = resetPw.length >= 8;
+    const hasResetUppercase = /[A-Z]/.test(resetPw);
+    const hasResetLowercase = /[a-z]/.test(resetPw);
+    const hasResetNumber = /[0-9]/.test(resetPw);
+    const hasResetSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(resetPw);
 
     const defaultRolePassword = formData.roleName === 'ADMIN' ? 'Admin@123' : 'Staff@123';
 
@@ -69,15 +78,28 @@ export const EditStaff: React.FC = () => {
             try {
                 // Fetch existing staff details from backend
                 const response = await api.get(`/staff/${id}`); 
+                const data = response.data;
+
+                const isTargetSuper = Boolean(
+                    data.email && data.email.toLowerCase() === 'admin@ecommerce.com'
+                );
+
+                if (isTargetSuper && !isCurrentSuperAdmin) {
+                    setError("ACCESS_DENIED_SUPER_ADMIN");
+                    setLoading(false);
+                    return;
+                }
+
                 setFormData({
-                    userName: response.data.userName,
-                    email: response.data.email,
-                    roleName: response.data.roleName,
-                    status: response.data.status,
+                    userName: data.userName,
+                    email: data.email,
+                    roleName: data.roleName,
+                    status: data.status,
                     password: ''
                 });
-                setInitialStatus(response.data.status);
-                setInitialRoleName(response.data.roleName);
+                setInitialStatus(data.status);
+                setInitialRoleName(data.roleName);
+                setInitialEmail(data.email || '');
                 setLoading(false);
             } catch (err: any) {
                 console.error("Error fetching staff:", err);
@@ -90,10 +112,15 @@ export const EditStaff: React.FC = () => {
         if (id) {
             fetchStaffDetails();
         }
-    }, [id]);
+    }, [id, isCurrentSuperAdmin]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        if (name === 'email') {
+            setFormData(prev => ({ ...prev, email: value.toLowerCase().replace(/\s+/g, '') }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -101,6 +128,26 @@ export const EditStaff: React.FC = () => {
 
         if (isEditingRestricted) {
             toast.error("You do not have permission to modify this administrator account.");
+            return;
+        }
+
+        const trimmedEmail = formData.email.trim().toLowerCase();
+        const trimmedUserName = formData.userName.trim();
+
+        if (!trimmedUserName) {
+            toast.warning("Full name cannot be blank.");
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+            toast.warning("Please enter a valid email address.");
+            return;
+        }
+
+        // Option 2 Protection: Subordinate admins cannot change email
+        if (initialEmail && trimmedEmail !== initialEmail.trim().toLowerCase() && !isCurrentSuperAdmin) {
+            toast.error("Only the primary Super Administrator has the authority to change account email addresses.");
             return;
         }
 
@@ -134,10 +181,13 @@ export const EditStaff: React.FC = () => {
         setSubmitting(true);
         setShowRoleConfirmModal(false);
         try {
+            const trimmedEmail = formData.email.trim().toLowerCase();
+            const trimmedUserName = formData.userName.trim();
+
             // 1. Update basic information (Name, Email, Role, and optional Password)
             const updatePayload: any = {
-                userName: formData.userName,
-                email: formData.email,
+                userName: trimmedUserName,
+                email: trimmedEmail,
                 roleName: formData.roleName === 'ORDER_STAFF' ? 'SALES_STAFF' : formData.roleName
             };
 
@@ -173,6 +223,57 @@ export const EditStaff: React.FC = () => {
     };
 
     if (loading) return <div className="loading-text">Loading staff details...</div>;
+
+    // Completely block and hide the edit form if target is Super Admin and logged-in user is not Super Admin
+    if ((isTargetSuperAdmin && !isCurrentSuperAdmin) || error === "ACCESS_DENIED_SUPER_ADMIN" || (error && error.toLowerCase().includes('super administrator'))) {
+        return (
+            <div className="edit-staff-container">
+                <div className="edit-staff-card" style={{ maxWidth: '520px', margin: '40px auto', textAlign: 'center', padding: '40px 28px' }}>
+                    <div style={{
+                        width: '68px',
+                        height: '68px',
+                        borderRadius: '50%',
+                        backgroundColor: '#fef3c7',
+                        border: '2px solid #fde68a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 18px',
+                        fontSize: '30px'
+                    }}>
+                        🔒
+                    </div>
+                    
+                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>
+                        Access Restricted
+                    </h2>
+                    
+                    <p style={{ fontSize: '13.5px', color: '#64748b', lineHeight: 1.6, marginBottom: '24px' }}>
+                        The <strong>Super Administrator</strong> account (<code style={{ color: '#b45309', fontWeight: 600 }}>admin@ecommerce.com</code>) cannot be viewed or modified by other staff or administrators. Only the root Super Administrator has access.
+                    </p>
+
+                    <button
+                        type="button"
+                        onClick={() => navigate('/admin/staff')}
+                        style={{
+                            padding: '10px 24px',
+                            backgroundColor: '#2563eb',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            fontSize: '13.5px',
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+                        }}
+                    >
+                        ← Back to Staff List
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     if (error) return <div className="error-text">{error}</div>;
 
     return (
@@ -194,6 +295,7 @@ export const EditStaff: React.FC = () => {
                             name="userName"
                             value={formData.userName}
                             onChange={handleChange}
+                            onBlur={() => setFormData(prev => ({ ...prev, userName: prev.userName.trim() }))}
                             required
                             disabled={isEditingRestricted}
                             placeholder="Enter full name"
@@ -207,13 +309,33 @@ export const EditStaff: React.FC = () => {
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
+                            onBlur={() => setFormData(prev => ({ ...prev, email: prev.email.trim().toLowerCase() }))}
                             required
-                            disabled={isEditingRestricted || isTargetSuperAdmin}
+                            disabled={!isCurrentSuperAdmin || isEditingRestricted || isTargetSuperAdmin}
                             placeholder="Enter email address"
                         />
-                        {isTargetSuperAdmin && (
+                        {!isCurrentSuperAdmin ? (
+                            <small style={{ 
+                                color: '#92400e', 
+                                backgroundColor: '#fef3c7', 
+                                border: '1px solid #fde68a', 
+                                padding: '6px 10px', 
+                                borderRadius: '6px', 
+                                fontSize: '12px', 
+                                marginTop: '6px', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px' 
+                            }}>
+                                🔒 <strong>Super Administrator Privilege:</strong> Staff email address modification is restricted to the primary Super Administrator only.
+                            </small>
+                        ) : isTargetSuperAdmin ? (
                             <small style={{ color: '#6b7280', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
                                 The primary Super Administrator's root email address cannot be renamed.
+                            </small>
+                        ) : (
+                            <small style={{ color: '#15803d', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
+                                🛡️ <em>As Super Administrator, updating this email address will automatically revoke active sessions for this account.</em>
                             </small>
                         )}
                     </div>
@@ -379,6 +501,33 @@ export const EditStaff: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* Real-time Password Requirements Checklist (displayed when setting a new password) */}
+                                    {resetPw.length > 0 && (
+                                        <div className="pw-requirements-box">
+                                            <span className="pw-requirements-header">Password Requirements:</span>
+                                            <div className={`pw-req-item ${hasResetMinLength ? 'valid' : ''}`}>
+                                                {hasResetMinLength ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                                <span>At least 8 characters long</span>
+                                            </div>
+                                            <div className={`pw-req-item ${hasResetUppercase ? 'valid' : ''}`}>
+                                                {hasResetUppercase ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                                <span>At least one uppercase letter (A-Z)</span>
+                                            </div>
+                                            <div className={`pw-req-item ${hasResetLowercase ? 'valid' : ''}`}>
+                                                {hasResetLowercase ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                                <span>At least one lowercase letter (a-z)</span>
+                                            </div>
+                                            <div className={`pw-req-item ${hasResetNumber ? 'valid' : ''}`}>
+                                                {hasResetNumber ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                                <span>At least one number (0-9)</span>
+                                            </div>
+                                            <div className={`pw-req-item ${hasResetSpecial ? 'valid' : ''}`}>
+                                                {hasResetSpecial ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                                <span>At least one special character (!@#$%^&*)</span>
+                                            </div>
+                                        </div>
+                                    )}
                                     <small style={{ color: '#6b7280', fontSize: '11.5px', marginTop: '5px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         <FiInfo size={13} style={{ flexShrink: 0 }} />
                                         {formData.password.trim() ? (
