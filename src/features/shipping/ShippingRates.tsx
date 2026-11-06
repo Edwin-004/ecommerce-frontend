@@ -175,7 +175,7 @@ export const ShippingRates = () => {
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <BackButton fallbackUrl="/admin/dashboard" />
           <div className={styles.titleArea}>
             <h1>
@@ -211,8 +211,8 @@ export const ShippingRates = () => {
       {/* 3 Stat Cards Grid (Matching Categories & Brands Pages) */}
       <div className={styles.statsGrid}>
         <div
-          className={`${styles.statCard} ${statusFilter === "ALL" ? styles.statCardActive : ""}`}
-          onClick={() => setStatusFilter("ALL")}
+          className={`${styles.statCard} ${statusFilter === 'ALL' ? styles.statCardActive : ''}`}
+          onClick={() => setStatusFilter('ALL')}
           title="Filter by All Delivery Zones"
         >
           <div className={styles.statInfo}>
@@ -225,8 +225,8 @@ export const ShippingRates = () => {
         </div>
 
         <div
-          className={`${styles.statCard} ${statusFilter === "ACTIVE" ? styles.statCardActive : ""}`}
-          onClick={() => setStatusFilter("ACTIVE")}
+          className={`${styles.statCard} ${statusFilter === 'ACTIVE' ? styles.statCardActive : ''}`}
+          onClick={() => setStatusFilter('ACTIVE')}
           title="Filter by Active Zones"
         >
           <div className={styles.statInfo}>
@@ -239,8 +239,8 @@ export const ShippingRates = () => {
         </div>
 
         <div
-          className={`${styles.statCard} ${statusFilter === "INACTIVE" ? styles.statCardActive : ""}`}
-          onClick={() => setStatusFilter("INACTIVE")}
+          className={`${styles.statCard} ${statusFilter === 'INACTIVE' ? styles.statCardActive : ''}`}
+          onClick={() => setStatusFilter('INACTIVE')}
           title="Filter by Inactive Zones"
         >
           <div className={styles.statInfo}>
@@ -256,13 +256,13 @@ export const ShippingRates = () => {
       {/* Filter Tabs & Search Toolbar */}
       <div className={styles.toolbarCard}>
         <div className={styles.statusTabs}>
-          {["ALL", "ACTIVE", "INACTIVE"].map((status) => (
+          {['ALL', 'ACTIVE', 'INACTIVE'].map((status) => (
             <button
               key={status}
               type="button"
               onClick={() => setStatusFilter(status)}
               className={`${styles.statusTabBtn} ${
-                statusFilter === status ? styles.statusTabBtnActive : ""
+                statusFilter === status ? styles.statusTabBtnActive : ''
               }`}
             >
               {status}
@@ -270,7 +270,14 @@ export const ShippingRates = () => {
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
           {selectedZoneGroups.length > 0 && (
             <button
               type="button"
@@ -343,105 +350,114 @@ export const ShippingRates = () => {
                 </td>
               </tr>
             ) : (
-              displayZoneGroups.map((zone, index) => {
-                const rowNumber = currentPage * pageSize + index + 1;
-                return (
-                  <tr key={`${zone.zoneName}_${zone.city}`}>
-                    <td
-                      className="text-center"
-                      style={{
-                        fontWeight: 600,
-                        color: '#64748b',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {rowNumber}
-                    </td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selectedZoneGroups.some(
-                          (zg) =>
-                            zg.zoneName === zone.zoneName &&
-                            zg.city === zone.city
-                        )}
-                        onChange={(e) =>
-                          handleSelectZone(zone, e.target.checked)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 500 }}>{zone.zoneName}</div>
-                      <div className={styles.subText}>{zone.zoneCode}</div>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 500 }}>{zone.city}</div>
-                      <div className={styles.subText}>{zone.regionOrState}</div>
-                    </td>
-                    <td>
-                      {zone.isCityDefault ? (
-                        <span className={styles.defaultTownshipBadge}>
-                          All Other Townships (City Default)
-                        </span>
-                      ) : (
-                        <div className={styles.townshipList}>
-                          {zone.townships.map((t: string) => (
-                            <span key={t} className={styles.townshipTag}>
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ fontWeight: 600, color: '#0f172a' }}>
-                      {(zone.shippingFee ?? 0).toLocaleString()} MMK
-                    </td>
-                    <td>
-                      {zone.estimatedDays ? `${zone.estimatedDays} Days` : '-'}
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStatus(zone)}
+              displayZoneGroups
+                .filter((zone) => !zone.zoneName.startsWith('DELETED_ZONE'))
+                .map((zone, index) => {
+                  const rowNumber = currentPage * pageSize + index + 1;
+                  return (
+                    <tr key={`${zone.zoneName}_${zone.city}`}>
+                      <td
+                        className="text-center"
                         style={{
-                          border: 'none',
-                          background: 'transparent',
-                          cursor: 'pointer',
-                          padding: 0,
+                          fontWeight: 600,
+                          color: '#64748b',
+                          textAlign: 'center',
                         }}
-                        title="Click to toggle status"
                       >
-                        <span
-                          className={`badge-status ${
-                            zone.status === 'ACTIVE'
-                              ? 'badge-status-active'
-                              : 'badge-status-inactive'
-                          }`}
-                        >
-                          {zone.status === 'ACTIVE' ? (
-                            <FiCheckCircle size={12} />
-                          ) : (
-                            <FiXCircle size={12} />
+                        {rowNumber}
+                      </td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedZoneGroups.some(
+                            (zg) =>
+                              zg.zoneName === zone.zoneName &&
+                              zg.city === zone.city
                           )}
-                          {zone.status}
-                        </span>
-                      </button>
-                    </td>
-                    <td className="text-center" style={{ textAlign: 'center' }}>
-                      <div className={styles.actionGroup}>
+                          onChange={(e) =>
+                            handleSelectZone(zone, e.target.checked)
+                          }
+                        />
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{zone.zoneName}</div>
+                        <div className={styles.subText}>{zone.zoneCode}</div>
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{zone.city}</div>
+                        <div className={styles.subText}>
+                          {zone.regionOrState}
+                        </div>
+                      </td>
+                      <td>
+                        {zone.isCityDefault ? (
+                          <span className={styles.defaultTownshipBadge}>
+                            All Other Townships (City Default)
+                          </span>
+                        ) : (
+                          <div className={styles.townshipList}>
+                            {zone.townships.map((t: string) => (
+                              <span key={t} className={styles.townshipTag}>
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ fontWeight: 600, color: '#0f172a' }}>
+                        {(zone.shippingFee ?? 0).toLocaleString()} MMK
+                      </td>
+                      <td>
+                        {zone.estimatedDays
+                          ? `${zone.estimatedDays} Days`
+                          : '-'}
+                      </td>
+                      <td>
                         <button
                           type="button"
-                          className="table-btn-edit"
-                          title="Edit Zone & Rates"
-                          onClick={() => setEditingZone(zone)}
+                          onClick={() => handleToggleStatus(zone)}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: 0,
+                          }}
+                          title="Click to toggle status"
                         >
-                          <FiEdit2 size={13} /> Edit Zone & Rates
+                          <span
+                            className={`badge-status ${
+                              zone.status === 'ACTIVE'
+                                ? 'badge-status-active'
+                                : 'badge-status-inactive'
+                            }`}
+                          >
+                            {zone.status === 'ACTIVE' ? (
+                              <FiCheckCircle size={12} />
+                            ) : (
+                              <FiXCircle size={12} />
+                            )}
+                            {zone.status}
+                          </span>
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
+                      </td>
+                      <td
+                        className="text-center"
+                        style={{ textAlign: 'center' }}
+                      >
+                        <div className={styles.actionGroup}>
+                          <button
+                            type="button"
+                            className="table-btn-edit"
+                            title="Edit Zone & Rates"
+                            onClick={() => setEditingZone(zone)}
+                          >
+                            <FiEdit2 size={13} /> Edit Zone & Rates
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
             )}
           </tbody>
         </table>

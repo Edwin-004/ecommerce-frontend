@@ -29,6 +29,7 @@ export interface CreateZoneGroupRequest {
 // ၃။ ဈေးနှုန်းနှင့် Status ပြင်ဆင်ရန် (UpdateZoneRateRequest DTO နှင့် ကိုက်ညီသည်)
 export interface UpdateZoneRateRequest {
   zoneIds: number[];
+  removedZoneIds?: number[];
   zoneName?: string;
   shippingFee: number;
   estimatedDays: number;
