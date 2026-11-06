@@ -1,31 +1,30 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  FiShoppingCart,
-  FiClock,
-  FiTruck,
-  FiCheckCircle,
-  FiXCircle,
-  FiRotateCcw,
-  FiArrowRight,
-  FiDollarSign,
-  FiRefreshCw,
-  FiEye,
-} from 'react-icons/fi';
+import { FiShoppingCart, FiRotateCcw, FiArrowRight } from 'react-icons/fi';
 import { useGetOrdersQuery } from '../../features/orders/orderApi';
 import type { OrderResponseDto } from '../../types/order';
-import { getRefundStats, type RefundStats } from '../../features/refunds/refundApi';
+import {
+  getRefundStats,
+  type RefundStats,
+} from '../../features/refunds/refundApi';
 import styles from '../AdminDashboard.module.css';
 
 export const SalesOrderDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   // Fetch Orders
-  const { data: orderData, isLoading: ordersLoading, refetch } = useGetOrdersQuery({
+  const {
+    data: orderData,
+    isLoading: ordersLoading,
+    refetch,
+  } = useGetOrdersQuery({
     page: 0,
     size: 200,
   });
-  const orders: OrderResponseDto[] = useMemo(() => orderData?.content || [], [orderData]);
+  const orders: OrderResponseDto[] = useMemo(
+    () => orderData?.content || [],
+    [orderData]
+  );
 
   // Fetch Refund Stats
   const [refundStats, setRefundStats] = useState<RefundStats | null>(null);
@@ -37,43 +36,65 @@ export const SalesOrderDashboard: React.FC = () => {
   }, []);
 
   // Compute Metrics
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr =
+    orders.length > 0 && orders[0].createdAt
+      ? orders[0].createdAt.split('T')[0]
+      : new Date().toISOString().split('T')[0];
 
   const todayOrders = useMemo(() => {
-    return orders.filter((o) => o.createdAt && o.createdAt.startsWith(todayStr));
+    return orders.filter(
+      (o) => o.createdAt && o.createdAt.startsWith(todayStr)
+    );
   }, [orders, todayStr]);
 
   const todayRevenue = useMemo(() => {
-    return todayOrders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
+    return todayOrders.reduce(
+      (sum, o) => sum + (Number(o.totalAmount) || 0),
+      0
+    );
   }, [todayOrders]);
 
   const totalRevenue = useMemo(() => {
     return orders.reduce((sum, o) => sum + (Number(o.totalAmount) || 0), 0);
   }, [orders]);
+  console.log('Fetched Orders:', orders);
+  console.log('Today String:', todayStr);
 
   // Status counts
   const pendingCount = useMemo(
-    () => orders.filter((o) => o.status === 'PENDING' || o.status === 'PLACED').length,
+    () =>
+      orders.filter(
+        (o) => o.orderStatus === 'PENDING' || o.orderStatus === 'PLACED'
+      ).length,
     [orders]
   );
 
   const processingCount = useMemo(
-    () => orders.filter((o) => o.status === 'PROCESSING' || o.status === 'CONFIRMED').length,
+    () =>
+      orders.filter(
+        (o) => o.orderStatus === 'PROCESSING' || o.orderStatus === 'CONFIRMED'
+      ).length,
     [orders]
   );
 
   const shippedCount = useMemo(
-    () => orders.filter((o) => o.status === 'SHIPPED' || o.status === 'IN_TRANSIT').length,
+    () =>
+      orders.filter(
+        (o) => o.orderStatus === 'SHIPPED' || o.orderStatus === 'IN_TRANSIT'
+      ).length,
     [orders]
   );
 
   const deliveredCount = useMemo(
-    () => orders.filter((o) => o.status === 'DELIVERED').length,
+    () => orders.filter((o) => o.orderStatus === 'DELIVERED').length,
     [orders]
   );
 
   const cancelledCount = useMemo(
-    () => orders.filter((o) => o.status === 'CANCELLED' || o.status === 'RETURNED').length,
+    () =>
+      orders.filter(
+        (o) => o.orderStatus === 'CANCELLED' || o.orderStatus === 'RETURNED'
+      ).length,
     [orders]
   );
 
@@ -89,9 +110,13 @@ export const SalesOrderDashboard: React.FC = () => {
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
-      const hours = String(d.getHours()).padStart(2, '0');
+      let hoursNum = d.getHours();
+      const ampm = hoursNum >= 12 ? 'PM' : 'AM';
+      hoursNum = hoursNum % 12;
+      hoursNum = hoursNum ? hoursNum : 12;
+      const hours = String(hoursNum).padStart(2, '0');
       const mins = String(d.getMinutes()).padStart(2, '0');
-      return `${day}/${month}/${year} ${hours}:${mins}`;
+      return `${day}/${month}/${year}, ${hours}:${mins} ${ampm}`;
     } catch {
       return dateStr;
     }
@@ -205,7 +230,8 @@ export const SalesOrderDashboard: React.FC = () => {
             <h1 className={styles.headerTitle}>Order &amp; Sales Operations</h1>
           </div>
           <p className={styles.headerSubtitle}>
-            Process customer orders, monitor fulfillment pipelines, and handle return requests
+            Process customer orders, monitor fulfillment pipelines, and handle
+            return requests
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -224,29 +250,21 @@ export const SalesOrderDashboard: React.FC = () => {
           >
             <FiRotateCcw size={16} /> Refund Requests
           </button>
-          <button
-            type="button"
-            className={styles.chartToggleBtn}
-            onClick={() => refetch()}
-            title="Refresh Order Data"
-          >
-            <FiRefreshCw size={14} className={ordersLoading ? 'animate-spin' : ''} />
-          </button>
         </div>
       </div>
 
       {/* Top 4 KPI Cards */}
       <div className={styles.statsGrid}>
         {/* Card 1: Today's Sales */}
-        <div className={styles.statCard} onClick={() => navigate('/admin/orders')}>
+        <div
+          className={styles.statCard}
+          onClick={() => navigate('/admin/orders')}
+        >
           <div className={styles.cardHeader}>
-            <div className={`${styles.iconWrap} ${styles.iconWrapGreen}`}>
-              <FiDollarSign size={20} />
-            </div>
-            <span className={styles.cardTrendPositive}>Today</span>
+            <span className={styles.cardTrendPositive}>Today's Sales</span>
           </div>
           <div className={styles.cardBottom}>
-            <p className={styles.cardLabel}>Today's Sales</p>
+            <p className={styles.cardLabel}>Revenue</p>
             <h3 className={styles.cardValue}>{formatCurrency(todayRevenue)}</h3>
           </div>
         </div>
@@ -254,34 +272,31 @@ export const SalesOrderDashboard: React.FC = () => {
         {/* Card 2: Orders Awaiting Processing */}
         <div
           className={styles.statCard}
-          style={pendingCount > 0 ? { borderColor: 'rgba(245, 158, 11, 0.7)' } : {}}
+          style={
+            pendingCount > 0 ? { borderColor: 'rgba(245, 158, 11, 0.7)' } : {}
+          }
           onClick={() => navigate('/admin/orders')}
         >
           <div className={styles.cardHeader}>
-            <div className={`${styles.iconWrap} ${styles.iconWrapAmber}`}>
-              <FiClock size={20} />
-            </div>
-            <span
-              className={styles.cardTrendWarning}
-              style={{ background: 'rgba(254, 243, 199, 0.8)', color: '#b45309' }}
-            >
-              Action Required
-            </span>
+            <span className={styles.cardTrendWarning}>Action Required</span>
           </div>
           <div className={styles.cardBottom}>
             <p className={styles.cardLabel}>Pending Orders</p>
-            <h3 className={styles.cardValue} style={pendingCount > 0 ? { color: '#d97706' } : {}}>
+            <h3
+              className={styles.cardValue}
+              style={pendingCount > 0 ? { color: '#d97706' } : {}}
+            >
               {pendingCount}
             </h3>
           </div>
         </div>
 
         {/* Card 3: In Transit / Shipped */}
-        <div className={styles.statCard} onClick={() => navigate('/admin/orders')}>
+        <div
+          className={styles.statCard}
+          onClick={() => navigate('/admin/orders')}
+        >
           <div className={styles.cardHeader}>
-            <div className={`${styles.iconWrap} ${styles.iconWrapBlue}`}>
-              <FiTruck size={20} />
-            </div>
             <span className={styles.cardTrendNeutral}>Dispatched</span>
           </div>
           <div className={styles.cardBottom}>
@@ -293,30 +308,18 @@ export const SalesOrderDashboard: React.FC = () => {
         {/* Card 4: Pending Refunds */}
         <div
           className={styles.statCard}
-          style={
-            (refundStats?.pendingCount || 0) > 0 ? { borderColor: 'rgba(239, 68, 68, 0.6)' } : {}
-          }
           onClick={() => navigate('/admin/refunds')}
         >
           <div className={styles.cardHeader}>
-            <div
-              className={styles.iconWrap}
-              style={{ background: 'rgba(254, 226, 226, 0.8)', color: '#b91c1c' }}
-            >
-              <FiRotateCcw size={20} />
-            </div>
-            <span
-              className={styles.cardTrendDanger}
-              style={{ background: 'rgba(254, 226, 226, 0.8)', color: '#b91c1c' }}
-            >
-              Pending Review
-            </span>
+            <span className={styles.cardTrendDanger}>Pending Review</span>
           </div>
           <div className={styles.cardBottom}>
             <p className={styles.cardLabel}>Refund Requests</p>
             <h3
               className={styles.cardValue}
-              style={(refundStats?.pendingCount || 0) > 0 ? { color: '#dc2626' } : {}}
+              style={
+                (refundStats?.pendingCount || 0) > 0 ? { color: '#dc2626' } : {}
+              }
             >
               {refundStats?.pendingCount ?? 0}
             </h3>
@@ -334,7 +337,14 @@ export const SalesOrderDashboard: React.FC = () => {
           boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
         }}
       >
-        <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#0f172a', margin: '0 0 16px 0' }}>
+        <h3
+          style={{
+            fontSize: '15px',
+            fontWeight: 600,
+            color: '#0f172a',
+            margin: '0 0 16px 0',
+          }}
+        >
           📦 Order Fulfillment Pipeline
         </h3>
 
@@ -355,11 +365,26 @@ export const SalesOrderDashboard: React.FC = () => {
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#b45309' }}>1. PENDING</div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#92400e', marginTop: '4px' }}>
+            <div
+              style={{ fontSize: '11px', fontWeight: 600, color: '#b45309' }}
+            >
+              1. PENDING
+            </div>
+            <div
+              style={{
+                fontSize: '20px',
+                fontWeight: 700,
+                color: '#92400e',
+                marginTop: '4px',
+              }}
+            >
               {pendingCount}
             </div>
-            <div style={{ fontSize: '11px', color: '#b45309', marginTop: '2px' }}>Awaiting Pack</div>
+            <div
+              style={{ fontSize: '11px', color: '#b45309', marginTop: '2px' }}
+            >
+              Awaiting Pack
+            </div>
           </div>
 
           {/* Processing */}
@@ -372,11 +397,26 @@ export const SalesOrderDashboard: React.FC = () => {
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#1d4ed8' }}>2. PROCESSING</div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#1e40af', marginTop: '4px' }}>
+            <div
+              style={{ fontSize: '11px', fontWeight: 600, color: '#1d4ed8' }}
+            >
+              2. PROCESSING
+            </div>
+            <div
+              style={{
+                fontSize: '20px',
+                fontWeight: 700,
+                color: '#1e40af',
+                marginTop: '4px',
+              }}
+            >
               {processingCount}
             </div>
-            <div style={{ fontSize: '11px', color: '#1d4ed8', marginTop: '2px' }}>Being Packed</div>
+            <div
+              style={{ fontSize: '11px', color: '#1d4ed8', marginTop: '2px' }}
+            >
+              Being Packed
+            </div>
           </div>
 
           {/* Shipped */}
@@ -389,11 +429,26 @@ export const SalesOrderDashboard: React.FC = () => {
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#4338ca' }}>3. SHIPPED</div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#3730a3', marginTop: '4px' }}>
+            <div
+              style={{ fontSize: '11px', fontWeight: 600, color: '#4338ca' }}
+            >
+              3. SHIPPED
+            </div>
+            <div
+              style={{
+                fontSize: '20px',
+                fontWeight: 700,
+                color: '#3730a3',
+                marginTop: '4px',
+              }}
+            >
               {shippedCount}
             </div>
-            <div style={{ fontSize: '11px', color: '#4338ca', marginTop: '2px' }}>In Transit</div>
+            <div
+              style={{ fontSize: '11px', color: '#4338ca', marginTop: '2px' }}
+            >
+              In Transit
+            </div>
           </div>
 
           {/* Delivered */}
@@ -406,11 +461,26 @@ export const SalesOrderDashboard: React.FC = () => {
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#047857' }}>4. DELIVERED</div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#065f46', marginTop: '4px' }}>
+            <div
+              style={{ fontSize: '11px', fontWeight: 600, color: '#047857' }}
+            >
+              4. DELIVERED
+            </div>
+            <div
+              style={{
+                fontSize: '20px',
+                fontWeight: 700,
+                color: '#065f46',
+                marginTop: '4px',
+              }}
+            >
               {deliveredCount}
             </div>
-            <div style={{ fontSize: '11px', color: '#047857', marginTop: '2px' }}>Completed</div>
+            <div
+              style={{ fontSize: '11px', color: '#047857', marginTop: '2px' }}
+            >
+              Completed
+            </div>
           </div>
 
           {/* Cancelled */}
@@ -423,11 +493,26 @@ export const SalesOrderDashboard: React.FC = () => {
               textAlign: 'center',
             }}
           >
-            <div style={{ fontSize: '11px', fontWeight: 600, color: '#b91c1c' }}>5. CANCELLED</div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#991b1b', marginTop: '4px' }}>
+            <div
+              style={{ fontSize: '11px', fontWeight: 600, color: '#b91c1c' }}
+            >
+              5. CANCELLED
+            </div>
+            <div
+              style={{
+                fontSize: '20px',
+                fontWeight: 700,
+                color: '#991b1b',
+                marginTop: '4px',
+              }}
+            >
               {cancelledCount}
             </div>
-            <div style={{ fontSize: '11px', color: '#b91c1c', marginTop: '2px' }}>Voided</div>
+            <div
+              style={{ fontSize: '11px', color: '#b91c1c', marginTop: '2px' }}
+            >
+              Voided
+            </div>
           </div>
         </div>
       </div>
@@ -451,10 +536,23 @@ export const SalesOrderDashboard: React.FC = () => {
           }}
         >
           <div>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#0f172a', margin: 0 }}>
+            <h3
+              style={{
+                fontSize: '16px',
+                fontWeight: 600,
+                color: '#0f172a',
+                margin: 0,
+              }}
+            >
               🛒 Recent Customer Orders
             </h3>
-            <p style={{ fontSize: '12px', color: '#64748b', margin: '2px 0 0 0' }}>
+            <p
+              style={{
+                fontSize: '12px',
+                color: '#64748b',
+                margin: '2px 0 0 0',
+              }}
+            >
               Latest customer purchases requiring tracking or dispatch
             </p>
           </div>
@@ -478,15 +576,51 @@ export const SalesOrderDashboard: React.FC = () => {
         </div>
 
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: '13px',
+            }}
+          >
             <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b', textAlign: 'left' }}>
-                <th style={{ padding: '10px 8px', fontWeight: 600 }}>Tracking / Order #</th>
-                <th style={{ padding: '10px 8px', fontWeight: 600 }}>Customer</th>
-                <th style={{ padding: '10px 8px', fontWeight: 600 }}>Date &amp; Time</th>
-                <th style={{ padding: '10px 8px', fontWeight: 600 }}>Total Amount</th>
-                <th style={{ padding: '10px 8px', fontWeight: 600, textAlign: 'center' }}>Status</th>
-                <th style={{ padding: '10px 8px', fontWeight: 600, textAlign: 'right' }}>Action</th>
+              <tr
+                style={{
+                  borderBottom: '1px solid #e2e8f0',
+                  color: '#64748b',
+                  textAlign: 'left',
+                }}
+              >
+                <th style={{ padding: '10px 8px', fontWeight: 600 }}>
+                  Tracking / Order #
+                </th>
+                <th style={{ padding: '10px 8px', fontWeight: 600 }}>
+                  Customer
+                </th>
+                <th style={{ padding: '10px 8px', fontWeight: 600 }}>
+                  Date &amp; Time
+                </th>
+                <th style={{ padding: '10px 8px', fontWeight: 600 }}>
+                  Total Amount
+                </th>
+                <th
+                  style={{
+                    padding: '10px 8px',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                  }}
+                >
+                  Status
+                </th>
+                <th
+                  style={{
+                    padding: '10px 8px',
+                    fontWeight: 600,
+                    textAlign: 'right',
+                  }}
+                >
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -508,25 +642,34 @@ export const SalesOrderDashboard: React.FC = () => {
                           fontSize: '12.5px',
                         }}
                       >
-                        {order.orderTrackingNumber || `#ORD-${order.orderId}`}
+                        {order.orderNo || `#ORD-${order.orderId}`}
                       </span>
                     </td>
                     <td style={{ padding: '12px 8px' }}>
                       <div style={{ fontWeight: 600, color: '#1e293b' }}>
-                        {order.customerName || order.user?.userName || 'Customer'}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#64748b' }}>
-                        {order.customerEmail || order.user?.email || '—'}
+                        {order.customerName || order.customerName || 'Customer'}
                       </div>
                     </td>
-                    <td style={{ padding: '12px 8px', color: '#64748b', fontSize: '12px' }}>
+                    <td
+                      style={{
+                        padding: '12px 8px',
+                        color: '#64748b',
+                        fontSize: '12px',
+                      }}
+                    >
                       {formatDate(order.createdAt)}
                     </td>
-                    <td style={{ padding: '12px 8px', fontWeight: 700, color: '#0f172a' }}>
+                    <td
+                      style={{
+                        padding: '12px 8px',
+                        fontWeight: 700,
+                        color: '#0f172a',
+                      }}
+                    >
                       {formatCurrency(Number(order.totalAmount) || 0)}
                     </td>
                     <td style={{ padding: '12px 8px', textAlign: 'center' }}>
-                      {renderStatusBadge(order.status || 'PENDING')}
+                      {renderStatusBadge(order.orderStatus || 'PENDING')}
                     </td>
                     <td style={{ padding: '12px 8px', textAlign: 'right' }}>
                       <button
@@ -550,7 +693,14 @@ export const SalesOrderDashboard: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} style={{ padding: '32px 0', textAlign: 'center', color: '#64748b' }}>
+                  <td
+                    colSpan={6}
+                    style={{
+                      padding: '32px 0',
+                      textAlign: 'center',
+                      color: '#64748b',
+                    }}
+                  >
                     No customer orders found.
                   </td>
                 </tr>

@@ -31,7 +31,12 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
     if (isRefund) {
       navigate('/admin/refunds');
     } else if (notification.link && notification.link !== '/admin/refunds') {
-      navigate(notification.link);
+      if (notification.link.startsWith('/admin/orders/')) {
+        const extractedOrderNo = notification.link.split('/').pop();
+        navigate(`/admin/orders?orderNo=${extractedOrderNo}`);
+      } else {
+        navigate(notification.link);
+      }
     }
   };
 
@@ -44,7 +49,9 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
         </div>
         <div className={styles.toastTextWrapper}>
           <div className={styles.toastHeaderRow}>
-            <span className={styles.toastBadge}>{isRefund ? 'REFUND REQUEST' : (notification.type || 'EVENT')}</span>
+            <span className={styles.toastBadge}>
+              {isRefund ? 'REFUND REQUEST' : notification.type || 'EVENT'}
+            </span>
             <span className={styles.toastTime}>Just now</span>
           </div>
           <h4 className={styles.toastTitle}>{notification.title}</h4>

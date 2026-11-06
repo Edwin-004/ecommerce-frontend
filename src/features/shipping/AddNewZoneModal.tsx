@@ -133,8 +133,18 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
     e.preventDefault();
     setFormError(null);
 
-    if (!zoneName || !selectedRegionOrState || !selectedCity || !shippingFee) {
-      toast.error('Please fill in all required fields.');
+    // ⭐️ မြို့နယ် မရွေးရသေးလျှင် Form ထဲတွင် Error ပြရန် ⭐️
+    if (
+      !zoneName ||
+      !selectedRegionOrState ||
+      !selectedCity ||
+      !shippingFee ||
+      !selectedTownships ||
+      selectedTownships.length === 0
+    ) {
+      setFormError(
+        'Please fill in all required fields and select at least one township.'
+      );
       return;
     }
 
@@ -156,7 +166,6 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
           : undefined,
       }).unwrap();
 
-      // အောင်မြင်ပါက Modal ပိတ်ပြီး Form ကို ရှင်းလင်းမည်
       toast.success('New delivery zone created successfully!');
       onClose();
       setZoneName('');
@@ -172,10 +181,6 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
         err?.message ||
         'There was an error while creating the zone. Please try again.';
 
-      toast.error(backendMessage, {
-        position: 'top-right',
-        autoClose: 4000,
-      });
       setFormError(backendMessage);
     }
   };
