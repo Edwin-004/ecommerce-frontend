@@ -15,7 +15,7 @@ export const orderApi = createApi({
       query: (args) => {
         const page = args?.page ?? 0;
         const size = args?.size ?? 10;
-        let url = `/orders?page=${page}&size=${size}`;
+        let url = `/orders?page=${page}&pageSize=${size}&size=${size}`;
         if (args?.status && args.status !== 'ALL') {
           url += `&status=${args.status}`;
         }
@@ -30,6 +30,11 @@ export const orderApi = createApi({
         }
         return url;
       },
+      providesTags: ['Order'],
+    }),
+
+    getOrderStatusCounts: builder.query<Record<string, number>, void>({
+      query: () => '/orders/status-counts',
       providesTags: ['Order'],
     }),
 
@@ -73,6 +78,7 @@ export const orderApi = createApi({
 
 export const {
   useGetOrdersQuery,
+  useGetOrderStatusCountsQuery,
   useGetOrderByOrderNoQuery,
   useGetPaymentByOrderNoQuery,
   useGetCouriersQuery,

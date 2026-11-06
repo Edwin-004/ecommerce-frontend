@@ -325,8 +325,20 @@
 
 .pipelineGrid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
+}
+
+@media (max-width: 1280px) {
+  .pipelineGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .pipelineGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* Individual Stepper Cards - Clean White Surface with 3px Accent Bar */
@@ -360,6 +372,7 @@
 }
 
 .stepPending::before { background: #f59e0b; }
+.stepPaid::before { background: #06b6d4; }
 .stepProcessing::before { background: #3b82f6; }
 .stepShipped::before { background: #8b5cf6; }
 .stepDelivered::before { background: #10b981; }
@@ -371,6 +384,7 @@
 }
 
 .stepPending:hover { border-color: #fcd34d; }
+.stepPaid:hover { border-color: #67e8f9; }
 .stepProcessing:hover { border-color: #93c5fd; }
 .stepShipped:hover { border-color: #c4b5fd; }
 .stepDelivered:hover { border-color: #6ee7b7; }
@@ -397,6 +411,7 @@
 }
 
 .tagPending { color: #b45309; }
+.tagPaid { color: #0e7490; }
 .tagProcessing { color: #1d4ed8; }
 .tagShipped { color: #6d28d9; }
 .tagDelivered { color: #047857; }
