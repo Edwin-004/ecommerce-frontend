@@ -1,8 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import type { RootState } from "../store";
-import styles from "./AdminDashboard.module.css";
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import styles from './AdminDashboard.module.css';
 import {
   FiShoppingCart,
   FiPackage,
@@ -18,19 +16,19 @@ import {
   FiCalendar,
   FiPlus,
   FiChevronRight,
-} from "react-icons/fi";
-import { inventoryApi } from "../features/inventory/inventoryApi";
-import { useGetOrdersQuery } from "../features/orders/orderApi";
-import type { OrderResponseDto } from "../types/order";
+} from 'react-icons/fi';
+import { inventoryApi } from '../features/inventory/inventoryApi';
+import { useGetOrdersQuery } from '../features/orders/orderApi';
+import type { OrderResponseDto } from '../types/order';
 import {
   productManagementApi,
   type ProductItem,
-} from "../features/products/productManagementApi";
-import api from "../utils/axiosConfig";
-import { useSelector } from "react-redux";
-import type { RootState } from "../store";
-import { InventoryDashboard } from "./dashboard/InventoryDashboard";
-import { SalesOrderDashboard } from "./dashboard/SalesOrderDashboard";
+} from '../features/products/productManagementApi';
+import api from '../utils/axiosConfig';
+import { useSelector } from 'react-redux';
+import type { RootState } from '../store';
+import { InventoryDashboard } from './dashboard/InventoryDashboard';
+import { SalesOrderDashboard } from './dashboard/SalesOrderDashboard';
 
 interface DailyMetric {
   dateKey: string;
@@ -42,40 +40,65 @@ interface DailyMetric {
 export const AdminDashboard = () => {
   const navigate = useNavigate();
   const { role } = useSelector((state: RootState) => state.auth);
-  const normalizedRole = (role || "").toUpperCase();
+  const normalizedRole = (role || '').toUpperCase();
 
   // ၁။ Staff Role များအတွက် သီးသန့် Dashboard များဆီသို့ တိုက်ရိုက်ပို့ဆောင်ခြင်း
-  if (normalizedRole === "INVENTORY_STAFF" || normalizedRole === "ROLE_INVENTORY_STAFF") {
+  if (
+    normalizedRole === 'INVENTORY_STAFF' ||
+    normalizedRole === 'ROLE_INVENTORY_STAFF'
+  ) {
     return <InventoryDashboard />;
   }
 
   if (
-    normalizedRole === "SALES_STAFF" ||
-    normalizedRole === "ROLE_SALES_STAFF" ||
-    normalizedRole === "ORDER_STAFF" ||
-    normalizedRole === "ROLE_ORDER_STAFF"
+    normalizedRole === 'SALES_STAFF' ||
+    normalizedRole === 'ROLE_SALES_STAFF' ||
+    normalizedRole === 'ORDER_STAFF' ||
+    normalizedRole === 'ROLE_ORDER_STAFF'
   ) {
     return <SalesOrderDashboard />;
   }
 
   // ၂။ Executive Admin Dashboard အတွက် Permission များ စစ်ဆေးခြင်း
-  const isAdmin = normalizedRole === "ADMIN" || normalizedRole === "ROLE_ADMIN";
-  const canAccessCatalog = isAdmin || normalizedRole === "INVENTORY_STAFF" || normalizedRole === "ROLE_INVENTORY_STAFF";
-  const canAccessOperations = isAdmin || normalizedRole === "SALES_STAFF" || normalizedRole === "ROLE_SALES_STAFF" || normalizedRole === "ORDER_STAFF" || normalizedRole === "ROLE_ORDER_STAFF";
-  const canAccessInventory = isAdmin || normalizedRole === "INVENTORY_STAFF" || normalizedRole === "ROLE_INVENTORY_STAFF" || normalizedRole === "SALES_STAFF" || normalizedRole === "ROLE_SALES_STAFF";
+  const isAdmin = normalizedRole === 'ADMIN' || normalizedRole === 'ROLE_ADMIN';
+  const canAccessCatalog =
+    isAdmin ||
+    normalizedRole === 'INVENTORY_STAFF' ||
+    normalizedRole === 'ROLE_INVENTORY_STAFF';
+  const canAccessOperations =
+    isAdmin ||
+    normalizedRole === 'SALES_STAFF' ||
+    normalizedRole === 'ROLE_SALES_STAFF' ||
+    normalizedRole === 'ORDER_STAFF' ||
+    normalizedRole === 'ROLE_ORDER_STAFF';
+  const canAccessInventory =
+    isAdmin ||
+    normalizedRole === 'INVENTORY_STAFF' ||
+    normalizedRole === 'ROLE_INVENTORY_STAFF' ||
+    normalizedRole === 'SALES_STAFF' ||
+    normalizedRole === 'ROLE_SALES_STAFF';
 
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   const [staffCount, setStaffCount] = useState<number>(0);
   const [products, setProducts] = useState<ProductItem[]>([]);
-  const [timeRange, setTimeRange] = useState<"7d" | "14d" | "30d">("7d");
-  const [activeMetric, setActiveMetric] = useState<"revenue" | "orders">("revenue");
-  const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(null);
-  const [chartType, setChartType] = useState<"bar" | "area">("bar");
+  const [timeRange, setTimeRange] = useState<'7d' | '14d' | '30d'>('7d');
+  const [activeMetric, setActiveMetric] = useState<'revenue' | 'orders'>(
+    'revenue'
+  );
+  const [hoveredPointIndex, setHoveredPointIndex] = useState<number | null>(
+    null
+  );
+  const [chartType, setChartType] = useState<'bar' | 'area'>('bar');
 
   // Real-time Orders & Revenue from Backend
-  const { data: orderData } = useGetOrdersQuery({ page: 0, size: 200 }, { skip: !canAccessOperations });
-  const orders: OrderResponseDto[] = useMemo(() => orderData?.content || [], [orderData]);
-  ...
+  const { data: orderData } = useGetOrdersQuery(
+    { page: 0, size: 200 },
+    { skip: !canAccessOperations }
+  );
+  const orders: OrderResponseDto[] = useMemo(
+    () => orderData?.content || [],
+    [orderData]
+  );
 
   const totalOrders = orderData?.totalElements ?? orders.length;
   const totalRevenue = useMemo(() => {
@@ -96,7 +119,7 @@ export const AdminDashboard = () => {
     // 2. Fetch Staff Count (Strictly ADMIN only)
     if (isAdmin) {
       api
-        .get("/staff")
+        .get('/staff')
         .then((res) => {
           if (Array.isArray(res.data)) {
             setStaffCount(res.data.length);
@@ -117,7 +140,7 @@ export const AdminDashboard = () => {
   // =========================================================
   // 1. REVENUE & ORDERS TREND GRAPH DATA
   // =========================================================
-  const daysCount = timeRange === "7d" ? 7 : timeRange === "14d" ? 14 : 30;
+  const daysCount = timeRange === '7d' ? 7 : timeRange === '14d' ? 14 : 30;
 
   const chartData: DailyMetric[] = useMemo(() => {
     const list: DailyMetric[] = [];
@@ -126,8 +149,8 @@ export const AdminDashboard = () => {
     for (let i = daysCount - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const dateKey = d.toISOString().split("T")[0]; // YYYY-MM-DD
-      const label = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const dateKey = d.toISOString().split('T')[0]; // YYYY-MM-DD
+      const label = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
 
       list.push({
         dateKey,
@@ -140,7 +163,9 @@ export const AdminDashboard = () => {
     // Aggregate orders into dates
     orders.forEach((order) => {
       if (!order.createdAt) return;
-      const orderDateKey = new Date(order.createdAt).toISOString().split("T")[0];
+      const orderDateKey = new Date(order.createdAt)
+        .toISOString()
+        .split('T')[0];
       const match = list.find((m) => m.dateKey === orderDateKey);
       if (match) {
         match.orders += 1;
@@ -161,14 +186,17 @@ export const AdminDashboard = () => {
   const plotWidth = chartWidth - marginLeft - marginRight;
   const plotHeight = chartHeight - marginTop - marginBottom;
 
-  const slotWidth = chartData.length > 0 ? plotWidth / chartData.length : plotWidth;
+  const slotWidth =
+    chartData.length > 0 ? plotWidth / chartData.length : plotWidth;
   const barWidth = Math.min(36, Math.max(14, slotWidth * 0.52));
 
   const maxVal = useMemo(() => {
-    const vals = chartData.map((d) => (activeMetric === "revenue" ? d.revenue : d.orders));
+    const vals = chartData.map((d) =>
+      activeMetric === 'revenue' ? d.revenue : d.orders
+    );
     const max = Math.max(...vals, 0);
     if (max === 0) {
-      return activeMetric === "revenue" ? 1000 : 10;
+      return activeMetric === 'revenue' ? 1000 : 10;
     }
     return Math.ceil(max * 1.2);
   }, [chartData, activeMetric]);
@@ -176,16 +204,24 @@ export const AdminDashboard = () => {
   const points = useMemo(() => {
     if (chartData.length === 0) return [];
     return chartData.map((d, index) => {
-      const val = activeMetric === "revenue" ? d.revenue : d.orders;
+      const val = activeMetric === 'revenue' ? d.revenue : d.orders;
       const x = marginLeft + (index + 0.5) * slotWidth;
       const y = marginTop + plotHeight - (val / (maxVal || 1)) * plotHeight;
       return { x, y, data: d, val, index };
     });
-  }, [chartData, activeMetric, maxVal, slotWidth, marginLeft, marginTop, plotHeight]);
+  }, [
+    chartData,
+    activeMetric,
+    maxVal,
+    slotWidth,
+    marginLeft,
+    marginTop,
+    plotHeight,
+  ]);
 
   // Build SVG path string with smooth spline curve
   const svgLinePath = useMemo(() => {
-    if (points.length === 0) return "";
+    if (points.length === 0) return '';
     if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
     return points.reduce((acc, pt, i) => {
       if (i === 0) return `M ${pt.x} ${pt.y}`;
@@ -195,11 +231,11 @@ export const AdminDashboard = () => {
       const cp2x = prev.x + (pt.x - prev.x) / 2;
       const cp2y = pt.y;
       return `${acc} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${pt.x} ${pt.y}`;
-    }, "");
+    }, '');
   }, [points]);
 
   const svgAreaPath = useMemo(() => {
-    if (points.length === 0) return "";
+    if (points.length === 0) return '';
     const bottomY = marginTop + plotHeight;
     const firstX = points[0].x;
     const lastX = points[points.length - 1].x;
@@ -215,7 +251,8 @@ export const AdminDashboard = () => {
     return chartData.reduce((acc, d) => acc + d.orders, 0);
   }, [chartData]);
 
-  const avgOrderVal = periodTotalOrders > 0 ? periodTotalRevenue / periodTotalOrders : 0;
+  const avgOrderVal =
+    periodTotalOrders > 0 ? periodTotalRevenue / periodTotalOrders : 0;
 
   // =========================================================
   // 2. ORDER STATUS DISTRIBUTION (DONUT CHART)
@@ -230,21 +267,21 @@ export const AdminDashboard = () => {
     };
 
     orders.forEach((o) => {
-      const s = (o.orderStatus || "PENDING").toUpperCase();
+      const s = (o.orderStatus || 'PENDING').toUpperCase();
       if (counts[s] !== undefined) {
         counts[s]++;
       } else {
-        counts["PENDING"]++;
+        counts['PENDING']++;
       }
     });
 
     const total = orders.length || 1;
     const colors: Record<string, string> = {
-      DELIVERED: "#10b981", // Emerald
-      PROCESSING: "#3b82f6", // Blue
-      SHIPPED: "#8b5cf6", // Purple
-      PENDING: "#f59e0b", // Amber
-      CANCELLED: "#ef4444", // Red
+      DELIVERED: '#10b981', // Emerald
+      PROCESSING: '#3b82f6', // Blue
+      SHIPPED: '#8b5cf6', // Purple
+      PENDING: '#f59e0b', // Amber
+      CANCELLED: '#ef4444', // Red
     };
 
     const segments = Object.entries(counts).map(([name, count]) => {
@@ -253,7 +290,7 @@ export const AdminDashboard = () => {
         name,
         count,
         percent,
-        color: colors[name] || "#64748b",
+        color: colors[name] || '#64748b',
       };
     });
 
@@ -269,7 +306,7 @@ export const AdminDashboard = () => {
   const categoryStats = useMemo(() => {
     const counts: Record<string, number> = {};
     products.forEach((p) => {
-      const cat = p.categoryName || "Uncategorized";
+      const cat = p.categoryName || 'Uncategorized';
       counts[cat] = (counts[cat] || 0) + 1;
     });
 
@@ -283,7 +320,7 @@ export const AdminDashboard = () => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    const barColors = ["#2563eb", "#10b981", "#8b5cf6", "#f59e0b", "#06b6d4"];
+    const barColors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4'];
     return sorted.map((s, idx) => ({
       ...s,
       color: barColors[idx % barColors.length],
@@ -295,16 +332,20 @@ export const AdminDashboard = () => {
   // =========================================================
   const recentOrders = useMemo(() => {
     return [...orders]
-      .sort((a, b) => new Date(b.createdAt || "").getTime() - new Date(a.createdAt || "").getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt || '').getTime() -
+          new Date(a.createdAt || '').getTime()
+      )
       .slice(0, 5);
   }, [orders]);
 
   const getStatusBadgeClass = (status: string) => {
-    const s = (status || "").toUpperCase();
-    if (s === "DELIVERED" || s === "COMPLETED") return styles.statusDelivered;
-    if (s === "PROCESSING" || s === "CONFIRMED") return styles.statusProcessing;
-    if (s === "SHIPPED") return styles.statusShipped;
-    if (s === "CANCELLED" || s === "FAILED") return styles.statusCancelled;
+    const s = (status || '').toUpperCase();
+    if (s === 'DELIVERED' || s === 'COMPLETED') return styles.statusDelivered;
+    if (s === 'PROCESSING' || s === 'CONFIRMED') return styles.statusProcessing;
+    if (s === 'SHIPPED') return styles.statusShipped;
+    if (s === 'CANCELLED' || s === 'FAILED') return styles.statusCancelled;
     return styles.statusPending;
   };
 
@@ -315,7 +356,8 @@ export const AdminDashboard = () => {
         <div className={styles.headerLeft}>
           <h1 className={styles.headerTitle}>Admin Analytics Dashboard</h1>
           <p className={styles.headerSubtitle}>
-            Real-time overview of revenue performance, orders lifecycle, and inventory health
+            Real-time overview of revenue performance, orders lifecycle, and
+            inventory health
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -323,7 +365,7 @@ export const AdminDashboard = () => {
             <button
               type="button"
               className={styles.primaryBtn}
-              onClick={() => navigate("/admin/orders")}
+              onClick={() => navigate('/admin/orders')}
             >
               <FiShoppingCart size={14} /> View Orders &rarr;
             </button>
@@ -331,7 +373,7 @@ export const AdminDashboard = () => {
             <button
               type="button"
               className={styles.primaryBtn}
-              onClick={() => navigate("/admin/inventory")}
+              onClick={() => navigate('/admin/inventory')}
             >
               <FiPackage size={14} /> View Inventory &rarr;
             </button>
@@ -343,43 +385,77 @@ export const AdminDashboard = () => {
       <div className={styles.statsGrid}>
         {/* 1. Total Revenue */}
         <div
-          className={`${styles.statCard} ${activeMetric === "revenue" && canAccessOperations ? styles.statCardActive : ""}`}
-          onClick={canAccessOperations ? () => setActiveMetric("revenue") : undefined}
-          style={!canAccessOperations ? { cursor: "default" } : undefined}
-          title={canAccessOperations ? "Click to view Revenue trend" : "Restricted to Sales & Admin"}
+          className={`${styles.statCard} ${activeMetric === 'revenue' && canAccessOperations ? styles.statCardActive : ''}`}
+          onClick={
+            canAccessOperations ? () => setActiveMetric('revenue') : undefined
+          }
+          style={!canAccessOperations ? { cursor: 'default' } : undefined}
+          title={
+            canAccessOperations
+              ? 'Click to view Revenue trend'
+              : 'Restricted to Sales & Admin'
+          }
         >
           <div className={styles.statTopRow}>
             <span className={styles.statLabel}>Total revenue</span>
             {canAccessOperations && <span className={styles.statDotBlue} />}
           </div>
           <div className={styles.statValue}>
-            {canAccessOperations ? `${totalRevenue.toLocaleString()} MMK` : "—"}
+            {canAccessOperations ? `${totalRevenue.toLocaleString()} MMK` : '—'}
           </div>
           <div className={styles.statBottomRow}>
-            <span className={styles.statTrendGreen} style={!canAccessOperations ? { color: "#94a3b8" } : undefined}>
-              <FiTrendingUp size={13} /> {canAccessOperations ? "Gross sales across all orders" : "Requires Order access"}
+            <span
+              className={styles.statTrendGreen}
+              style={!canAccessOperations ? { color: '#94a3b8' } : undefined}
+            >
+              <FiTrendingUp size={13} />{' '}
+              {canAccessOperations
+                ? 'Gross sales across all orders'
+                : 'Requires Order access'}
             </span>
             <div className={`${styles.statIconBox} ${styles.iconGreen}`}>
-              <span style={{ fontWeight: 700, fontSize: "13px", letterSpacing: "-0.02em" }}>Ks</span>
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Ks
+              </span>
             </div>
           </div>
         </div>
 
         {/* 2. Total Orders */}
         <div
-          className={`${styles.statCard} ${activeMetric === "orders" && canAccessOperations ? styles.statCardActive : ""}`}
-          onClick={canAccessOperations ? () => setActiveMetric("orders") : undefined}
-          style={!canAccessOperations ? { cursor: "default" } : undefined}
-          title={canAccessOperations ? "Click to view Orders trend" : "Restricted to Sales & Admin"}
+          className={`${styles.statCard} ${activeMetric === 'orders' && canAccessOperations ? styles.statCardActive : ''}`}
+          onClick={
+            canAccessOperations ? () => setActiveMetric('orders') : undefined
+          }
+          style={!canAccessOperations ? { cursor: 'default' } : undefined}
+          title={
+            canAccessOperations
+              ? 'Click to view Orders trend'
+              : 'Restricted to Sales & Admin'
+          }
         >
           <div className={styles.statTopRow}>
             <span className={styles.statLabel}>Total orders</span>
             {canAccessOperations && <span className={styles.statDotBlue} />}
           </div>
-          <div className={styles.statValue}>{canAccessOperations ? totalOrders.toLocaleString() : "—"}</div>
+          <div className={styles.statValue}>
+            {canAccessOperations ? totalOrders.toLocaleString() : '—'}
+          </div>
           <div className={styles.statBottomRow}>
-            <span className={styles.statTrendBlue} style={!canAccessOperations ? { color: "#94a3b8" } : undefined}>
-              <FiShoppingCart size={13} /> {canAccessOperations ? "Lifetime processed orders" : "Requires Order access"}
+            <span
+              className={styles.statTrendBlue}
+              style={!canAccessOperations ? { color: '#94a3b8' } : undefined}
+            >
+              <FiShoppingCart size={13} />{' '}
+              {canAccessOperations
+                ? 'Lifetime processed orders'
+                : 'Requires Order access'}
             </span>
             <div className={`${styles.statIconBox} ${styles.iconBlue}`}>
               <FiShoppingCart size={15} />
@@ -390,7 +466,7 @@ export const AdminDashboard = () => {
         {/* 3. Low Stock Alerts */}
         <div
           className={styles.statCard}
-          onClick={() => navigate("/admin/inventory")}
+          onClick={() => navigate('/admin/inventory')}
           title="Click to manage stock & inventory"
         >
           <div className={styles.statTopRow}>
@@ -401,9 +477,10 @@ export const AdminDashboard = () => {
           <div className={styles.statBottomRow}>
             <span
               className={styles.statTrend}
-              style={{ color: lowStockCount > 0 ? "#ea580c" : "#059669" }}
+              style={{ color: lowStockCount > 0 ? '#ea580c' : '#059669' }}
             >
-              <FiAlertTriangle size={13} /> {lowStockCount > 0 ? "Requires restocking" : "All stocks healthy"}
+              <FiAlertTriangle size={13} />{' '}
+              {lowStockCount > 0 ? 'Requires restocking' : 'All stocks healthy'}
             </span>
             <div className={`${styles.statIconBox} ${styles.iconOrange}`}>
               <FiPackage size={15} />
@@ -414,18 +491,22 @@ export const AdminDashboard = () => {
         {/* 4. Active Staff */}
         <div
           className={styles.statCard}
-          onClick={isAdmin ? () => navigate("/admin/staff") : undefined}
-          style={!isAdmin ? { cursor: "default" } : undefined}
-          title={isAdmin ? "Click to view staff roster" : "Restricted to Admin"}
+          onClick={isAdmin ? () => navigate('/admin/staff') : undefined}
+          style={!isAdmin ? { cursor: 'default' } : undefined}
+          title={isAdmin ? 'Click to view staff roster' : 'Restricted to Admin'}
         >
           <div className={styles.statTopRow}>
             <span className={styles.statLabel}>Active staff</span>
             {isAdmin && <span className={styles.statDotPurple} />}
           </div>
-          <div className={styles.statValue}>{isAdmin ? staffCount : "—"}</div>
+          <div className={styles.statValue}>{isAdmin ? staffCount : '—'}</div>
           <div className={styles.statBottomRow}>
-            <span className={styles.statTrendPurple} style={!isAdmin ? { color: "#94a3b8" } : undefined}>
-              <FiCheckCircle size={13} /> {isAdmin ? "Store managers & staff" : "Restricted to Admin"}
+            <span
+              className={styles.statTrendPurple}
+              style={!isAdmin ? { color: '#94a3b8' } : undefined}
+            >
+              <FiCheckCircle size={13} />{' '}
+              {isAdmin ? 'Store managers & staff' : 'Restricted to Admin'}
             </span>
             <div className={`${styles.statIconBox} ${styles.iconPurple}`}>
               <FiUsers size={15} />
@@ -444,8 +525,12 @@ export const AdminDashboard = () => {
                 <FiActivity size={17} />
               </div>
               <div>
-                <h3 className={styles.chartTitle}>Sales &amp; revenue overview</h3>
-                <p className={styles.chartSubtitle}>Daily breakdown of orders &amp; income</p>
+                <h3 className={styles.chartTitle}>
+                  Sales &amp; revenue overview
+                </h3>
+                <p className={styles.chartSubtitle}>
+                  Daily breakdown of orders &amp; income
+                </p>
               </div>
             </div>
 
@@ -454,16 +539,16 @@ export const AdminDashboard = () => {
               <div className={styles.segmentedGroup}>
                 <button
                   type="button"
-                  className={`${styles.segmentedBtn} ${chartType === "bar" ? styles.segmentedBtnActive : ""}`}
-                  onClick={() => setChartType("bar")}
+                  className={`${styles.segmentedBtn} ${chartType === 'bar' ? styles.segmentedBtnActive : ''}`}
+                  onClick={() => setChartType('bar')}
                   title="Bar View"
                 >
                   <FiBarChart2 size={13} /> Bar
                 </button>
                 <button
                   type="button"
-                  className={`${styles.segmentedBtn} ${chartType === "area" ? styles.segmentedBtnActive : ""}`}
-                  onClick={() => setChartType("area")}
+                  className={`${styles.segmentedBtn} ${chartType === 'area' ? styles.segmentedBtnActive : ''}`}
+                  onClick={() => setChartType('area')}
                   title="Area Spline View"
                 >
                   <FiActivity size={13} /> Area
@@ -474,15 +559,15 @@ export const AdminDashboard = () => {
               <div className={styles.segmentedGroup}>
                 <button
                   type="button"
-                  className={`${styles.segmentedBtn} ${activeMetric === "revenue" ? styles.segmentedBtnActive : ""}`}
-                  onClick={() => setActiveMetric("revenue")}
+                  className={`${styles.segmentedBtn} ${activeMetric === 'revenue' ? styles.segmentedBtnActive : ''}`}
+                  onClick={() => setActiveMetric('revenue')}
                 >
                   Revenue (MMK)
                 </button>
                 <button
                   type="button"
-                  className={`${styles.segmentedBtn} ${activeMetric === "orders" ? styles.segmentedBtnActive : ""}`}
-                  onClick={() => setActiveMetric("orders")}
+                  className={`${styles.segmentedBtn} ${activeMetric === 'orders' ? styles.segmentedBtnActive : ''}`}
+                  onClick={() => setActiveMetric('orders')}
                 >
                   # Orders
                 </button>
@@ -492,22 +577,22 @@ export const AdminDashboard = () => {
               <div className={styles.segmentedGroup}>
                 <button
                   type="button"
-                  className={`${styles.segmentedBtn} ${timeRange === "7d" ? styles.segmentedBtnActive : ""}`}
-                  onClick={() => setTimeRange("7d")}
+                  className={`${styles.segmentedBtn} ${timeRange === '7d' ? styles.segmentedBtnActive : ''}`}
+                  onClick={() => setTimeRange('7d')}
                 >
                   7D
                 </button>
                 <button
                   type="button"
-                  className={`${styles.segmentedBtn} ${timeRange === "14d" ? styles.segmentedBtnActive : ""}`}
-                  onClick={() => setTimeRange("14d")}
+                  className={`${styles.segmentedBtn} ${timeRange === '14d' ? styles.segmentedBtnActive : ''}`}
+                  onClick={() => setTimeRange('14d')}
                 >
                   14D
                 </button>
                 <button
                   type="button"
-                  className={`${styles.segmentedBtn} ${timeRange === "30d" ? styles.segmentedBtnActive : ""}`}
-                  onClick={() => setTimeRange("30d")}
+                  className={`${styles.segmentedBtn} ${timeRange === '30d' ? styles.segmentedBtnActive : ''}`}
+                  onClick={() => setTimeRange('30d')}
                 >
                   30D
                 </button>
@@ -519,14 +604,20 @@ export const AdminDashboard = () => {
           <div className={styles.svgContainer}>
             <svg
               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-              style={{ width: "100%", height: "260px", overflow: "visible" }}
+              style={{ width: '100%', height: '260px', overflow: 'visible' }}
             >
               <defs>
                 <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#2563eb" stopOpacity="0.22" />
                   <stop offset="100%" stopColor="#2563eb" stopOpacity="0.01" />
                 </linearGradient>
-                <linearGradient id="royalBarGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient
+                  id="royalBarGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
                   <stop offset="0%" stopColor="#3b82f6" />
                   <stop offset="100%" stopColor="#1d4ed8" />
                 </linearGradient>
@@ -555,7 +646,7 @@ export const AdminDashboard = () => {
                       textAnchor="end"
                       fontWeight="500"
                     >
-                      {activeMetric === "revenue"
+                      {activeMetric === 'revenue'
                         ? `${displayVal >= 1000000 ? `${(displayVal / 1000000).toFixed(displayVal % 1000000 === 0 ? 0 : 1)}M` : displayVal >= 1000 ? `${(displayVal / 1000).toFixed(displayVal % 1000 === 0 ? 0 : 1)}k` : displayVal.toLocaleString()} MMK`
                         : displayVal}
                     </text>
@@ -564,11 +655,12 @@ export const AdminDashboard = () => {
               })}
 
               {/* Bar Chart Mode */}
-              {chartType === "bar" && (
+              {chartType === 'bar' && (
                 <g>
                   {points.map((pt, idx) => {
                     const val = pt.val;
-                    const barH = maxVal > 0 ? (val / maxVal) * (plotHeight - 6) : 0;
+                    const barH =
+                      maxVal > 0 ? (val / maxVal) * (plotHeight - 6) : 0;
                     const x = pt.x - barWidth / 2;
                     const y = marginTop + plotHeight - barH;
                     const isHovered = hoveredPointIndex === idx;
@@ -578,7 +670,7 @@ export const AdminDashboard = () => {
                         key={idx}
                         onMouseEnter={() => setHoveredPointIndex(idx)}
                         onMouseLeave={() => setHoveredPointIndex(null)}
-                        style={{ cursor: "pointer" }}
+                        style={{ cursor: 'pointer' }}
                       >
                         {/* Frosted rounded track column */}
                         <rect
@@ -586,10 +678,14 @@ export const AdminDashboard = () => {
                           y={marginTop}
                           width={barWidth}
                           height={plotHeight}
-                          fill={isHovered ? "rgba(239, 246, 255, 0.7)" : "rgba(248, 250, 252, 0.75)"}
+                          fill={
+                            isHovered
+                              ? 'rgba(239, 246, 255, 0.7)'
+                              : 'rgba(248, 250, 252, 0.75)'
+                          }
                           rx="6"
                           ry="6"
-                          style={{ transition: "fill 0.15s ease" }}
+                          style={{ transition: 'fill 0.15s ease' }}
                         />
 
                         {/* Active bar with gradient & rounded top */}
@@ -603,10 +699,10 @@ export const AdminDashboard = () => {
                             rx="6"
                             ry="6"
                             style={{
-                              transition: "all 0.2s ease",
+                              transition: 'all 0.2s ease',
                               filter: isHovered
-                                ? "drop-shadow(0 4px 10px rgba(37, 99, 235, 0.35)) brightness(1.08)"
-                                : "none",
+                                ? 'drop-shadow(0 4px 10px rgba(37, 99, 235, 0.35)) brightness(1.08)'
+                                : 'none',
                             }}
                           />
                         ) : (
@@ -624,11 +720,11 @@ export const AdminDashboard = () => {
                         <text
                           x={pt.x}
                           y={chartHeight - 10}
-                          fill={isHovered ? "#0f172a" : "#64748b"}
+                          fill={isHovered ? '#0f172a' : '#64748b'}
                           fontSize="11"
                           textAnchor="middle"
-                          fontWeight={isHovered ? "700" : "500"}
-                          style={{ transition: "all 0.15s ease" }}
+                          fontWeight={isHovered ? '700' : '500'}
+                          style={{ transition: 'all 0.15s ease' }}
                         >
                           {pt.data.label}
                         </text>
@@ -639,14 +735,14 @@ export const AdminDashboard = () => {
               )}
 
               {/* Area Spline Line Mode */}
-              {chartType === "area" && (
+              {chartType === 'area' && (
                 <g>
                   {/* Gradient Area Fill */}
                   {svgAreaPath && (
                     <path
                       d={svgAreaPath}
                       fill="url(#areaGradient)"
-                      style={{ transition: "all 0.3s ease" }}
+                      style={{ transition: 'all 0.3s ease' }}
                     />
                   )}
 
@@ -683,7 +779,7 @@ export const AdminDashboard = () => {
                         key={idx}
                         onMouseEnter={() => setHoveredPointIndex(idx)}
                         onMouseLeave={() => setHoveredPointIndex(null)}
-                        style={{ cursor: "pointer" }}
+                        style={{ cursor: 'pointer' }}
                       >
                         <circle cx={pt.x} cy={pt.y} r={16} fill="transparent" />
                         <circle
@@ -694,10 +790,10 @@ export const AdminDashboard = () => {
                           stroke="#2563eb"
                           strokeWidth={isHovered ? 3 : 2}
                           style={{
-                            transition: "all 0.15s ease",
+                            transition: 'all 0.15s ease',
                             filter: isHovered
-                              ? "drop-shadow(0 2px 6px rgba(37, 99, 235, 0.4))"
-                              : "none",
+                              ? 'drop-shadow(0 2px 6px rgba(37, 99, 235, 0.4))'
+                              : 'none',
                           }}
                         />
 
@@ -705,11 +801,11 @@ export const AdminDashboard = () => {
                         <text
                           x={pt.x}
                           y={chartHeight - 10}
-                          fill={isHovered ? "#0f172a" : "#64748b"}
+                          fill={isHovered ? '#0f172a' : '#64748b'}
                           fontSize="11"
                           textAnchor="middle"
-                          fontWeight={isHovered ? "700" : "500"}
-                          style={{ transition: "all 0.15s ease" }}
+                          fontWeight={isHovered ? '700' : '500'}
+                          style={{ transition: 'all 0.15s ease' }}
                         >
                           {pt.data.label}
                         </text>
@@ -752,13 +848,22 @@ export const AdminDashboard = () => {
           <div className={styles.summaryRow}>
             <div className={styles.summaryItem}>
               <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Period Revenue ({timeRange.toUpperCase()})</span>
-                <span className={styles.summaryIconBlue} style={{ fontWeight: 700, fontSize: "12px" }}>Ks</span>
+                <span className={styles.summaryLabel}>
+                  Period Revenue ({timeRange.toUpperCase()})
+                </span>
+                <span
+                  className={styles.summaryIconBlue}
+                  style={{ fontWeight: 700, fontSize: '12px' }}
+                >
+                  Ks
+                </span>
               </div>
               <h4 className={styles.summaryValue}>
                 {periodTotalRevenue.toLocaleString()} MMK
               </h4>
-              <span className={styles.summarySubtext}>Total gross for selected range</span>
+              <span className={styles.summarySubtext}>
+                Total gross for selected range
+              </span>
             </div>
 
             <div className={styles.summaryItem}>
@@ -766,19 +871,27 @@ export const AdminDashboard = () => {
                 <span className={styles.summaryLabel}>Period Orders</span>
                 <FiShoppingCart className={styles.summaryIconBlue} size={14} />
               </div>
-              <h4 className={styles.summaryValue}>{periodTotalOrders.toLocaleString()} Orders</h4>
-              <span className={styles.summarySubtext}>Completed transactions</span>
+              <h4 className={styles.summaryValue}>
+                {periodTotalOrders.toLocaleString()} Orders
+              </h4>
+              <span className={styles.summarySubtext}>
+                Completed transactions
+              </span>
             </div>
 
             <div className={styles.summaryItem}>
               <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Avg Order Value (AOV)</span>
+                <span className={styles.summaryLabel}>
+                  Avg Order Value (AOV)
+                </span>
                 <FiTrendingUp className={styles.summaryIconGreen} size={14} />
               </div>
               <h4 className={styles.summaryValue}>
                 {avgOrderVal.toLocaleString()} MMK
               </h4>
-              <span className={styles.summarySubtext}>Average basket per order</span>
+              <span className={styles.summarySubtext}>
+                Average basket per order
+              </span>
             </div>
           </div>
         </div>
@@ -792,7 +905,9 @@ export const AdminDashboard = () => {
               </div>
               <div>
                 <h3 className={styles.chartTitle}>Order Statuses</h3>
-                <p className={styles.chartSubtitle}>Distribution of order lifecycle</p>
+                <p className={styles.chartSubtitle}>
+                  Distribution of order lifecycle
+                </p>
               </div>
             </div>
             <span className={styles.headerCountPill}>
@@ -819,7 +934,8 @@ export const AdminDashboard = () => {
                     if (seg.count === 0) return null;
                     const strokeDash = (seg.percent / 100) * donutCircumference;
                     const strokeSpace = donutCircumference - strokeDash;
-                    const offset = -(accumulatedPercent / 100) * donutCircumference;
+                    const offset =
+                      -(accumulatedPercent / 100) * donutCircumference;
                     accumulatedPercent += seg.percent;
 
                     return (
@@ -835,7 +951,7 @@ export const AdminDashboard = () => {
                         strokeDashoffset={offset}
                         transform="rotate(-90 78 78)"
                         strokeLinecap="round"
-                        style={{ transition: "stroke-dasharray 0.5s ease" }}
+                        style={{ transition: 'stroke-dasharray 0.5s ease' }}
                       />
                     );
                   });
@@ -843,7 +959,9 @@ export const AdminDashboard = () => {
               </svg>
 
               <div className={styles.donutCenterText}>
-                <p className={styles.donutCenterNum}>{statusStats.totalOrders}</p>
+                <p className={styles.donutCenterNum}>
+                  {statusStats.totalOrders}
+                </p>
                 <p className={styles.donutCenterLabel}>ORDERS</p>
               </div>
             </div>
@@ -853,12 +971,17 @@ export const AdminDashboard = () => {
               {statusStats.segments.map((seg, i) => (
                 <div key={i} className={styles.legendItem}>
                   <div className={styles.legendColorLabel}>
-                    <span className={styles.legendDot} style={{ background: seg.color }} />
+                    <span
+                      className={styles.legendDot}
+                      style={{ background: seg.color }}
+                    />
                     <span className={styles.legendName}>{seg.name}</span>
                   </div>
                   <div className={styles.legendRightGroup}>
                     <span className={styles.legendCount}>{seg.count}</span>
-                    <span className={styles.legendPercentBadge}>{Math.round(seg.percent)}%</span>
+                    <span className={styles.legendPercentBadge}>
+                      {Math.round(seg.percent)}%
+                    </span>
                   </div>
                 </div>
               ))}
@@ -870,12 +993,12 @@ export const AdminDashboard = () => {
             <div className={styles.fulfillmentPill}>
               <FiCheckCircle size={14} className={styles.fulfillmentIcon} />
               <span>
-                Fulfillment Health:{" "}
+                Fulfillment Health:{' '}
                 <strong>
                   {statusStats.totalOrders > 0
-                    ? `${Math.round(((statusStats.segments.find((s) => s.name === "DELIVERED")?.count || 0) / statusStats.totalOrders) * 100)}%`
-                    : "100%"}
-                </strong>{" "}
+                    ? `${Math.round(((statusStats.segments.find((s) => s.name === 'DELIVERED')?.count || 0) / statusStats.totalOrders) * 100)}%`
+                    : '100%'}
+                </strong>{' '}
                 delivery rate
               </span>
             </div>
@@ -894,13 +1017,15 @@ export const AdminDashboard = () => {
               </div>
               <div>
                 <h3 className={styles.chartTitle}>Catalog by Category</h3>
-                <p className={styles.chartSubtitle}>Products volume across categories</p>
+                <p className={styles.chartSubtitle}>
+                  Products volume across categories
+                </p>
               </div>
             </div>
             <button
               type="button"
               className={styles.headerLinkBtn}
-              onClick={() => navigate("/admin/categories")}
+              onClick={() => navigate('/admin/categories')}
             >
               Categories <FiChevronRight size={13} />
             </button>
@@ -912,9 +1037,12 @@ export const AdminDashboard = () => {
                 <div className={styles.emptyIconCircle}>
                   <FiPackage size={22} />
                 </div>
-                <h4 className={styles.emptyTitle}>Catalog Distribution Restricted</h4>
+                <h4 className={styles.emptyTitle}>
+                  Catalog Distribution Restricted
+                </h4>
                 <p className={styles.emptySubtitle}>
-                  Product categorization and catalog management are assigned to Inventory Staff and Administrators.
+                  Product categorization and catalog management are assigned to
+                  Inventory Staff and Administrators.
                 </p>
               </div>
             ) : categoryStats.length === 0 ? (
@@ -922,14 +1050,17 @@ export const AdminDashboard = () => {
                 <div className={styles.emptyIconCircle}>
                   <FiPackage size={22} />
                 </div>
-                <h4 className={styles.emptyTitle}>No category data available yet</h4>
+                <h4 className={styles.emptyTitle}>
+                  No category data available yet
+                </h4>
                 <p className={styles.emptySubtitle}>
-                  Create categories and assign products to analyze catalog distribution.
+                  Create categories and assign products to analyze catalog
+                  distribution.
                 </p>
                 <button
                   type="button"
                   className={styles.emptyActionBtn}
-                  onClick={() => navigate("/admin/categories")}
+                  onClick={() => navigate('/admin/categories')}
                 >
                   <FiPlus size={13} /> Manage Categories
                 </button>
@@ -967,13 +1098,15 @@ export const AdminDashboard = () => {
               </div>
               <div>
                 <h3 className={styles.chartTitle}>Recent Orders</h3>
-                <p className={styles.chartSubtitle}>Latest store activity &amp; payments</p>
+                <p className={styles.chartSubtitle}>
+                  Latest store activity &amp; payments
+                </p>
               </div>
             </div>
             <button
               type="button"
               className={styles.headerLinkBtn}
-              onClick={() => navigate("/admin/orders")}
+              onClick={() => navigate('/admin/orders')}
             >
               All Orders <FiChevronRight size={13} />
             </button>
@@ -987,7 +1120,8 @@ export const AdminDashboard = () => {
                 </div>
                 <h4 className={styles.emptyTitle}>Recent Orders Restricted</h4>
                 <p className={styles.emptySubtitle}>
-                  Customer order transactions and processing are managed by Sales Staff and Administrators.
+                  Customer order transactions and processing are managed by
+                  Sales Staff and Administrators.
                 </p>
               </div>
             ) : recentOrders.length === 0 ? (
@@ -997,12 +1131,13 @@ export const AdminDashboard = () => {
                 </div>
                 <h4 className={styles.emptyTitle}>No recent orders found</h4>
                 <p className={styles.emptySubtitle}>
-                  Customer purchases and order updates will show up here automatically.
+                  Customer purchases and order updates will show up here
+                  automatically.
                 </p>
                 <button
                   type="button"
                   className={styles.emptyActionBtn}
-                  onClick={() => navigate("/admin/orders")}
+                  onClick={() => navigate('/admin/orders')}
                 >
                   <FiShoppingCart size={13} /> Go to Orders
                 </button>
@@ -1021,23 +1156,27 @@ export const AdminDashboard = () => {
                 <tbody>
                   {recentOrders.map((ord) => (
                     <tr key={ord.orderId}>
-                      <td style={{ fontWeight: 600, color: "#2563eb" }}>
+                      <td style={{ fontWeight: 600, color: '#2563eb' }}>
                         #{ord.orderNo || ord.orderId}
                       </td>
-                      <td>{ord.customerName || "Customer"}</td>
-                      <td style={{ fontWeight: 700, color: "#0f172a" }}>
+                      <td>{ord.customerName || 'Customer'}</td>
+                      <td style={{ fontWeight: 700, color: '#0f172a' }}>
                         {Number(ord.totalAmount || 0).toLocaleString()} MMK
                       </td>
                       <td>
-                        <span className={`${styles.statusBadge} ${getStatusBadgeClass(ord.orderStatus)}`}>
-                          {ord.orderStatus || "PENDING"}
+                        <span
+                          className={`${styles.statusBadge} ${getStatusBadgeClass(ord.orderStatus)}`}
+                        >
+                          {ord.orderStatus || 'PENDING'}
                         </span>
                       </td>
                       <td>
                         <button
                           type="button"
                           className="table-btn-view"
-                          onClick={() => navigate(`/admin/orders/${ord.orderNo}`)}
+                          onClick={() =>
+                            navigate(`/admin/orders/${ord.orderNo}`)
+                          }
                         >
                           <FiEye size={12} /> View
                         </button>
