@@ -98,14 +98,14 @@ export const AllOrders = () => {
     setStartDateState(d);
     setCurrentPageState(0);
     setSelectedOrderNoState(null);
-    updateOrderQueryParams({ status: d, page: 0, orderNo: null });
+    updateOrderQueryParams({ start: d, page: 0, orderNo: null });
   };
 
   const setEndDate = (d: string) => {
     setEndDateState(d);
     setCurrentPageState(0);
     setSelectedOrderNoState(null);
-    updateOrderQueryParams({ status: d, page: 0, orderNo: null });
+    updateOrderQueryParams({ end: d, page: 0, orderNo: null });
   };
 
   const setCurrentPage = (p: number) => {
@@ -132,10 +132,10 @@ export const AllOrders = () => {
   const { data, isLoading, isError } = useGetOrdersQuery({
     page: currentPage,
     size: pageSize,
-    status: statusFilter,
+    status: statusFilter === 'ALL' ? undefined : statusFilter,
     search: searchTerm,
-    startDate: startDate,
-    endDate: endDate,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
   });
 
   const orders = data?.content || [];
@@ -447,36 +447,6 @@ export const AllOrders = () => {
             </button>
           ))}
         </div>
-        <div className={styles.rightFilterGroup}>
-          <div className={styles.datePickerContainer}>
-            <DatePicker
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              title="Start Date"
-              style={{ width: '135px' }}
-              inputStyle={{
-                border: 'none',
-                padding: '4px 22px 4px 0',
-                fontSize: '12px',
-                background: 'transparent',
-              }}
-            />
-            <span className={styles.dateSeparator}>-</span>
-            <DatePicker
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              title="End Date"
-              align="right"
-              style={{ width: '135px' }}
-              inputStyle={{
-                border: 'none',
-                padding: '4px 22px 4px 0',
-                fontSize: '12px',
-                background: 'transparent',
-              }}
-            />
-          </div>
-        </div>
         <div
           style={{
             display: 'flex',
@@ -606,6 +576,35 @@ export const AllOrders = () => {
                 </button>
               </div>
             )}
+          </div>
+
+          <div className={styles.datePickerContainer}>
+            <DatePicker
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              title="Start Date"
+              style={{ width: '135px' }}
+              inputStyle={{
+                border: 'none',
+                padding: '4px 22px 4px 0',
+                fontSize: '12px',
+                background: 'transparent',
+              }}
+            />
+            <span className={styles.dateSeparator}>-</span>
+            <DatePicker
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              title="End Date"
+              align="right"
+              style={{ width: '135px' }}
+              inputStyle={{
+                border: 'none',
+                padding: '4px 22px 4px 0',
+                fontSize: '12px',
+                background: 'transparent',
+              }}
+            />
           </div>
         </div>
       </div>

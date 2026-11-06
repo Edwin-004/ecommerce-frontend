@@ -1,13 +1,18 @@
 import { createPortal } from 'react-dom';
 import React, { useState, useEffect } from 'react';
-import { BackButton } from '../../components/common/BackButton';
 import { useUpdateZoneRateMutation } from './shippingApi';
 import styles from './EditZoneModal.module.css';
+import { FiX } from 'react-icons/fi';
 
 interface EditZoneModalProps {
   isOpen: boolean;
   onClose: () => void;
   zone: any; // displayZoneGroups မှ လာသော zone object
+}
+
+interface TownshipPair {
+  id: number;
+  name: string;
 }
 
 export const EditZoneModal: React.FC<EditZoneModalProps> = ({
@@ -19,18 +24,20 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
 
   // Specific Zone State များ
   const [zoneName, setZoneName] = useState('');
-  const [shippingFee, setShippingFee] = useState<number | string>();
-  const [estimatedDays, setEstimatedDays] = useState<number | string>();
+  const [shippingFee, setShippingFee] = useState<number | string>('');
+  const [estimatedDays, setEstimatedDays] = useState<number | string>('');
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
+  const [activeTownships, setActiveTownships] = useState<TownshipPair[]>([]);
+  const [removedZoneIds, setRemovedZoneIds] = useState<number[]>([]);
 
   // Default Zone (ရှိခဲ့လျှင်) State များ
   const [isEditingDefault, setIsEditingDefault] = useState(false);
-  const [defaultShippingFee, setDefaultShippingFee] = useState<
-    number | string
-  >();
+  const [defaultShippingFee, setDefaultShippingFee] = useState<number | string>(
+    ''
+  );
   const [defaultEstimatedDays, setDefaultEstimatedDays] = useState<
     number | string
-  >();
+  >('');
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -38,13 +45,32 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
   useEffect(() => {
     if (zone) {
       setZoneName(zone.zoneName);
-      setShippingFee(zone.shippingFee);
-      setEstimatedDays(zone.estimatedDays);
+      setShippingFee(zone.shippingFee ?? '');
+      setEstimatedDays(zone.estimatedDays ?? '');
       setStatus(zone.status);
 
+      if (
+        zone.townships &&
+        zone.zoneIds &&
+        zone.townships.length === zone.zoneIds.length
+      ) {
+        const pairedTownships = zone.townships.map(
+          (tName: string, index: number) => ({
+            id: zone.zoneIds[index],
+            name: tName,
+          })
+        );
+        setActiveTownships(pairedTownships);
+        setRemovedZoneIds([]);
+      } else {
+        // Fallback: အကယ်၍ zoneIds မပါလာပါက အလွတ်ထားမည် သို့မဟုတ် Error ပြမည်
+        setActiveTownships([]);
+        setRemovedZoneIds([]);
+      }
+
       if (zone.hasDefaultRate) {
-        setDefaultShippingFee(zone.defaultShippingFee || 0);
-        setDefaultEstimatedDays(zone.defaultEstimatedDays || 1);
+        setDefaultShippingFee(zone.defaultShippingFee ?? '');
+        setDefaultEstimatedDays(zone.defaultEstimatedDays ?? '');
         setIsEditingDefault(false); // အစပိုင်းတွင် Checkbox မခြစ်ထားပါ
       }
     }
@@ -52,14 +78,32 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
 
   if (!isOpen || !zone) return null;
 
+  const handleRemoveTownship = (idToRemove: number) => {
+    setActiveTownships((prev) => prev.filter((t) => t.id !== idToRemove));
+    setRemovedZoneIds((prev) => {
+      if (!prev.includes(idToRemove)) {
+        return [...prev, idToRemove];
+      }
+      return prev;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
+    const remainingZoneIds = activeTownships.map((t) => t.id);
+
+    if (remainingZoneIds.length === 0) {
+      setErrorMessage('At least one township must remain in the zone.');
+      return;
+    }
+
     try {
       // ၁။ Specific Zone ကို အရင် Update လုပ်မည်
       await updateZoneRate({
-        zoneIds: zone.zoneIds,
+        zoneIds: remainingZoneIds,
+        removedZoneIds: removedZoneIds,
         zoneName,
         shippingFee: Number(shippingFee),
         estimatedDays: Number(estimatedDays),
@@ -112,11 +156,25 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
                 {zone.regionOrState} - {zone.city}
               </div>
               <div className={styles.townshipChips}>
-                {zone.townships?.map((t: string) => (
-                  <span key={t} className={styles.chip}>
-                    {t}
+                {activeTownships.map((t) => (
+                  <span key={t.id} className={styles.chip}>
+                    {t.name}
+                    <button
+                      type="button"
+                      className={styles.removeChipBtn}
+                      onClick={() => handleRemoveTownship(t.id)}
+                      aria-label={`Remove ${t.name}`}
+                    >
+                      <FiX size={12} />
+                    </button>
                   </span>
                 ))}
+
+                {activeTownships.length === 0 && (
+                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+                    No townships left.
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -145,7 +203,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label>Shipping Fee (MMK)</label>
+              <label>Shipping Fee.</label>
               <input
                 type="number"
                 value={shippingFee}
@@ -191,7 +249,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
               {isEditingDefault && (
                 <div className={styles.formRow}>
                   <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                    <label>Default Fee (MMK)</label>
+                    <label>Default Fee.</label>
                     <input
                       type="number"
                       value={defaultShippingFee}
