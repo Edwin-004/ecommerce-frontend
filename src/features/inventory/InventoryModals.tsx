@@ -80,6 +80,7 @@ export const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSuc
                 required
                 placeholder="Enter units to add (e.g. 50)"
                 value={quantity}
+
                 onChange={(e) => setQuantity(e.target.value === '' ? '' : Math.max(1, Number(e.target.value)))}
                 autoFocus
               />
@@ -231,8 +232,19 @@ export const WriteOffModal: React.FC<WriteOffModalProps> = ({ item, onClose, onS
                 min="1"
                 max={item.quantity}
                 required
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
+
+                placeholder="Enter units to remove"
+                value={quantity === '' || quantity === 0 ? '' : quantity}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setQuantity('');
+                  } else {
+                    const parsed = parseInt(val, 10);
+                    setQuantity(isNaN(parsed) ? '' : Math.max(1, parsed));
+                  }
+                }}
+                autoFocus
               />
             </div>
 
