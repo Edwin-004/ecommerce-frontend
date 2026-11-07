@@ -295,7 +295,25 @@ export const CreateProductPage: React.FC = () => {
   const handleQuickCreateTag = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = newTagName.replace(/^#/, '').trim();
-    if (!clean) return;
+    if (!clean) {
+      toast.warning('Please enter a tag name');
+      return;
+    }
+
+    // Check if tag already exists
+    const existing = allTags.find((t) => t.tagName.toLowerCase() === clean.toLowerCase());
+    if (existing) {
+      if (!selectedTagIds.includes(existing.tagId)) {
+        setSelectedTagIds((prev) => [...prev, existing.tagId]);
+        toast.info(`Tag "${existing.tagName}" already exists and has been selected!`);
+      } else {
+        toast.info(`Tag "${existing.tagName}" is already attached to this product.`);
+      }
+      setShowTagModal(false);
+      setNewTagName('');
+      return;
+    }
+
     try {
       setTagLoading(true);
       const res = await tagApi.createTag({ tagName: clean });
@@ -303,6 +321,7 @@ export const CreateProductPage: React.FC = () => {
       setSelectedTagIds((prev) => [...prev, res.tagId]);
       setShowTagModal(false);
       setNewTagName('');
+      toast.success(`Tag "${res.tagName}" created successfully!`);
     } catch (err: any) {
       toast.error(err.response?.data?.message || err.message || 'Failed to create tag');
     } finally {

@@ -49,7 +49,7 @@ export const AdminLayout = () => {
       {/* Main Area Wrapper: flex-1 flex flex-col h-screen overflow-hidden min-w-0 */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 bg-[#f8fafc]">
         {/* Top Header Component: h-14 bg-white border-b border-slate-100 px-6 flex items-center justify-between sticky top-0 z-30 flex-shrink-0 */}
-        <header className="h-14 bg-white border-b border-slate-100 px-6 flex items-center justify-between sticky top-0 z-30 flex-shrink-0">
+        <header className={`${styles.header} h-14 bg-white border-b border-slate-100 px-6 flex items-center justify-between sticky top-0 z-200 flex-shrink-0`}>
           <Topbar
             onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
             isMobileMenuOpen={mobileMenuOpen}

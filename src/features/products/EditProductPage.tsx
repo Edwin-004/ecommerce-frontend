@@ -522,10 +522,31 @@ export const EditProductPage: React.FC = () => {
     }
   };
 
-  const handleQuickCreateTag = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleQuickCreateTag = async (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const clean = newTagName.replace(/^#/, '').trim();
-    if (!clean) return;
+    if (!clean) {
+      toast.warning('Please enter a tag name');
+      return;
+    }
+
+    // Check if tag already exists in allTags list
+    const existing = allTags.find((t) => t.tagName.toLowerCase() === clean.toLowerCase());
+    if (existing) {
+      if (!selectedTagIds.includes(existing.tagId)) {
+        setSelectedTagIds((prev) => [...prev, existing.tagId]);
+        toast.info(`Tag "${existing.tagName}" already exists and has been selected!`);
+      } else {
+        toast.info(`Tag "${existing.tagName}" is already attached to this product.`);
+      }
+      setShowTagModal(false);
+      setNewTagName('');
+      return;
+    }
+
     try {
       setTagLoading(true);
       const res = await tagApi.createTag({ tagName: clean });
@@ -533,8 +554,9 @@ export const EditProductPage: React.FC = () => {
       setSelectedTagIds((prev) => [...prev, res.tagId]);
       setShowTagModal(false);
       setNewTagName('');
+      toast.success(`Tag "${res.tagName}" created successfully!`);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create tag');
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to create tag');
     } finally {
       setTagLoading(false);
     }
@@ -1625,20 +1647,26 @@ export const EditProductPage: React.FC = () => {
                 <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
                   Tags
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowTagModal(true)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#2563eb',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  + Add Tag
-                </button>
+                {!showTagModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTagModal(true);
+                      setNewTagName('');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#2563eb',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    + Add New
+                  </button>
+                )}
               </div>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -1673,7 +1701,128 @@ export const EditProductPage: React.FC = () => {
                     </button>
                   );
                 })}
+                {allTags.length === 0 && (
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    No tags available
+                  </span>
+                )}
               </div>
+
+              {/* Inline Quick Add Tag Card (Under Add Tag on the Right Side) */}
+              {showTagModal && (
+                <div
+                  style={{
+                    marginTop: '14px',
+                    padding: '14px',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+                    animation: 'fadeIn 0.15s ease-out',
+                  }}
+                >
+                  <div style={{ marginBottom: '10px' }}>
+                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1e293b' }}>
+                      Add New Tag
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          color: '#475569',
+                          marginBottom: '5px',
+                        }}
+                      >
+                        Tag Name <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newTagName}
+                        onChange={(e) => setNewTagName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleQuickCreateTag(e);
+                          }
+                        }}
+                        placeholder="Enter tag name (e.g. popular, sale)"
+                        autoFocus
+                        style={{
+                          width: '100%',
+                          padding: '7px 10px',
+                          borderRadius: '7px',
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          fontSize: '12px',
+                          outline: 'none',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowTagModal(false);
+                          setNewTagName('');
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '7px',
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: '#475569',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleQuickCreateTag(e);
+                        }}
+                        disabled={tagLoading || !newTagName.trim()}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: '7px',
+                          border: 'none',
+                          background: '#2563eb',
+                          color: '#ffffff',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: tagLoading || !newTagName.trim() ? 'not-allowed' : 'pointer',
+                          opacity: tagLoading || !newTagName.trim() ? 0.6 : 1,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {tagLoading ? (
+                          <>
+                            <FiRefreshCw size={11} className={styles.exportSpinner} /> Creating...
+                          </>
+                        ) : (
+                          'Create Tag'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -1744,42 +1893,7 @@ export const EditProductPage: React.FC = () => {
         onSubmit={handleBrandModalSubmit}
       />
 
-      {/* Quick Tag Modal */}
-      {showTagModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBox} style={{ maxWidth: '380px', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>+ Add New Tag</h3>
-              <button type="button" onClick={() => setShowTagModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                <FiX size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleQuickCreateTag}>
-              <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
-                  Tag Name *
-                </label>
-                <input
-                  type="text"
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  placeholder="e.g. popular"
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  required
-                />
-              </div>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" className={styles.btnActionOutline} onClick={() => setShowTagModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" disabled={tagLoading} className={styles.btnPrimary}>
-                  {tagLoading ? 'Creating...' : 'Create Tag'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
