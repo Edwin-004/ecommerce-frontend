@@ -86,3 +86,4 @@ export const {
   useUpdateOrderStatusMutation,
   useGetOrderStatusHistoryQuery,
 } = orderApi;
+export default orderApi;

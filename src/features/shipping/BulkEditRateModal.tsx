@@ -20,6 +20,7 @@ export const BulkEditRateModal: React.FC<BulkEditRateModalProps> = ({
 }) => {
   const [shippingFee, setShippingFee] = useState<number | string>('');
   const [estimatedDays, setEstimatedDays] = useState<number | string>('');
+  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE' | ''>('');
 
   const [updateZoneRate, { isLoading: isSubmitting }] =
     useUpdateZoneRateMutation();
@@ -29,8 +30,10 @@ export const BulkEditRateModal: React.FC<BulkEditRateModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (shippingFee === '' || estimatedDays === '') {
-      toast.error('Please enter both shipping fee and estimated days.');
+    if (shippingFee === '' && estimatedDays === '' && status === '') {
+      toast.error(
+        'Please enter new shipping fee, estimated days, or select a status to update.'
+      );
       return;
     }
 
@@ -45,17 +48,16 @@ export const BulkEditRateModal: React.FC<BulkEditRateModalProps> = ({
     try {
       await updateZoneRate({
         zoneIds: allZoneIds,
-        shippingFee: Number(shippingFee),
-        estimatedDays: Number(estimatedDays),
+        shippingFee: shippingFee !== '' ? Number(shippingFee) : undefined,
+        estimatedDays: estimatedDays !== '' ? Number(estimatedDays) : undefined,
+        status: status !== '' ? status : undefined,
       }).unwrap();
 
-      toast.success(
-        `Successfully updated rates for ${selectedZones.length} zones!`
-      );
       onSuccess(); // Selection များကို ရှင်းလင်းရန်
       onClose();
       setShippingFee('');
       setEstimatedDays('');
+      setStatus('');
     } catch (err: any) {
       toast.error(
         err?.data?.message || 'Failed to update rates. Please try again.'
@@ -92,7 +94,7 @@ export const BulkEditRateModal: React.FC<BulkEditRateModalProps> = ({
                   )
                 }
                 min={0}
-                required
+                placeholder="Leave blank for no change"
               />
             </div>
             <div className={styles.formGroup}>
@@ -106,9 +108,30 @@ export const BulkEditRateModal: React.FC<BulkEditRateModalProps> = ({
                   )
                 }
                 min={1}
-                required
+                placeholder="Leave blank for no change"
               />
             </div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Update Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as any)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                outline: 'none',
+                backgroundColor: '#f8fafc',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="">-- No Change --</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
           </div>
 
           <div className={styles.modalActions}>

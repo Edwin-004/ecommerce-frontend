@@ -31,8 +31,8 @@ export interface UpdateZoneRateRequest {
   zoneIds: number[];
   removedZoneIds?: number[];
   zoneName?: string;
-  shippingFee: number;
-  estimatedDays: number;
+  shippingFee?: number;
+  estimatedDays?: number;
   status?: 'ACTIVE' | 'INACTIVE';
 }
 
