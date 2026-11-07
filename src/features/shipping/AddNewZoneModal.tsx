@@ -165,8 +165,6 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
           ? Number(defaultEstimatedDays)
           : undefined,
       }).unwrap();
-
-      toast.success('New delivery zone created successfully!');
       onClose();
       setZoneName('');
       setSelectedRegionOrState('');
@@ -181,6 +179,7 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
         err?.message ||
         'There was an error while creating the zone. Please try again.';
 
+      toast.error(backendMessage);
       setFormError(backendMessage);
     }
   };
