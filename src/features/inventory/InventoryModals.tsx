@@ -172,15 +172,16 @@ export const WriteOffModal: React.FC<WriteOffModalProps> = ({ item, onClose, onS
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (quantity <= 0) {
+    const numericQuantity = Number(quantity);
+    if (numericQuantity <= 0) {
       setError('Quantity must be at least 1');
       return;
     }
-    if (quantity > item.quantity) {
+    if (numericQuantity > item.quantity) {
       setError(`Cannot write off ${quantity} units. Current stock is only ${item.quantity}.`);
       return;
     }
-    if (item.availableQuantity !== undefined && quantity > item.availableQuantity) {
+    if (item.availableQuantity !== undefined && numericQuantity > item.availableQuantity) {
       setError(`Cannot write off ${quantity} units. Available stock is only ${item.availableQuantity} (${item.reservedQuantity} reserved for customer orders).`);
       return;
     }
@@ -194,7 +195,7 @@ export const WriteOffModal: React.FC<WriteOffModalProps> = ({ item, onClose, onS
       setError(null);
       await inventoryApi.writeOffVariant({
         variantId: item.variantId,
-        quantity: Number(quantity),
+        quantity: numericQuantity,
         remark: remark.trim(),
       });
       onSuccess();

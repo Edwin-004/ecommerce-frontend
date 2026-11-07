@@ -14,8 +14,6 @@ import {
   FiPackage,
   FiDownload,
   FiChevronDown,
-  FiChevronLeft,
-  FiChevronRight,
   FiFileText,
 } from 'react-icons/fi';
 import styles from './Inventory.module.css';
@@ -60,23 +58,6 @@ export const InventoryPage: React.FC = () => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [startX, setStartX] = useState<number>(0);
   const [scrollLeftState, setScrollLeftState] = useState<number>(0);
-  const [scrollPercent, setScrollPercent] = useState<number>(0);
-
-  const updateScrollProgress = () => {
-    if (!tableRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = tableRef.current;
-    const maxScroll = scrollWidth - clientWidth;
-    if (maxScroll > 0) {
-      const pct = Math.min(100, Math.max(0, Math.round((scrollLeft / maxScroll) * 100)));
-      setScrollPercent(pct);
-    } else {
-      setScrollPercent(0);
-    }
-  };
-
-  const handleTableScroll = () => {
-    updateScrollProgress();
-  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, a, input, select, textarea, .btn, [role="button"]')) {
@@ -97,7 +78,6 @@ export const InventoryPage: React.FC = () => {
       const x = e.pageX - tableRef.current.offsetLeft;
       const walk = (x - startX) * 1.5;
       tableRef.current.scrollLeft = scrollLeftState - walk;
-      updateScrollProgress();
     };
 
     const onMouseUp = () => {
@@ -112,31 +92,9 @@ export const InventoryPage: React.FC = () => {
     };
   }, [isDragging, startX, scrollLeftState]);
 
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number(e.target.value);
-    setScrollPercent(val);
-    if (!tableRef.current) return;
-    const { scrollWidth, clientWidth } = tableRef.current;
-    const maxScroll = scrollWidth - clientWidth;
-    if (maxScroll > 0) {
-      tableRef.current.scrollLeft = (val / 100) * maxScroll;
-    }
-  };
-
-  const scrollToEndpoint = (endpoint: 'start' | 'end') => {
-    if (!tableRef.current) return;
-    const { scrollWidth, clientWidth } = tableRef.current;
-    const maxScroll = scrollWidth - clientWidth;
-    tableRef.current.scrollTo({
-      left: endpoint === 'start' ? 0 : maxScroll,
-      behavior: 'smooth',
-    });
-  };
-
   useEffect(() => {
     if (tableRef.current) {
       tableRef.current.scrollLeft = 0;
-      setScrollPercent(0);
     }
   }, [activeTab, searchQuery, statusFilter, txnTypeFilter]);
 
@@ -681,7 +639,6 @@ export const InventoryPage: React.FC = () => {
           ref={tableRef}
           className={`${styles.tableResponsive} ${isDragging ? styles.isDragging : ''}`}
           onMouseDown={handleMouseDown}
-          onScroll={handleTableScroll}
         >
           {activeTab !== 'TRANSACTIONS' ? (
             <table className={`${styles.table} ${filteredItems.length > 0 ? styles.tableWithData : styles.tableEmpty}`}>

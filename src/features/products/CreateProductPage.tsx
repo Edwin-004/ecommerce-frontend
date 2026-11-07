@@ -32,7 +32,6 @@ import {
   FiAlertCircle,
   FiClock,
 } from 'react-icons/fi';
-import { inventoryApi } from '../inventory/inventoryApi';
 
 const ATTRIBUTE_PRESETS: Record<string, string[]> = {
   color: ['White', 'Black', 'Yellow', 'Red', 'Blue', 'Green', 'Grey', 'Navy'],
@@ -857,7 +856,7 @@ export const CreateProductPage: React.FC = () => {
           const skuCode = `${cleanName}-${Math.floor(1000 + Math.random() * 9000)}`;
           const initQty = Number(quantity) >= 10 ? Number(quantity) : 10;
 
-          const createdSimpleVar = await productManagementApi.createProductVariantWithOptions({
+          await productManagementApi.createProductVariantWithOptions({
             productId: prodId,
             sku: skuCode,
             sellingPrice: Number(price),

@@ -116,12 +116,6 @@ const AuditLog: React.FC = () => {
     updateAuditQueryParams({ end: d, preset: newPreset, page: 1 });
   };
 
-  const setActivePreset = (p: string) => {
-    setActivePresetState(p);
-    setCurrentPageState(1);
-    updateAuditQueryParams({ preset: p, page: 1 });
-  };
-
   const setCurrentPage = (p: number) => {
     setCurrentPageState(p);
     updateAuditQueryParams({ page: p });
@@ -760,7 +754,7 @@ const AuditLog: React.FC = () => {
               <button
                 type="button"
                 className="btn-page"
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
                 disabled={currentPage === 1}
               >
                 &larr; Previous
@@ -773,7 +767,7 @@ const AuditLog: React.FC = () => {
               <button
                 type="button"
                 className="btn-page"
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
                 disabled={currentPage >= totalPages}
               >
                 Next &rarr;
@@ -1207,23 +1201,23 @@ const AuditLog: React.FC = () => {
                   <div className="audit-tech-grid">
                     <div className="tech-item">
                       <span className="tech-label">HTTP Method</span>
-                      <span className="tech-val"><code className="tech-code">{selectedLog.httpMethod || 'N/A'}</code></span>
+                      <span className="tech-val"><code className="tech-code">{selectedLog?.httpMethod || 'N/A'}</code></span>
                     </div>
                     <div className="tech-item">
                       <span className="tech-label">API Endpoint</span>
-                      <span className="tech-val"><code className="tech-code">{selectedLog.endpoint || 'N/A'}</code></span>
+                      <span className="tech-val"><code className="tech-code">{selectedLog?.endpoint || 'N/A'}</code></span>
                     </div>
                     <div className="tech-item">
                       <span className="tech-label">Database Table</span>
-                      <span className="tech-val"><code className="tech-code">{selectedLog.tableName || 'N/A'}</code></span>
+                      <span className="tech-val"><code className="tech-code">{selectedLog?.tableName || 'N/A'}</code></span>
                     </div>
                     <div className="tech-item">
                       <span className="tech-label">Target Record ID</span>
-                      <span className="tech-val"><code className="tech-code">{selectedLog.recordId ? `#${selectedLog.recordId}` : 'N/A'}</code></span>
+                      <span className="tech-val"><code className="tech-code">{selectedLog?.recordId ? `#${selectedLog?.recordId}` : 'N/A'}</code></span>
                     </div>
                     <div className="tech-item tech-item-full">
                       <span className="tech-label">Client Browser (User-Agent)</span>
-                      <div className="tech-code tech-ua">{selectedLog.userAgent || 'Not captured'}</div>
+                      <div className="tech-code tech-ua">{selectedLog?.userAgent || 'Not captured'}</div>
                     </div>
                   </div>
                 </div>

@@ -23,7 +23,6 @@ import {
 } from "react-icons/fi";
 
 import "./TagManagement.css";
-import { formatDateTime } from "../../utils/dateUtils";
 
 const PAGE_SIZE = 10;
 
@@ -42,10 +41,6 @@ function getErrorMessage(error: unknown): string {
   }
 
   return "Something went wrong.";
-}
-
-function formatDate(date?: string | null) {
-  return formatDateTime(date);
 }
 
 export default function TagManagement() {
@@ -271,7 +266,7 @@ export default function TagManagement() {
       setSuccess("Tag deleted successfully.");
 
       if (tags.length === 1 && page > 0) {
-        setPage((currentPage) => currentPage - 1);
+        setPage(page - 1);
       } else {
         await loadTags();
       }
@@ -604,7 +599,7 @@ export default function TagManagement() {
             <button
               type="button"
               onClick={() =>
-                setPage((current) => current - 1)
+                setPage(page - 1)
               }
               disabled={page === 0 || loading}
               aria-label="Previous page"
@@ -621,7 +616,7 @@ export default function TagManagement() {
             <button
               type="button"
               onClick={() =>
-                setPage((current) => current + 1)
+                setPage(page + 1)
               }
               disabled={
                 loading ||

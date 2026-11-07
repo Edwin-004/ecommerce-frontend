@@ -14,8 +14,6 @@ import {
   FiTag,
   FiX,
   FiExternalLink,
-  FiFilter,
-  FiTrendingUp,
 } from 'react-icons/fi';
 import styles from './Variants.module.css';
 import { variantApi } from './variantApi';
