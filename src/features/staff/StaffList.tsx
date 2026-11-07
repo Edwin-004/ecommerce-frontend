@@ -157,6 +157,10 @@ export const StaffList: React.FC = () => {
     };
 
     const handleEdit = (id: number, email?: string) => {
+        if (currentUser.email && email && currentUser.email.toLowerCase() === email.toLowerCase()) {
+            navigate('/admin/profile');
+            return;
+        }
         if (email?.toLowerCase() === 'admin@ecommerce.com' && !isCurrentSuperAdmin) {
             toast.warning("You do not have permission to view or edit the Super Administrator account.");
             return;
@@ -432,15 +436,27 @@ export const StaffList: React.FC = () => {
                                                 <div className="action-pill-group">
                                                     {/* Hide Edit button if this is Super Admin and logged-in user is NOT Super Admin */}
                                                     {(!isSuperAdminUser || isCurrentSuperAdmin) && (
-                                                        <button
-                                                            type="button"
-                                                            className="action-pill action-pill-edit"
-                                                            onClick={() => handleEdit(staff.userId, staff.email)}
-                                                            title="Edit account details"
-                                                        >
-                                                            <FiEdit2 size={12} style={{ flexShrink: 0 }} />
-                                                            <span>Edit</span>
-                                                        </button>
+                                                        isSelf ? (
+                                                            <button
+                                                                type="button"
+                                                                className="action-pill action-pill-profile"
+                                                                onClick={() => navigate('/admin/profile')}
+                                                                title="View and manage your own profile"
+                                                            >
+                                                                <FiUser size={12} style={{ flexShrink: 0 }} />
+                                                                <span>My Profile</span>
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                className="action-pill action-pill-edit"
+                                                                onClick={() => handleEdit(staff.userId, staff.email)}
+                                                                title="Edit account details"
+                                                            >
+                                                                <FiEdit2 size={12} style={{ flexShrink: 0 }} />
+                                                                <span>Edit</span>
+                                                            </button>
+                                                        )
                                                     )}
 
                                                     {isSuperAdminUser ? (

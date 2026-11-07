@@ -151,8 +151,8 @@ export const EditStaff: React.FC = () => {
             return;
         }
 
-        // Validate password strength if a new password is being set
-        if (!isTargetSuperAdmin && formData.password && formData.password.trim()) {
+        // Validate password strength if a new password is being set for subordinate staff
+        if (!isTargetSuperAdmin && !isCurrentLoggedInUser && formData.password && formData.password.trim()) {
             const passwordError = validatePasswordStrength(formData.password.trim());
             if (passwordError) {
                 toast.warning(passwordError);
@@ -191,9 +191,9 @@ export const EditStaff: React.FC = () => {
                 roleName: formData.roleName === 'ORDER_STAFF' ? 'SALES_STAFF' : formData.roleName
             };
 
-            const isPasswordUpdated = !isTargetSuperAdmin && Boolean(formData.password && formData.password.trim());
+            // Password reset is ONLY for subordinate staff members, NEVER for own account or super admin
+            const isPasswordUpdated = !isTargetSuperAdmin && !isCurrentLoggedInUser && Boolean(formData.password && formData.password.trim());
 
-            // Only send password if admin entered one (and not for super admin)
             if (isPasswordUpdated) {
                 updatePayload.password = formData.password.trim();
             }
@@ -269,6 +269,78 @@ export const EditStaff: React.FC = () => {
                     >
                         ← Back to Staff List
                     </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Completely hide the edit form if user is viewing their own account
+    if (isCurrentLoggedInUser) {
+        return (
+            <div className="edit-staff-container">
+                <div className="edit-staff-card" style={{ maxWidth: '520px', margin: '40px auto', textAlign: 'center', padding: '40px 28px' }}>
+                    <div style={{
+                        width: '68px',
+                        height: '68px',
+                        borderRadius: '50%',
+                        backgroundColor: '#eff6ff',
+                        border: '2px solid #bfdbfe',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 18px',
+                        fontSize: '30px'
+                    }}>
+                        👤
+                    </div>
+                    
+                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>
+                        Your Personal Account
+                    </h2>
+                    
+                    <p style={{ fontSize: '13.5px', color: '#64748b', lineHeight: 1.6, marginBottom: '24px' }}>
+                        You are currently viewing your own profile (<strong>{formData.userName}</strong> · <code style={{ color: '#2563eb', fontWeight: 600 }}>{formData.email}</code>). To protect system security, your full name, profile picture, and login password must be managed directly in <strong>My Profile</strong>.
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                        <button
+                            type="button"
+                            onClick={() => navigate('/admin/profile')}
+                            style={{
+                                padding: '10px 22px',
+                                backgroundColor: '#2563eb',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontWeight: 600,
+                                fontSize: '13.5px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
+                            }}
+                        >
+                            <span>👤 Go to My Profile</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => navigate('/admin/staff')}
+                            style={{
+                                padding: '10px 18px',
+                                backgroundColor: '#f1f5f9',
+                                color: '#475569',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '8px',
+                                fontWeight: 600,
+                                fontSize: '13.5px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            ← Staff List
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -413,10 +485,65 @@ export const EditStaff: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Reset Password is only for subordinate staff members. Super Admin manages password via Profile > Change Password */}
-                    {!isTargetSuperAdmin ? (
+                    {/* Password Management */}
+                    {isCurrentLoggedInUser ? (
                         <div className="form-group">
-                            <label>Reset Password (Optional)</label>
+                            <label>Password Management</label>
+                            <div style={{
+                                padding: '12px 16px',
+                                backgroundColor: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '10px',
+                                fontSize: '13px',
+                                color: '#475569',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '12px',
+                                flexWrap: 'wrap'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '18px' }}>🔒</span>
+                                    <span>
+                                        To change your own password, please use <strong>Profile &gt; Change Password</strong>.
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/admin/profile')}
+                                    style={{
+                                        backgroundColor: '#2563eb',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        padding: '6px 14px',
+                                        fontSize: '12px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    Go to Profile
+                                </button>
+                            </div>
+                        </div>
+                    ) : isTargetSuperAdmin ? (
+                        <div className="form-group">
+                            <label>Password Management</label>
+                            <div style={{
+                                padding: '10px 14px',
+                                backgroundColor: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                color: '#475569'
+                            }}>
+                                🔒 <strong>Super Administrator Security:</strong> The primary Super Administrator's password cannot be reset from this staff management form. Please use the <strong>Profile &gt; Change Password</strong> settings to update your password securely.
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="form-group">
+                            <label>Reset Password for Staff (Optional)</label>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                                 <input
                                     type={showPassword ? 'text' : 'password'}
@@ -540,20 +667,6 @@ export const EditStaff: React.FC = () => {
                                     </small>
                                 </>
                             )}
-                        </div>
-                    ) : (
-                        <div className="form-group">
-                            <label>Password Management</label>
-                            <div style={{
-                                padding: '10px 14px',
-                                backgroundColor: '#f8fafc',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '8px',
-                                fontSize: '13px',
-                                color: '#475569'
-                            }}>
-                                🔒 <strong>Super Administrator Security:</strong> The primary Super Administrator's password cannot be reset from this staff management form. Please use the <strong>Profile &gt; Change Password</strong> settings to update your password securely.
-                            </div>
                         </div>
                     )}
 

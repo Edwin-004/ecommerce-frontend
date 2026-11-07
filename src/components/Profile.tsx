@@ -1,8 +1,9 @@
 import { BackButton } from './common/BackButton';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { type RootState } from '../store';
+import { updateUsername } from '../features/auth/authSlice';
 import api from '../utils/axiosConfig';
 import styles from './Profile.module.css';
 import {
@@ -14,10 +15,13 @@ import {
   FiEye,
   FiEyeOff,
   FiCamera,
+  FiEdit2,
+  FiX,
 } from 'react-icons/fi';
 
 export const Profile = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
   const passwordInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -30,9 +34,75 @@ export const Profile = () => {
       }, 200);
     }
   }, [searchParams]);
+
   const { username, email, role } = useSelector(
     (state: RootState) => state.auth
   );
+
+  // Full Name Editing State
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(username || '');
+  const [nameLoading, setNameLoading] = useState(false);
+  const [nameError, setNameError] = useState('');
+
+  useEffect(() => {
+    if (username) {
+      setNameInput(username);
+    }
+  }, [username]);
+
+  const handleStartEditName = () => {
+    setNameInput(username || '');
+    setNameError('');
+    setIsEditingName(true);
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+    setNameInput(username || '');
+    setNameError('');
+  };
+
+  const handleSaveName = async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed) {
+      setNameError('Full name cannot be blank.');
+      return;
+    }
+    if (trimmed.length < 2 || trimmed.length > 50) {
+      setNameError('Full name must be between 2 and 50 characters.');
+      return;
+    }
+    if (trimmed === username) {
+      setIsEditingName(false);
+      return;
+    }
+
+    try {
+      setNameLoading(true);
+      setNameError('');
+      const res = await api.put('/auth/profile', { userName: trimmed });
+      const updatedName = res.data.userName || trimmed;
+
+      // Migrate avatar to new username keys if existing
+      const currentAv = avatarUrl;
+      if (currentAv && updatedName) {
+        localStorage.setItem(`avatar_${updatedName}`, currentAv);
+        localStorage.setItem(`avatar_${updatedName.toLowerCase()}`, currentAv);
+      }
+
+      dispatch(updateUsername(updatedName));
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('avatarChange'));
+      setIsEditingName(false);
+      setMessage({ type: 'success', text: 'Full name updated successfully!' });
+    } catch (err: any) {
+      console.error('Failed to update name:', err);
+      setNameError(err.response?.data?.message || 'Failed to update full name.');
+    } finally {
+      setNameLoading(false);
+    }
+  };
 
   const [passwords, setPasswords] = useState({
     currentPassword: '',
@@ -222,7 +292,7 @@ export const Profile = () => {
             <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
               My Profile
             </h1>
-            <p className="text-xs text-slate-500">View your personal profile details and security settings</p>
+            <p className="text-xs text-slate-500">View and update your personal details and security settings</p>
           </div>
         </div>
       </div>
@@ -252,7 +322,72 @@ export const Profile = () => {
         <div className={styles.infoSection}>
           <div className={styles.infoRow}>
             <span className={styles.label}>Full Name:</span>
-            <span className={styles.value}>{username || 'Unknown'}</span>
+            {isEditingName ? (
+              <div className={styles.nameEditWrapper}>
+                <div className={styles.nameInputContainer}>
+                  <input
+                    type="text"
+                    value={nameInput}
+                    onChange={(e) => {
+                      setNameInput(e.target.value);
+                      if (nameError) setNameError('');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSaveName();
+                      } else if (e.key === 'Escape') {
+                        handleCancelEditName();
+                      }
+                    }}
+                    placeholder="Enter full name"
+                    className={styles.nameInlineInput}
+                    autoFocus
+                    disabled={nameLoading}
+                  />
+                  <div className={styles.nameEditActions}>
+                    <button
+                      type="button"
+                      onClick={handleSaveName}
+                      disabled={nameLoading}
+                      className={styles.nameSaveBtn}
+                      title="Save full name"
+                    >
+                      <FiCheck size={14} />
+                      <span>{nameLoading ? 'Saving...' : 'Save'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelEditName}
+                      disabled={nameLoading}
+                      className={styles.nameCancelBtn}
+                      title="Cancel"
+                    >
+                      <FiX size={14} />
+                      <span>Cancel</span>
+                    </button>
+                  </div>
+                </div>
+                {nameError && (
+                  <span className={styles.inlineNameError}>
+                    <FiAlertCircle size={12} /> {nameError}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className={styles.nameDisplayWrapper}>
+                <span className={styles.value}>{username || 'Unknown'}</span>
+                <button
+                  type="button"
+                  onClick={handleStartEditName}
+                  className={styles.nameEditToggleBtn}
+                  title="Edit full name"
+                >
+                  <FiEdit2 size={12} />
+                  <span>Edit</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className={styles.infoRow}>

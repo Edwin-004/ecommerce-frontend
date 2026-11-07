@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fi';
 import { type RootState } from '../store';
 import styles from './Topbar.module.css';
+import { formatTimeAgo } from '../utils/dateUtils';
 import { useNotificationSocket } from '../hooks/useNotificationSocket';
 import { NotificationToast } from './notifications/NotificationToast';
 import { LoginUnreadModal } from './notifications/LoginUnreadModal';
@@ -151,20 +152,7 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
     }
   };
 
-  const formatTimeAgo = (isoDate?: string) => {
-    if (!isoDate) return 'Just now';
-    try {
-      const diff = Math.floor(
-        (Date.now() - new Date(isoDate).getTime()) / 1000
-      );
-      if (diff < 60) return 'Just now';
-      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-      return `${Math.floor(diff / 86400)}d ago`;
-    } catch {
-      return 'Recently';
-    }
-  };
+  // formatTimeAgo imported from ../utils/dateUtils
 
   // Dynamic Breadcrumb Trail Parser based on location.pathname
   const breadcrumbTrail = useMemo(() => {
