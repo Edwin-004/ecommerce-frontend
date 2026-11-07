@@ -25,9 +25,18 @@ export const Login: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const [generalError, setGeneralError] = useState('');
 
+  // Caps Lock State
+  const [capsLockOn, setCapsLockOn] = useState(false);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // Clean up any previously stored remember email keys
+  useEffect(() => {
+    localStorage.removeItem('saved_login_email');
+    localStorage.removeItem('remember_login_email');
+  }, []);
 
   // Listen for session expiry / kick-out messages from axios interceptor
   useEffect(() => {
@@ -246,6 +255,16 @@ export const Login: React.FC = () => {
                   if (passwordError) setPasswordError('');
                   if (generalError) setGeneralError('');
                 }}
+                onKeyDown={(e) => {
+                  if (e.getModifierState) {
+                    setCapsLockOn(e.getModifierState('CapsLock'));
+                  }
+                }}
+                onKeyUp={(e) => {
+                  if (e.getModifierState) {
+                    setCapsLockOn(e.getModifierState('CapsLock'));
+                  }
+                }}
                 className="login-input login-input-password"
                 autoComplete="current-password"
               />
@@ -260,6 +279,12 @@ export const Login: React.FC = () => {
                 {showPassword ? <FiEyeOff size={17} /> : <FiEye size={17} />}
               </button>
             </div>
+            {capsLockOn && (
+              <div className="login-caps-warning">
+                <FiAlertCircle size={12} />
+                <span>Caps Lock is ON</span>
+              </div>
+            )}
             {passwordError && (
               <span className="login-error-text">
                 <FiAlertCircle size={13} /> {passwordError}
