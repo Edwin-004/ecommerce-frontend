@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSelector } from 'react-redux';
 import { type RootState } from '../store';
 import { API_BASE_URL } from '../utils/axiosConfig';
 import {
@@ -10,6 +9,8 @@ import {
   triggerTestRefundNotification,
   type AdminNotificationItem,
 } from '../services/notificationApi';
+import { useSelector, useDispatch } from 'react-redux';
+import orderApi from '../features/orders/orderApi';
 
 // Web Audio API Synthesizer for pleasant two-tone chime
 function playNotificationChime() {
@@ -49,6 +50,7 @@ function playNotificationChime() {
 
 export function useNotificationSocket() {
   const authRole = useSelector((state: RootState) => state.auth.role);
+  const dispatch = useDispatch();
   const normalizedRole = (authRole || '').toUpperCase();
   // Inventory staff accounts do not use notification features (only Admin and Sales/Order staff have notification access)
   const hasNotificationAccess =
@@ -150,6 +152,12 @@ export function useNotificationSocket() {
 
           if (data.type === 'NOTIFICATION' && data.data) {
             const newNotif = data.data as AdminNotificationItem;
+            const typeStr = (newNotif.type || '').toUpperCase();
+
+            if (typeStr.includes('ORDER') || typeStr.includes('PAYMENT') || typeStr.includes('SHIPPING')) {
+                // RTK Query ၏ 'Order' tag ပါသော API အားလုံးကို နောက်ကွယ်မှ ပြန်ဆွဲ (Refetch) လုပ်ခိုင်းမည်
+                dispatch(orderApi.util.invalidateTags(['Order']));
+            }
 
             // Play notification sound
             playNotificationChime();

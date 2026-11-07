@@ -80,7 +80,7 @@ export const ShippingRates = () => {
     setCurrentPageState(Number(searchParams.get('page')) || 0);
   }, [searchParams]);
 
-  const pageSize = 10;
+  const pageSize = 5;
 
   const { data: stats } = useGetZoneStatsQuery();
   const [selectedZoneGroups, setSelectedZoneGroups] = useState<any[]>([]);
@@ -285,7 +285,7 @@ export const ShippingRates = () => {
               className={styles.bulkUpdateBtn}
             >
               <FiEdit2 size={13} />
-              Bulk Update ({selectedZoneGroups.length})
+              Bulk Update
             </button>
           )}
 

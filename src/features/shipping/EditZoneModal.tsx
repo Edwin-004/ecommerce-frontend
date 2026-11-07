@@ -127,8 +127,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
       onClose(); // အကုန်အောင်မြင်ပါက Modal ပိတ်မည်
     } catch (err: any) {
       setErrorMessage(
-        err?.data?.message ||
-          'Zone အချက်အလက်များ ပြင်ဆင်ရာတွင် အမှားအယွင်းရှိနေပါသည်။'
+        err?.data?.message || 'Failed to update zone. Please try again.'
       );
     }
   };
