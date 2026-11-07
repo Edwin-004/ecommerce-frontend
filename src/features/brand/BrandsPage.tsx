@@ -964,7 +964,7 @@ export function BrandsPage() {
                 type="button"
                 className={styles.pageBtn}
                 disabled={page === 0 || loading}
-                onClick={() => setPage((previous) => previous - 1)}
+                onClick={() => setPage(page - 1)}
                 aria-label="Previous page"
               >
                 <FiChevronLeft size={16} />
@@ -974,7 +974,7 @@ export function BrandsPage() {
                 type="button"
                 className={styles.pageBtn}
                 disabled={page >= totalPages - 1 || loading}
-                onClick={() => setPage((previous) => previous + 1)}
+                onClick={() => setPage(page + 1)}
                 aria-label="Next page"
               >
                 <FiChevronRight size={16} />

@@ -39,7 +39,6 @@ export const FirstTimePassword: React.FC = () => {
   const isDifferentFromCurrent = currentPassword.length > 0 && newPassword.length > 0 && newPassword !== currentPassword;
   const isMatching = confirmPassword.length > 0 && newPassword === confirmPassword;
 
-  const isAllValid = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecial && isDifferentFromCurrent;
 
   const handleLogout = async () => {
     try {

@@ -14,7 +14,6 @@ import {
   FiSearch,
   FiClock,
   FiEdit2,
-  FiTrash2,
   FiPlus,
   FiEye,
   FiX,
@@ -451,29 +450,6 @@ export const ProductManagementPage: React.FC = () => {
           setProducts((prev) =>
             prev.map((p) => (p.productId === productId ? { ...p, status: newStatus } : p))
           );
-        } finally {
-          setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
-        }
-      },
-    });
-  };
-
-  // Single Product Delete (Uses React ConfirmModal instead of native browser confirm)
-  const handleDeleteSingle = (productId: number, productName: string) => {
-    setConfirmModalConfig({
-      isOpen: true,
-      title: 'Delete Product',
-      message: `Are you sure you want to delete "${productName}"? All associated variants and inventory will also be affected.`,
-      confirmText: 'Delete Product',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          await productManagementApi.deleteProduct(productId);
-          setProducts((prev) => prev.filter((p) => p.productId !== productId));
-          toast.success(`Product "${productName}" deleted successfully.`);
-        } catch {
-          setProducts((prev) => prev.filter((p) => p.productId !== productId));
-          toast.success(`Product "${productName}" removed.`);
         } finally {
           setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
         }

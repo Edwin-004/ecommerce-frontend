@@ -51,7 +51,7 @@ export const ReportsPage = () => {
   const [formatLowStock, setFormatLowStock] = useState('pdf');
   
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [isMomModalOpen, setIsMomModalOpen] = useState(false);
 
   useEffect(() => {

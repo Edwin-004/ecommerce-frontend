@@ -11,7 +11,6 @@ import {
   FiCheckCircle,
   FiCheck,
   FiAlertCircle,
-  FiInfo,
   FiEye,
   FiEyeOff,
   FiCamera,
@@ -142,7 +141,6 @@ export const Profile = () => {
   const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPw);
   const isDifferent = currPw.length > 0 && newPw.length > 0 && newPw !== currPw;
   const isMatch = confirmPw.length > 0 && newPw === confirmPw;
-  const isAllCriteriaMet = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecial && (currPw.length === 0 || isDifferent);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
