@@ -59,6 +59,10 @@ const authSlice = createSlice({
       );
       localStorage.setItem('mustChangePassword', String(Boolean(action.payload.mustChangePassword)));
     },
+    updateUsername: (state, action: PayloadAction<string>) => {
+      state.username = action.payload;
+      localStorage.setItem('username', action.payload);
+    },
     clearMustChangePassword: (state) => {
       state.mustChangePassword = false;
       localStorage.setItem('mustChangePassword', 'false');
@@ -83,5 +87,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, clearMustChangePassword, logout } = authSlice.actions;
+export const { setCredentials, updateUsername, clearMustChangePassword, logout } = authSlice.actions;
 export default authSlice.reducer;
