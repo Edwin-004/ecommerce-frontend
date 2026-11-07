@@ -4,9 +4,13 @@
  * Standard Time: 12-Hour format with AM/PM (hh:mm A)
  */
 
-export function parseDate(value: string | number | Date | null | undefined): Date | null {
+export function parseDate(value: any): Date | null {
   if (!value) return null;
   if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+  if (Array.isArray(value) && value.length >= 3) {
+    const [y, m, d, h = 0, min = 0, s = 0] = value;
+    return new Date(y, m - 1, d, h, min, s);
+  }
   if (typeof value === 'number') {
     const d = new Date(value);
     return isNaN(d.getTime()) ? null : d;
@@ -111,4 +115,24 @@ export function formatDateForFilename(value?: string | number | Date | null): st
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}-${month}-${year}`;
+}
+
+/**
+ * Format relative time elapsed (e.g. "Just now", "5m ago", "2h ago", "3d ago")
+ * Accurately parses DD/MM/YYYY hh:mm A, ISO timestamps, and array date formats
+ */
+export function formatTimeAgo(value?: any): string {
+  if (!value) return 'Just now';
+  try {
+    const d = parseDate(value);
+    if (!d) return 'Recently';
+    const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (diff <= 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 86400 * 30) return `${Math.floor(diff / 86400)}d ago`;
+    return `${Math.floor(diff / (86400 * 30))}mo ago`;
+  } catch {
+    return 'Recently';
+  }
 }
