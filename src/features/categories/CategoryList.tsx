@@ -31,7 +31,7 @@ interface CategoryListProps {
   expanded: number[];
   onToggleExpand: (id: number) => void;
   onEdit: (category: CategoryResponseDto) => void;
-  onDelete: (id: number) => Promise<void>;
+  onDelete: (id: number) => Promise<void> | void;
 }
 
 type ExportFormat = "pdf" | "excel";
