@@ -167,52 +167,6 @@ export const ProductManagementPage: React.FC = () => {
     }
   }, [viewProduct]);
 
-  const handleUploadVariantImageModal = async (variantId: number, file: File) => {
-    try {
-      await productManagementApi.uploadProductVariantImage(variantId, file);
-      const updatedImgs = await productManagementApi.getVariantImages(variantId);
-      setViewVariants((prev) =>
-        prev.map((v) => (v.variantId === variantId ? { ...v, images: updatedImgs } : v))
-      );
-    } catch (err) {
-      console.error('Failed to upload variant image:', err);
-      toast.error('Failed to upload variant image.');
-    }
-  };
-
-  const handleDeleteVariantImageModal = (variantId: number, imageId: number) => {
-    setConfirmModalConfig({
-      isOpen: true,
-      title: 'Delete Variant Image',
-      message: 'Are you sure you want to delete this variant image? This action cannot be undone.',
-      confirmText: 'Delete Image',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          await productManagementApi.deleteVariantImage(imageId);
-          setViewVariants((prev) =>
-            prev.map((v) =>
-              v.variantId === variantId
-                ? {
-                    ...v,
-                    images: (v.images || []).filter(
-                      (img: any) => img.productVariantImageId !== imageId
-                    ),
-                  }
-                : v
-            )
-          );
-          toast.success('Variant image deleted successfully.');
-        } catch (err) {
-          console.error('Failed to delete variant image:', err);
-          toast.error('Failed to delete variant image.');
-        } finally {
-          setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
-        }
-      },
-    });
-  };
-
   // Click outside to close column dropdown or export menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
