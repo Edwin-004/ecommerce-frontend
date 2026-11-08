@@ -1104,7 +1104,7 @@ export const CreateProductPage: React.FC = () => {
                   }}
                   title="Add New Category"
                 >
-                  <FiPlus size={11} /> + Add New Category
+                  <FiPlus size={11} /> Add New Category
                 </button>
               </div>
               <div className={styles.categoryBrandRow}>
@@ -1112,18 +1112,9 @@ export const CreateProductPage: React.FC = () => {
                   required
                   className={styles.inputField}
                   value={selectedCategory}
-                  onChange={(e) => {
-                    if (e.target.value === '__NEW_CATEGORY__') {
-                      setShowCategoryModal(true);
-                    } else {
-                      handleCategorySelect(e.target.value);
-                    }
-                  }}
+                  onChange={(e) => handleCategorySelect(e.target.value)}
                 >
                   <option value="">Select Category</option>
-                  <option value="__NEW_CATEGORY__" style={{ color: '#2563eb', fontWeight: 600 }}>
-                    + Add New Category...
-                  </option>
                   {categories.map((c) => (
                     <option key={c.categoryId} value={String(c.categoryId)}>
                       {c.categoryName}
@@ -1162,25 +1153,16 @@ export const CreateProductPage: React.FC = () => {
                   }}
                   title="Add New Brand"
                 >
-                  <FiPlus size={11} /> + Add New Brand
+                  <FiPlus size={11} /> Add New Brand
                 </button>
               </div>
               <div className={styles.categoryBrandRow}>
                 <select
                   className={styles.inputField}
                   value={selectedBrand}
-                  onChange={(e) => {
-                    if (e.target.value === '__NEW_BRAND__') {
-                      setShowBrandModal(true);
-                    } else {
-                      setSelectedBrand(e.target.value);
-                    }
-                  }}
+                  onChange={(e) => setSelectedBrand(e.target.value)}
                 >
                   <option value="">Select Brand (Optional)</option>
-                  <option value="__NEW_BRAND__" style={{ color: '#2563eb', fontWeight: 600 }}>
-                    + Add New Brand...
-                  </option>
                   {brands.map((b) => (
                     <option key={b.brandId} value={String(b.brandId)}>
                       {b.brandName}
@@ -1223,7 +1205,7 @@ export const CreateProductPage: React.FC = () => {
                 }}
                 title="Add New Tag"
               >
-                <FiPlus size={11} /> + Add New Tag
+                <FiPlus size={11} /> Add New Tag
               </button>
             </div>
 

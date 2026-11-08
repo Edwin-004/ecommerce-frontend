@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { isAxiosError } from "axios";
 
 import { tagApi } from "./tagApi";
+import { ConfirmModal } from "../../components/common/ConfirmModal";
+import { toast } from "react-toastify";
 
 import type {
   TagRequestDto,
@@ -97,6 +99,15 @@ export default function TagManagement() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteConfirmConfig, setDeleteConfirmConfig] = useState<{
+    isOpen: boolean;
+    tag: TagResponseDto | null;
+    loading: boolean;
+  }>({
+    isOpen: false,
+    tag: null,
+    loading: false,
+  });
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -235,9 +246,11 @@ export default function TagManagement() {
       if (editingId !== null) {
         await tagApi.updateTag(editingId, request);
         setSuccess("Tag updated successfully.");
+        toast.success("Tag updated successfully.");
       } else {
         await tagApi.createTag(request);
         setSuccess("Tag created successfully.");
+        toast.success("Tag created successfully.");
       }
 
       closeModal();
@@ -249,20 +262,24 @@ export default function TagManagement() {
     }
   };
 
-  const handleDelete = async (tag: TagResponseDto) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${tag.tagName}"?`
-    );
+  const handleDelete = (tag: TagResponseDto) => {
+    setDeleteConfirmConfig({
+      isOpen: true,
+      tag,
+      loading: false,
+    });
+  };
 
-    if (!confirmed) return;
-
-    setDeletingId(tag.tagId);
+  const executeDelete = async () => {
+    if (!deleteConfirmConfig.tag) return;
+    const tag = deleteConfirmConfig.tag;
+    setDeleteConfirmConfig((prev) => ({ ...prev, loading: true }));
     setError("");
     setSuccess("");
 
     try {
       await tagApi.deleteTag(tag.tagId);
-
+      toast.success(`Tag "${tag.tagName}" deleted successfully.`);
       setSuccess("Tag deleted successfully.");
 
       if (tags.length === 1 && page > 0) {
@@ -274,8 +291,16 @@ export default function TagManagement() {
       if (editingId === tag.tagId) {
         closeModal();
       }
+      setDeleteConfirmConfig({
+        isOpen: false,
+        tag: null,
+        loading: false,
+      });
     } catch (err) {
-      setError(getErrorMessage(err));
+      const msg = getErrorMessage(err);
+      toast.error(msg);
+      setError(msg);
+      setDeleteConfirmConfig((prev) => ({ ...prev, loading: false, isOpen: false }));
     } finally {
       setDeletingId(null);
     }
@@ -736,6 +761,18 @@ export default function TagManagement() {
           </div>
         </div>
       )}
+          {/* Tag Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirmConfig.isOpen}
+        title="Delete Tag"
+        message={`Are you sure you want to delete the tag "${deleteConfirmConfig.tag?.tagName || ''}"? Any products referencing this tag will no longer have it.`}
+        confirmText="Delete Tag"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleteConfirmConfig.loading}
+        onConfirm={executeDelete}
+        onClose={() => setDeleteConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
