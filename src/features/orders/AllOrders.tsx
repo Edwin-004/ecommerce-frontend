@@ -803,9 +803,10 @@ export const AllOrders = () => {
                         {orderDetails.shippingAddress?.phoneNumber || 'N/A'}
                       </p>
                       <p className={styles.infoText}>
-                        <strong>Address:</strong>{' '}
+                        <strong>Address 1 :</strong>{' '}
                         {[
                           orderDetails.shippingAddress?.addressLine1,
+                          orderDetails.shippingAddress?.addressLine2,
                           orderDetails.shippingAddress?.township,
                           orderDetails.shippingAddress?.city,
                           orderDetails.shippingAddress?.regionOrState,
