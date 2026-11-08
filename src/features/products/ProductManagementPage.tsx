@@ -1288,7 +1288,7 @@ export const ProductManagementPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Variant Images List & Upload */}
+                      {/* Variant Images List (Pure Read-Only) */}
                       <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '8px', marginTop: '6px' }}>
                         <div style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>
                           Variant Photos ({v.images?.length || 0})
@@ -1296,87 +1296,25 @@ export const ProductManagementPage: React.FC = () => {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                           {v.images && v.images.length > 0 ? (
                             v.images.map((img: any) => (
-                              <div
+                              <img
                                 key={img.productVariantImageId}
-                                style={{ position: 'relative', display: 'inline-block' }}
-                              >
-                                <img
-                                  src={getAssetUrl(img.imageUrl)}
-                                  alt="variant"
-                                  style={{
-                                    width: '42px',
-                                    height: '42px',
-                                    objectFit: 'cover',
-                                    borderRadius: '6px',
-                                    border: '1px solid #cbd5e1',
-                                    display: 'block',
-                                  }}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteVariantImageModal(v.variantId, img.productVariantImageId)}
-                                  title="Delete this variant image"
-                                  style={{
-                                    position: 'absolute',
-                                    top: '-5px',
-                                    right: '-5px',
-                                    width: '16px',
-                                    height: '16px',
-                                    borderRadius: '50%',
-                                    background: '#ef4444',
-                                    color: '#fff',
-                                    border: '2px solid #fff',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '9px',
-                                    fontWeight: 'bold',
-                                    cursor: 'pointer',
-                                    padding: 0,
-                                    lineHeight: 1,
-                                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                                  }}
-                                >
-                                  ×
-                                </button>
-                              </div>
+                                src={getAssetUrl(img.imageUrl)}
+                                alt="variant"
+                                style={{
+                                  width: '42px',
+                                  height: '42px',
+                                  objectFit: 'cover',
+                                  borderRadius: '6px',
+                                  border: '1px solid #cbd5e1',
+                                  display: 'block',
+                                }}
+                              />
                             ))
                           ) : (
                             <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
                               No photos for this variant
                             </span>
                           )}
-
-                          {/* Upload photo button for this variant */}
-                          <label
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '5px 10px',
-                              borderRadius: '6px',
-                              border: '1px dashed #6366f1',
-                              color: '#6366f1',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              background: '#ffffff',
-                              transition: 'all 0.15s ease',
-                            }}
-                          >
-                            <FiPlus size={12} /> Add Photo
-                            <input
-                              type="file"
-                              accept="image/*"
-                              style={{ display: 'none' }}
-                              onChange={(e) => {
-                                if (e.target.files?.[0]) {
-                                  handleUploadVariantImageModal(v.variantId, e.target.files[0]);
-                                  e.target.value = '';
-                                }
-                              }}
-                            />
-                          </label>
                         </div>
                       </div>
                     </div>
@@ -1393,29 +1331,17 @@ export const ProductManagementPage: React.FC = () => {
                 padding: '14px 24px',
                 borderTop: '1px solid #f1f5f9',
                 display: 'flex',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-end',
                 alignItems: 'center',
                 background: '#f8fafc',
               }}
             >
               <button
                 className={styles.btnActionOutline}
+                style={{ padding: '7px 20px', fontSize: '13px' }}
                 onClick={() => setViewProduct(null)}
               >
                 Close
-              </button>
-              <button
-                className={styles.btnPrimary}
-                style={{ padding: '7px 16px', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                onClick={() => {
-                  const pId = viewProduct.productId;
-                  setViewProduct(null);
-                  sessionStorage.setItem('activeEditProductId', String(pId));
-                  navigate('/admin/products/edit', { state: { productId: pId } });
-                }}
-              >
-                <FiEdit2 size={13} />
-                Edit This Product
               </button>
             </div>
 
