@@ -1,3 +1,4 @@
+import { toast } from "react-toastify";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiSearch,
@@ -156,7 +157,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
       console.error("Export category report failed", error);
       const message =
         error instanceof Error ? error.message : "Export failed. Please check backend connection.";
-      window.alert(message);
+      toast.error(message);
     } finally {
       setExportingFormat(null);
     }

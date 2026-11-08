@@ -207,7 +207,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {!isCollapsed && (
               <div className={styles.brandMeta}>
                 <span className={styles.brandName}>Gravity - 5</span>
-                <span className={styles.brandBadge}>Admin</span>
+              
               </div>
             )}
           </div>

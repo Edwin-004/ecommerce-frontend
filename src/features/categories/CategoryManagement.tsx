@@ -13,6 +13,8 @@ import {
 
 import { categoryApi } from "./categoryApi";
 import { CategoryFormModal } from "./CategoryFormModal";
+import { ConfirmModal } from "../../components/common/ConfirmModal";
+import { toast } from "react-toastify";
 import { CategoryList } from "./CategoryList";
 
 import {
@@ -51,6 +53,17 @@ export const CategoryManagement: React.FC = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleteConfirmConfig, setDeleteConfirmConfig] = useState<{
+    isOpen: boolean;
+    categoryId: number | null;
+    categoryName: string;
+    loading: boolean;
+  }>({
+    isOpen: false,
+    categoryId: null,
+    categoryName: "",
+    loading: false,
+  });
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -175,6 +188,7 @@ export const CategoryManagement: React.FC = () => {
         });
 
         setSuccessMessage("Category updated successfully.");
+        toast.success("Category updated successfully.");
       } else {
         // 1. Create the main category first
         const result = await categoryApi.createCategory({
@@ -257,30 +271,40 @@ export const CategoryManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // Delete category
-  const handleDelete = async (id: number) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this category?"
-      )
-    ) {
-      return;
-    }
+  // Delete category (Trigger modern React Confirm Modal)
+  const handleDelete = (id: number) => {
+    const target = flatAll.find((c) => c.categoryId === id);
+    const catName = target ? target.categoryName : "this category";
+    setDeleteConfirmConfig({
+      isOpen: true,
+      categoryId: id,
+      categoryName: catName,
+      loading: false,
+    });
+  };
 
+  const executeDelete = async () => {
+    if (!deleteConfirmConfig.categoryId) return;
+    setDeleteConfirmConfig((prev) => ({ ...prev, loading: true }));
     setErrorMessage(null);
     setSuccessMessage(null);
 
     try {
-      await categoryApi.deleteCategory(id);
-
-      setSuccessMessage("Category deleted successfully.");
-
+      await categoryApi.deleteCategory(deleteConfirmConfig.categoryId);
+      toast.success(`Category "${deleteConfirmConfig.categoryName}" deleted successfully.`);
+      setSuccessMessage(`Category "${deleteConfirmConfig.categoryName}" deleted successfully.`);
+      setDeleteConfirmConfig({
+        isOpen: false,
+        categoryId: null,
+        categoryName: "",
+        loading: false,
+      });
       await fetchData();
     } catch (err: any) {
-      setErrorMessage(
-        err?.response?.data?.message ||
-          "Cannot delete this category."
-      );
+      const msg = err?.response?.data?.message || err?.message || "Cannot delete this category.";
+      toast.error(msg);
+      setErrorMessage(msg);
+      setDeleteConfirmConfig((prev) => ({ ...prev, loading: false, isOpen: false }));
     }
   };
 
@@ -471,6 +495,19 @@ export const CategoryManagement: React.FC = () => {
         onToggleExpand={toggleExpand}
         onEdit={handleEdit}
         onDelete={handleDelete}
+      />
+
+      {/* Category Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirmConfig.isOpen}
+        title="Delete Category"
+        message={`Are you sure you want to delete the category "${deleteConfirmConfig.categoryName}"? Any products assigned to this category will need to be reassigned.`}
+        confirmText="Delete Category"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleteConfirmConfig.loading}
+        onConfirm={executeDelete}
+        onClose={() => setDeleteConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
       />
 
       {/* Create / Edit Modal */}
