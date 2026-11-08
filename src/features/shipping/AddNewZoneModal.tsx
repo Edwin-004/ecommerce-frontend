@@ -72,7 +72,11 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
   // ရွေးချယ်ထားသော မြို့အတွက် Default Zone ရှိပြီးသားလား စစ်ဆေးမည်
   const isDefaultAlreadyExists = existingZones.some((zone: any) => {
     const isDefault = zone.isCityDefault === true || zone.cityDefault === true;
-    return zone.city?.trim() === selectedCity?.trim() && isDefault;
+
+    const savedCity = (zone.city || '').replace(/\s+/g, '').toLowerCase();
+    const currentCity = (selectedCity || '').replace(/\s+/g, '').toLowerCase();
+
+    return savedCity === currentCity && isDefault;
   });
 
   // ⭐️ Region ပြောင်းသွားတိုင်း City နှင့် Township များကို Reset ချမည်
