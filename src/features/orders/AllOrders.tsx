@@ -60,7 +60,7 @@ export const AllOrders = () => {
       updates.search !== undefined ? updates.search : searchTerm;
     const nextStart = updates.start !== undefined ? updates.start : startDate;
     const nextEnd = updates.end !== undefined ? updates.end : endDate;
-    const nextPage = updates.page !== undefined ? updates.page : 0;
+    const nextPage = updates.page !== undefined ? updates.page : currentPage;
     const nextOrderNo =
       updates.orderNo !== undefined ? updates.orderNo : selectedOrderNo;
 
@@ -115,7 +115,7 @@ export const AllOrders = () => {
 
   const setSelectedOrderNo = (no: string | null) => {
     setSelectedOrderNoState(no);
-    updateOrderQueryParams({ orderNo: no });
+    updateOrderQueryParams({ orderNo: no, page: currentPage });
   };
 
   useEffect(() => {
@@ -401,6 +401,27 @@ export const AllOrders = () => {
     } catch {
       return attrString;
     }
+  };
+
+  const getPaginationGroup = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i);
+    }
+    if (currentPage <= 2) {
+      return [0, 1, 2, '...', totalPages - 1];
+    }
+    if (currentPage >= totalPages - 3) {
+      return [0, '...', totalPages - 3, totalPages - 2, totalPages - 1];
+    }
+    return [
+      0,
+      '...',
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      '...',
+      totalPages - 1,
+    ];
   };
 
   return (
@@ -722,10 +743,34 @@ export const AllOrders = () => {
                 <button
                   onClick={() => setCurrentPage(Math.max(currentPage - 1, 0))}
                   disabled={currentPage === 0}
-                  className={styles.paginationBtn}
+                  className={`${styles.paginationBtn} ${styles.navBtn}`}
                 >
                   <FiChevronLeft size={15} /> Previous
                 </button>
+                {getPaginationGroup().map((item, index) => {
+                  if (item === '...') {
+                    return (
+                      <span
+                        key={`ellipsis-${index}`}
+                        className={styles.paginationDots}
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  const pageNum = item as number;
+                  return (
+                    <button
+                      key={pageNum}
+                      className={`${styles.paginationBtn} ${currentPage === pageNum ? styles.activePage : ''}`}
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum + 1}
+                    </button>
+                  );
+                })}
+
                 <button
                   onClick={() =>
                     setCurrentPage(Math.min(currentPage + 1, totalPages - 1))
@@ -784,7 +829,14 @@ export const AllOrders = () => {
                   style={{ justifyContent: 'flex-start', gap: '14px' }}
                 >
                   <BackButton
-                    onClick={() => setSelectedOrderNo(null)}
+                    onClick={() => {
+                      setSelectedOrderNo(null);
+
+                      updateOrderQueryParams({
+                        orderNo: null,
+                        page: currentPage,
+                      });
+                    }}
                     label="Back"
                   />
                   <h3 style={{ margin: 0 }}>
