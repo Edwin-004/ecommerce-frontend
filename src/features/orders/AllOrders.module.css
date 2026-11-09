@@ -447,32 +447,62 @@
 
 .paginationControls {
   display: flex;
-  gap: 8px; /* Button နှစ်ခုကြား ခွာရန် */
+  gap: 8px; /* Button တွေကြား အကွာအဝေး */
+  align-items: center; /* အလယ်မှာ ညီနေစေဖို့ */
 }
 
+/* Page Number Button တွေအတွက် */
 .paginationBtn {
-  padding: 6px 12px;
-  border: 1px solid #ced4da;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e0e4e8; /* ပုံထဲကလို ခပ်ဖျော့ဖျော့ border */
   background-color: #fff;
-  border-radius: 4px;
-  color: #333;
+  border-radius: 6px; /* ပိုပြီး ဝိုင်းနေတဲ့ ထောင့်များ */
+  color: #334155;
+  font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 }
 
-.paginationBtn:hover:not(:disabled) {
-  background-color: #f8f9fa;
-  border-color: #b3b9bf;
+/* Hover ဖြစ်နေချိန် (Disabled မဟုတ်ရင်) */
+.paginationBtn:hover:not(:disabled):not(.activePage) {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
-/* Disabled ဖြစ်နေချိန်တွင် အလိုအလျောက် အလုပ်လုပ်မည့် CSS */
+/* လက်ရှိရောက်နေတဲ့ Page Button (အပြာရောင်) */
+.paginationBtn.activePage {
+  background-color: #2563eb; /* ပုံထဲက အပြာရောင် */
+  color: #fff;
+  border-color: #2563eb;
+  cursor: default; /* Click လို့မရတော့ဘူးဆိုတဲ့ သဘောပြဖို့ */
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); /* အပြာရောင် အရိပ်လေး */
+}
+
+/* Prev / Next Button အရှည်တွေအတွက် (optional) */
+.paginationBtn.navBtn {
+  min-width: 80px;
+}
+
+/* Disabled ဖြစ်နေချိန် (ဥပမာ- Prev button က Page 1 မှာ) */
 .paginationBtn:disabled {
   cursor: not-allowed;
-  background-color: #e9ecef;
-  color: #999;
-  border-color: #e9ecef;
+  background-color: #fff; /* ပုံထဲမှာ အဖြူပဲ */
+  color: #94a3b8; /* ဖျော့သွားတဲ့ စာသားအရောင် */
+  border-color: #f1f5f9;
 }
 
+/* အစက်လေးတွေ (...) ပြဖို့ */
+.paginationDots {
+  color: #64748b;
+  padding: 0 4px;
+  font-weight: 500;
+}
 /* ==================== Filter Section & Tabs ==================== */
 .filterSection {
   position: relative;
