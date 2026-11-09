@@ -308,12 +308,6 @@ export const ShippingRates = () => {
         >
           <thead>
             <tr>
-              <th
-                className="text-center"
-                style={{ width: '60px', textAlign: 'center' }}
-              >
-                No.
-              </th>
               <th style={{ width: '40px' }}>
                 <input
                   type="checkbox"
@@ -352,20 +346,9 @@ export const ShippingRates = () => {
             ) : (
               displayZoneGroups
                 .filter((zone) => !zone.zoneName.startsWith('DELETED_ZONE'))
-                .map((zone, index) => {
-                  const rowNumber = currentPage * pageSize + index + 1;
+                .map((zone) => {
                   return (
                     <tr key={`${zone.zoneName}_${zone.city}`}>
-                      <td
-                        className="text-center"
-                        style={{
-                          fontWeight: 600,
-                          color: '#64748b',
-                          textAlign: 'center',
-                        }}
-                      >
-                        {rowNumber}
-                      </td>
                       <td>
                         <input
                           type="checkbox"
