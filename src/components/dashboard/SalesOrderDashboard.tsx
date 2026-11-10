@@ -629,7 +629,7 @@ export const SalesOrderDashboard: React.FC = () => {
                         <button
                           type="button"
                           className={styles.viewBtn}
-                          onClick={() => navigate('/admin/orders')}
+                          onClick={() => navigate(`/admin/orders?orderNo=${order.orderNo || order.orderId}`)}
                           title="View order details"
                         >
                           <FiEye size={12} /> View Details

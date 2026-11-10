@@ -1,6 +1,6 @@
 import { toast } from 'react-toastify';
 import { BackButton } from '../../components/common/BackButton';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import styles from './ProductStyles.module.css';
 import { DatePicker } from '../../components/common/DatePicker';
@@ -31,10 +31,78 @@ import {
   FiTrash2,
   FiStar,
   FiRefreshCw,
-  FiImage,
   FiPlus,
 } from 'react-icons/fi';
 
+const ATTRIBUTE_PRESETS: Record<string, string[]> = {
+  color: ['White', 'Black', 'Yellow', 'Red', 'Blue', 'Green', 'Grey', 'Navy', 'Silver', 'Gold'],
+  size: ['S', 'M', 'L', 'XL', 'XXL', '45cm x 5M'],
+  storage: ['64GB', '128GB', '256GB', '512GB', '1TB'],
+  material: ['Cotton', 'Leather', 'Polyester', 'Silk', 'Denim'],
+};
+
+const COLOR_MAP: Record<string, string> = {
+  black: '#000000',
+  gold: '#d4af37',
+  olive: '#808000',
+  clear: '#f1f5f9',
+  silver: '#cbd5e1',
+  white: '#ffffff',
+  yellow: '#eab308',
+  red: '#ef4444',
+  blue: '#3b82f6',
+  green: '#22c55e',
+  grey: '#94a3b8',
+  gray: '#94a3b8',
+  navy: '#1e3a8a',
+  purple: '#a855f7',
+  pink: '#ec4899',
+  orange: '#f97316',
+};
+
+const getColorHex = (name: string): string => {
+  const clean = name.toLowerCase().trim();
+  return COLOR_MAP[clean] || (clean.startsWith('#') ? clean : '#94a3b8');
+};
+
+interface LocalAttribute {
+  id: string | number;
+  name: string;
+  values: string[];
+}
+
+export interface NewGeneratedVariant {
+  id: string;
+  sku: string;
+  combination: Array<{ attrName: string; value: string }>;
+  price: string | number;
+  costPrice?: string | number;
+  stock: string | number;
+  images: File[];
+  imagePreviews: string[];
+}
+
+const generateVariantSku = (
+  index: number,
+  combination: Array<{ attrName: string; value: string }>,
+  prodName: string
+) => {
+  const prefix = prodName
+    ? prodName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase() || 'PROD'
+    : 'PROD';
+
+  let comboCode = '';
+  combination.forEach((c) => {
+    const val = c.value.trim().toUpperCase();
+    if (val === 'WHITE') comboCode += 'W';
+    else if (val === 'BLACK') comboCode += 'B';
+    else if (val.length <= 2) comboCode += val;
+    else comboCode += val.slice(0, 2);
+  });
+
+  const numPart = String(index + 1).padStart(3, '0');
+  return `${prefix}-${comboCode || 'V'}-${numPart}`;
+};
 
 export const EditProductPage: React.FC = () => {
   const { id: pathId } = useParams<{ id: string }>();
@@ -48,87 +116,110 @@ export const EditProductPage: React.FC = () => {
   const productId = Number(id);
 
   useEffect(() => {
-    if (productId && !isNaN(productId)) {
-      sessionStorage.setItem('activeEditProductId', String(productId));
+    if (id) {
+      sessionStorage.setItem('activeEditProductId', String(id));
     }
-  }, [productId]);
+  }, [id]);
 
-  // Loading & error
+  // Loading & Submission states
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
 
-  // Form states
+  // Form Fields
   const [productName, setProductName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [status, setStatus] = useState<string>('ACTIVE');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedBrand, setSelectedBrand] = useState<string>('');
-  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
 
-  // Perishable / Expiry Details
+  // Dropdown Lookups
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [brands, setBrands] = useState<BrandItem[]>([]);
+  const [allCategoriesFull, setAllCategoriesFull] = useState<CategoryResponseDto[]>([]);
+
+  // Expiration & Perishable tracking
   const [isPerishable, setIsPerishable] = useState<boolean>(false);
   const [expiryDate, setExpiryDate] = useState<string>('');
   const [batchNumber, setBatchNumber] = useState<string>('');
 
+  // Tags
+  const [allTags, setAllTags] = useState<Array<{ tagId: number; tagName: string }>>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [showTagModal, setShowTagModal] = useState<boolean>(false);
+  const [newTagName, setNewTagName] = useState<string>('');
+  const [tagLoading, setTagLoading] = useState<boolean>(false);
+
   // Images
-  const [existingImages, setExistingImages] = useState<any[]>([]);
+  const [existingImages, setExistingImages] = useState<Array<{ imageId: number; imageUrl: string; isPrimary: boolean }>>([]);
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
-
-  // Image Action States
-  const [imageActionLoading, setImageActionLoading] = useState<number | null>(null);
   const [replacingTarget, setReplacingTarget] = useState<{ imageId: number; isPrimary: boolean } | null>(null);
-  const [uploadingNewImages, setUploadingNewImages] = useState<boolean>(false);
-  const replaceInputRef = React.useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
 
-  // Variants list
-  const [variants, setVariants] = useState<any[]>([]);
-
-  // Dropdown lists
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [brands, setBrands] = useState<BrandItem[]>([]);
-  const [allTags, setAllTags] = useState<{ tagId: number; tagName: string }[]>([]);
-
-  // Quick Create Modals
+  // Quick Modals
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [categoryFormData, setCategoryFormData] = useState<CategoryRequestDto>({
     categoryName: '',
     description: '',
     parentId: null,
   });
-  const [categoryModalError, setCategoryModalError] = useState<string | null>(null);
-  const [allCategoriesFull, setAllCategoriesFull] = useState<CategoryResponseDto[]>([]);
   const [catLoading, setCatLoading] = useState<boolean>(false);
+  const [categoryModalError, setCategoryModalError] = useState<string | null>(null);
 
   const [showBrandModal, setShowBrandModal] = useState<boolean>(false);
   const [brandLoading, setBrandLoading] = useState<boolean>(false);
 
-  const [showTagModal, setShowTagModal] = useState<boolean>(false);
-  const [newTagName, setNewTagName] = useState<string>('');
-  const [tagLoading, setTagLoading] = useState<boolean>(false);
+  // ==========================================
+  // 1. EXISTING ASSOCIATED VARIANTS STATE
+  // ==========================================
+  const [existingVariants, setExistingVariants] = useState<any[]>([]);
+  const [savingVariantId, setSavingVariantId] = useState<number | null>(null);
 
+  // ==========================================
+  // 2. PRODUCT VARIATIONS BUILDER (ADD NEW VARIANTS)
+  // (Starts UNCHECKED and EMPTY on load - only opens when user checks the box)
+  // ==========================================
+  const [hasVariants, setHasVariants] = useState<boolean>(false);
+  const [attributes, setAttributes] = useState<LocalAttribute[]>([]);
+  const [availableAttributes, setAvailableAttributes] = useState<string[]>([
+    'Color',
+    'Size',
+    'Storage',
+    'Material',
+  ]);
+  const [selectedExistingAttr, setSelectedExistingAttr] = useState<string>('');
+  const [showAddAttrInput, setShowAddAttrInput] = useState<boolean>(false);
+  const [customAttrName, setCustomAttrName] = useState<string>('');
+  const [inlineValues, setInlineValues] = useState<{ [key: string | number]: string }>({});
+  const [generatedVariants, setGeneratedVariants] = useState<NewGeneratedVariant[]>([]);
+
+  // Computed count of combinations from active attributes
+  
+  // Load all product details
   useEffect(() => {
     if (!productId || isNaN(productId)) {
-      setErrorMessage('Invalid Product ID');
+      setErrorMessage('Invalid Product ID.');
       setLoading(false);
       return;
     }
-    loadAllData();
+    fetchProductDetails();
   }, [productId]);
 
-  const loadAllData = async () => {
+  const fetchProductDetails = async () => {
     try {
       setLoading(true);
       setErrorMessage('');
 
       // 1. Fetch Lookups
-      const [catsRes, brandsRes, tagsRes, fullCatsRes] = await Promise.allSettled([
+      const [catsRes, brandsRes, tagsRes, fullCatsRes, varsRes] = await Promise.allSettled([
         productManagementApi.getCategories(),
         productManagementApi.getBrands(),
         tagApi.getAllTags(0, 100),
         categoryApi.getAllCategories(0, 1000),
+        variantApi.getVariations(),
       ]);
 
       if (catsRes.status === 'fulfilled') setCategories(catsRes.value);
@@ -138,6 +229,10 @@ export const EditProductPage: React.FC = () => {
       }
       if (fullCatsRes.status === 'fulfilled' && fullCatsRes.value?.content) {
         setAllCategoriesFull(fullCatsRes.value.content);
+      }
+      if (varsRes.status === 'fulfilled' && Array.isArray(varsRes.value)) {
+        const varNames = varsRes.value.map((v: any) => v.name);
+        setAvailableAttributes((prev) => Array.from(new Set([...prev, ...varNames])));
       }
 
       // 2. Fetch Product Info
@@ -166,47 +261,335 @@ export const EditProductPage: React.FC = () => {
         setSelectedTagIds([]);
       }
 
-      // 5. Fetch Variants & Inventory
+      // 5. Fetch Existing Variants (cleanly stored for Existing Variants card, NO auto-generation)
       try {
         const vars = await productManagementApi.getVariantsByProductId(productId);
-        if (Array.isArray(vars)) {
+        if (Array.isArray(vars) && vars.length > 0) {
+          const withImgs = await Promise.all(
+            vars.map(async (v: any) => {
+              try {
+                const varImgs = await productManagementApi.getVariantImages(v.variantId);
+                return { ...v, images: Array.isArray(varImgs) ? varImgs : [] };
+              } catch {
+                return { ...v, images: [] };
+              }
+            })
+          );
+          setExistingVariants(withImgs);
+
+          // Check inventory of first variant for perishable details
           try {
-            const withImgs = await Promise.all(
-              vars.map(async (v: any) => {
-                try {
-                  const varImgs = await productManagementApi.getVariantImages(v.variantId);
-                  return { ...v, images: Array.isArray(varImgs) ? varImgs : [] };
-                } catch {
-                  return { ...v, images: [] };
-                }
-              })
-            );
-            setVariants(withImgs);
+            const firstVariantId = vars[0].variantId;
+            const inv = await inventoryApi.getInventoryByVariantId(firstVariantId);
+            if (inv) {
+              setIsPerishable(Boolean(inv.isPerishable));
+              if (inv.expiryDate) setExpiryDate(inv.expiryDate);
+              if (inv.batchNumber) setBatchNumber(inv.batchNumber);
+            }
           } catch {
-            setVariants(vars);
+            // Optional
           }
         } else {
-          setVariants([]);
-        }
-
-        if (vars && vars.length > 0) {
-          // Check inventory of first variant for perishable details
-          const firstVariantId = vars[0].variantId;
-          const inv = await inventoryApi.getInventoryByVariantId(firstVariantId);
-          if (inv) {
-            setIsPerishable(Boolean(inv.isPerishable));
-            if (inv.expiryDate) setExpiryDate(inv.expiryDate);
-            if (inv.batchNumber) setBatchNumber(inv.batchNumber);
-          }
+          setExistingVariants([]);
         }
       } catch {
-        setVariants([]);
+        setExistingVariants([]);
       }
+
+      // Product Variations builder starts clean and unchecked!
+      setHasVariants(false);
+      setAttributes([]);
+      setGeneratedVariants([]);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to load product details');
     } finally {
       setLoading(false);
     }
+  };
+
+  // ==========================================
+  // Handlers for Existing Variants
+  // ==========================================
+  const handleExistingVariantFieldChange = (variantId: number, field: string, value: any) => {
+    setExistingVariants((prev) =>
+      prev.map((v) => (v.variantId === variantId ? { ...v, [field]: value } : v))
+    );
+  };
+
+  const handleSaveExistingVariant = async (v: any) => {
+    try {
+      setSavingVariantId(v.variantId);
+      await variantApi.updateProductVariant(v.variantId, {
+        sku: v.sku, // Read-only / preserved
+        sellingPrice: Number(v.sellingPrice) || 0,
+        costPrice: v.costPrice !== undefined && v.costPrice !== '' ? Number(v.costPrice) : undefined,
+        status: v.status || 'ACTIVE',
+      });
+      toast.success(`Variant ${v.sku || '#' + v.variantId} updated successfully!`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update variant');
+    } finally {
+      setSavingVariantId(null);
+    }
+  };
+
+  const handleToggleExistingVariantStatus = async (variantId: number, currentStatus: string) => {
+    const nextStatus = currentStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      const v = existingVariants.find((item) => item.variantId === variantId);
+      if (!v) return;
+      await variantApi.updateProductVariant(variantId, {
+        sku: v.sku,
+        sellingPrice: Number(v.sellingPrice) || 0,
+        costPrice: v.costPrice ? Number(v.costPrice) : undefined,
+        status: nextStatus,
+      });
+      setExistingVariants((prev) =>
+        prev.map((item) => (item.variantId === variantId ? { ...item, status: nextStatus } : item))
+      );
+      toast.success(`Variant status changed to ${nextStatus}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to change variant status');
+    }
+  };
+
+  const handleUploadExistingVariantPhoto = async (variantId: number, file: File) => {
+    try {
+      const uploaded = await productManagementApi.uploadProductVariantImage(variantId, file);
+      const newImgObj = {
+        productVariantImageId: uploaded.productVariantImageId,
+        imageUrl: uploaded.imageUrl,
+        isPrimary: Boolean(uploaded.isPrimary),
+      };
+      setExistingVariants((prev) =>
+        prev.map((v) =>
+          v.variantId === variantId
+            ? { ...v, images: [...(v.images || []), newImgObj] }
+            : v
+        )
+      );
+      toast.success('Variant photo added successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload photo');
+    }
+  };
+
+  const handleDeleteExistingVariantPhoto = async (variantId: number, imageId: number) => {
+    try {
+      await productManagementApi.deleteVariantImage(imageId);
+      setExistingVariants((prev) =>
+        prev.map((v) =>
+          v.variantId === variantId
+            ? { ...v, images: (v.images || []).filter((img: any) => img.productVariantImageId !== imageId) }
+            : v
+        )
+      );
+      toast.success('Variant photo removed!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove variant photo');
+    }
+  };
+
+  // ==========================================
+  // Handlers for Product Variations Builder (Add New Variants)
+  // ==========================================
+  const generateCombosFromAttrs = (currentAttrs: LocalAttribute[]) => {
+    const activeAttrs = currentAttrs.filter((a) => a.values && a.values.length > 0);
+    if (activeAttrs.length === 0) {
+      setGeneratedVariants([]);
+      return;
+    }
+
+    type Item = { attrName: string; value: string };
+    const attrChoices: Item[][] = activeAttrs.map((attr) =>
+      attr.values.map((v) => ({ attrName: attr.name, value: v }))
+    );
+
+    const cartesianCombos = (arrays: Item[][]): Item[][] => {
+      return arrays.reduce<Item[][]>(
+        (acc, curr) => acc.flatMap((c) => curr.map((n) => [...c, n])),
+        [[]]
+      );
+    };
+
+    const combos = cartesianCombos(attrChoices);
+    const activeName = productName || 'PROD';
+
+    setGeneratedVariants((prev) => {
+      return combos.map((combo, idx) => {
+        const comboKey = combo
+          .map((c) => `${c.attrName.toLowerCase()}:${c.value.toLowerCase()}`)
+          .sort()
+          .join('|');
+
+        const existing = prev.find((v) => {
+          const key = v.combination
+            .map((c) => `${c.attrName.toLowerCase()}:${c.value.toLowerCase()}`)
+            .sort()
+            .join('|');
+          return key === comboKey;
+        });
+
+        if (existing) {
+          return existing;
+        }
+
+        return {
+          id: `new-${idx + 1}-${comboKey}`,
+          sku: generateVariantSku(existingVariants.length + idx, combo, activeName),
+          combination: combo,
+          price: '',
+          costPrice: '',
+          stock: 25,
+          images: [],
+          imagePreviews: [],
+        };
+      });
+    });
+  };
+
+  const handleToggleHasVariants = (checked: boolean) => {
+    setHasVariants(checked);
+    if (!checked) {
+      setAttributes([]);
+      setGeneratedVariants([]);
+    }
+  };
+
+  // Real-time reactive auto-generation of variant cards whenever attributes change (e.g. clicking color card)
+  useEffect(() => {
+    if (hasVariants) {
+      generateCombosFromAttrs(attributes);
+    } else {
+      setGeneratedVariants([]);
+    }
+  }, [attributes, hasVariants]);
+
+  
+  const handleAddPresetValue = (attrId: string | number, value: string) => {
+    setAttributes((prev) =>
+      prev.map((attr) => {
+        if (attr.id === attrId) {
+          if (attr.values.some((v) => v.toLowerCase() === value.toLowerCase())) {
+            return attr;
+          }
+          return { ...attr, values: [...attr.values, value] };
+        }
+        return attr;
+      })
+    );
+  };
+
+  const handleAddValueToAttr = (attrId: string | number) => {
+    const val = inlineValues[attrId]?.trim();
+    if (!val) return;
+
+    setAttributes((prev) =>
+      prev.map((attr) => {
+        if (attr.id === attrId) {
+          if (attr.values.some((v) => v.toLowerCase() === val.toLowerCase())) {
+            return attr;
+          }
+          return { ...attr, values: [...attr.values, val] };
+        }
+        return attr;
+      })
+    );
+    setInlineValues((prev) => ({ ...prev, [attrId]: '' }));
+  };
+
+  const handleRemoveValue = (attrId: string | number, valueToRemove: string) => {
+    setAttributes((prev) =>
+      prev.map((attr) =>
+        attr.id === attrId
+          ? { ...attr, values: attr.values.filter((v) => v !== valueToRemove) }
+          : attr
+      )
+    );
+  };
+
+  const handleRemoveAttribute = (attrId: string | number) => {
+    setAttributes((prev) => prev.filter((attr) => attr.id !== attrId));
+  };
+
+  const handleAddExistingAttribute = () => {
+    if (!selectedExistingAttr) return;
+    if (attributes.some((a) => a.name.toLowerCase() === selectedExistingAttr.toLowerCase())) {
+      toast.warning('This attribute is already added.');
+      return;
+    }
+
+    const updated: LocalAttribute[] = [
+      ...attributes,
+      {
+        id: Date.now(),
+        name: selectedExistingAttr,
+        values: [],
+      },
+    ];
+    setAttributes(updated);
+    setSelectedExistingAttr('');
+  };
+
+  const handleAddCustomAttribute = () => {
+    if (!customAttrName.trim()) return;
+    if (attributes.some((a) => a.name.toLowerCase() === customAttrName.trim().toLowerCase())) {
+      toast.warning('Attribute already exists.');
+      return;
+    }
+
+    const updated: LocalAttribute[] = [
+      ...attributes,
+      {
+        id: Date.now(),
+        name: customAttrName.trim(),
+        values: [],
+      },
+    ];
+    setAttributes(updated);
+    setCustomAttrName('');
+    setShowAddAttrInput(false);
+  };
+
+  const handleDeleteGeneratedVariant = (id: string) => {
+    setGeneratedVariants((prev) => prev.filter((v) => v.id !== id));
+  };
+
+  const handleVariantFieldChange = (id: string, field: 'price' | 'costPrice' | 'stock', value: string) => {
+    setGeneratedVariants((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, [field]: value } : v))
+    );
+  };
+
+  const handleVariantImagesUpload = (id: string, files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files);
+    const newUrls = newFiles.map((f) => URL.createObjectURL(f));
+
+    setGeneratedVariants((prev) =>
+      prev.map((v) =>
+        v.id === id
+          ? {
+              ...v,
+              images: [...v.images, ...newFiles],
+              imagePreviews: [...v.imagePreviews, ...newUrls],
+            }
+          : v
+      )
+    );
+  };
+
+  const handleRemoveVariantImage = (id: string, indexToRemove: number) => {
+    setGeneratedVariants((prev) =>
+      prev.map((v) => {
+        if (v.id !== id) return v;
+        return {
+          ...v,
+          images: v.images.filter((_, idx) => idx !== indexToRemove),
+          imagePreviews: v.imagePreviews.filter((_, idx) => idx !== indexToRemove),
+        };
+      })
+    );
   };
 
   // Image Upload Handlers
@@ -224,11 +607,9 @@ export const EditProductPage: React.FC = () => {
     setNewImagePreviews((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Existing Image Management Handlers
   const handleDeleteExistingImage = async (imageId: number) => {
     if (!window.confirm('Are you sure you want to delete this product image?')) return;
     try {
-      setImageActionLoading(imageId);
       await productManagementApi.deleteProductImage(imageId);
       const updated = existingImages.filter((img) => img.imageId !== imageId);
       setExistingImages(updated);
@@ -237,14 +618,11 @@ export const EditProductPage: React.FC = () => {
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to delete image');
       setTimeout(() => setErrorMessage(''), 4000);
-    } finally {
-      setImageActionLoading(null);
     }
   };
 
   const handleSetPrimaryImage = async (imageId: number) => {
     try {
-      setImageActionLoading(imageId);
       await productManagementApi.setPrimaryProductImage(imageId);
       setExistingImages((prev) =>
         prev.map((img) => ({
@@ -257,8 +635,6 @@ export const EditProductPage: React.FC = () => {
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to set primary image');
       setTimeout(() => setErrorMessage(''), 4000);
-    } finally {
-      setImageActionLoading(null);
     }
   };
 
@@ -267,153 +643,12 @@ export const EditProductPage: React.FC = () => {
     replaceInputRef.current?.click();
   };
 
-  // Variant Editing States & Handlers
-  const [savingVariantId, setSavingVariantId] = useState<number | null>(null);
-  const [uploadingVariantId, setUploadingVariantId] = useState<number | null>(null);
-  const [replacingVariantImage, setReplacingVariantImage] = useState<{ variantId: number; imageId: number } | null>(null);
-  const variantReplaceInputRef = React.useRef<HTMLInputElement | null>(null);
-
-  const handleVariantFieldChange = (variantId: number, field: string, value: any) => {
-    setVariants((prev) =>
-      prev.map((v) => (v.variantId === variantId ? { ...v, [field]: value } : v))
-    );
-  };
-
-  const handleSaveVariant = async (v: any) => {
-    try {
-      setSavingVariantId(v.variantId);
-      await variantApi.updateProductVariant(v.variantId, {
-        sku: v.sku?.trim(),
-        sellingPrice: Number(v.sellingPrice) || 0,
-        costPrice: v.costPrice !== '' && v.costPrice !== undefined ? Number(v.costPrice) : undefined,
-        status: v.status || 'ACTIVE',
-      });
-
-      toast.success(`Variant ${v.sku || '#' + v.variantId} updated successfully!`);
-    } catch (err: any) {
-      console.error('Failed to update variant:', err);
-      toast.error(err.message || 'Failed to update variant');
-    } finally {
-      setSavingVariantId(null);
-    }
-  };
-
-  const handleDeleteVariant = async (variantId: number) => {
-    try {
-      await variantApi.deleteProductVariant(variantId);
-      setVariants((prev) =>
-        prev.map((v) => (v.variantId === variantId ? { ...v, status: 'INACTIVE' } : v))
-      );
-      toast.success('Variant deactivated successfully!');
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Failed to deactivate variant');
-    }
-  };
-
-  const handleOpenVariantImageReplace = (variantId: number, imageId: number) => {
-    setReplacingVariantImage({ variantId, imageId });
-    variantReplaceInputRef.current?.click();
-  };
-
-  const handleVariantImageReplaceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !replacingVariantImage) return;
-
-    const { variantId, imageId } = replacingVariantImage;
-    try {
-      setUploadingVariantId(variantId);
-      const uploaded = await productManagementApi.uploadProductVariantImage(variantId, file);
-      try {
-        await productManagementApi.deleteVariantImage(imageId);
-      } catch (delErr) {
-        console.warn('Old variant image deletion skipped:', delErr);
-      }
-      setVariants((prev) =>
-        prev.map((v) =>
-          v.variantId === variantId
-            ? {
-                ...v,
-                images: (v.images || [])
-                  .filter((img: any) => img.productVariantImageId !== imageId)
-                  .concat({
-                    productVariantImageId: uploaded.productVariantImageId,
-                    imageUrl: uploaded.imageUrl,
-                    isPrimary: Boolean(uploaded.isPrimary),
-                  }),
-              }
-            : v
-        )
-      );
-      toast.success('Variant photo replaced successfully!');
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Failed to replace variant photo');
-    } finally {
-      setUploadingVariantId(null);
-      setReplacingVariantImage(null);
-      if (variantReplaceInputRef.current) variantReplaceInputRef.current.value = '';
-    }
-  };
-
-  // Variant Image Handlers
-  const handleUploadVariantImage = async (variantId: number, file: File) => {
-    try {
-      setUploadingVariantId(variantId);
-      const uploaded = await productManagementApi.uploadProductVariantImage(variantId, file);
-      const newImgObj = {
-        productVariantImageId: uploaded.productVariantImageId,
-        imageUrl: uploaded.imageUrl,
-        isPrimary: Boolean(uploaded.isPrimary),
-      };
-      setVariants((prev) =>
-        prev.map((v) =>
-          v.variantId === variantId
-            ? {
-                ...v,
-                images: [...(v.images || []), newImgObj],
-              }
-            : v
-        )
-      );
-      toast.success('Variant photo added successfully!');
-    } catch (err: any) {
-      console.error('Failed to upload variant image:', err);
-      toast.error(err.message || 'Failed to upload variant photo');
-    } finally {
-      setUploadingVariantId(null);
-    }
-  };
-
-  const handleDeleteVariantImage = async (variantId: number, imageId: number) => {
-    try {
-      await productManagementApi.deleteVariantImage(imageId);
-      setVariants((prev) =>
-        prev.map((v) =>
-          v.variantId === variantId
-            ? {
-                ...v,
-                images: (v.images || []).filter(
-                  (img: any) => img.productVariantImageId !== imageId
-                ),
-              }
-            : v
-        )
-      );
-      toast.success('Variant photo deleted successfully!');
-    } catch (err: any) {
-      console.error('Failed to delete variant image:', err);
-      toast.error(err.message || 'Failed to delete variant photo');
-    }
-  };
-
   const handleReplaceFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !replacingTarget) return;
 
     const { imageId, isPrimary } = replacingTarget;
     try {
-      setImageActionLoading(imageId);
       const newImg = await productManagementApi.uploadProductImage(productId, file, isPrimary);
       try {
         await productManagementApi.deleteProductImage(imageId);
@@ -429,51 +664,17 @@ export const EditProductPage: React.FC = () => {
       setErrorMessage(err.message || 'Failed to replace image');
       setTimeout(() => setErrorMessage(''), 4000);
     } finally {
-      setImageActionLoading(null);
       setReplacingTarget(null);
       if (replaceInputRef.current) replaceInputRef.current.value = '';
     }
   };
 
-  const handleUploadNewImagesNow = async () => {
-    if (newImageFiles.length === 0) return;
-    setUploadingNewImages(true);
-    try {
-      const hasPrimary = existingImages.some((img) => img.isPrimary);
-      const uploadedList: any[] = [];
-      for (let i = 0; i < newImageFiles.length; i++) {
-        const isPrimary = !hasPrimary && i === 0;
-        const res = await productManagementApi.uploadProductImage(productId, newImageFiles[i], isPrimary);
-        uploadedList.push(res);
-      }
-      setExistingImages((prev) => [...prev, ...uploadedList]);
-      setNewImageFiles([]);
-      setNewImagePreviews([]);
-      setSuccessMessage(uploadedList.length + ' image(s) uploaded successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to upload new images');
-      setTimeout(() => setErrorMessage(''), 4000);
-    } finally {
-      setUploadingNewImages(false);
-    }
-  };
-
-  // Quick Create Handlers
-  const handleCategoryInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
+  // Category Modal Handlers
+  const handleCategoryInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setCategoryFormData((prev) => ({
       ...prev,
-      [name]:
-        name === 'parentId'
-          ? value
-            ? Number(value)
-            : null
-          : value,
+      [name]: name === 'parentId' ? (value ? Number(value) : null) : value,
     }));
   };
 
@@ -483,19 +684,27 @@ export const EditProductPage: React.FC = () => {
       setCategoryModalError('Category name is required.');
       return;
     }
+
     try {
       setCatLoading(true);
       setCategoryModalError(null);
-      const res = await categoryApi.createCategory(categoryFormData);
-      setCategories((prev) => [...prev, { categoryId: res.categoryId, categoryName: res.categoryName }]);
-      setAllCategoriesFull((prev) => [...prev, res]);
-      setSelectedCategory(String(res.categoryId));
-      setShowCategoryModal(false);
-      setCategoryFormData({
-        categoryName: '',
-        description: '',
-        parentId: null,
+      const newCat = await categoryApi.createCategory({
+        categoryName: categoryFormData.categoryName.trim(),
+        description: categoryFormData.description?.trim() || '',
+        parentId: categoryFormData.parentId,
       });
+
+      const updatedCats = await productManagementApi.getCategories();
+      setCategories(updatedCats);
+      const updatedFullCats = await categoryApi.getAllCategories(0, 1000);
+      if (updatedFullCats?.content) {
+        setAllCategoriesFull(updatedFullCats.content);
+      }
+
+      setSelectedCategory(String(newCat.categoryId));
+      setShowCategoryModal(false);
+      setCategoryFormData({ categoryName: '', description: '', parentId: null });
+      toast.success(`Category "${newCat.categoryName}" created!`);
     } catch (err: any) {
       setCategoryModalError(
         err.response?.data?.message || err.message || 'Failed to create category'
@@ -505,10 +714,7 @@ export const EditProductPage: React.FC = () => {
     }
   };
 
-  const handleBrandModalSubmit = async (
-    data: BrandRequest,
-    file: File | null
-  ) => {
+  const handleBrandModalSubmit = async (data: BrandRequest, file: File | null) => {
     try {
       setBrandLoading(true);
       const res = await createBrand(data, file);
@@ -533,7 +739,6 @@ export const EditProductPage: React.FC = () => {
       return;
     }
 
-    // Check if tag already exists in allTags list
     const existing = allTags.find((t) => t.tagName.toLowerCase() === clean.toLowerCase());
     if (existing) {
       if (!selectedTagIds.includes(existing.tagId)) {
@@ -606,7 +811,7 @@ export const EditProductPage: React.FC = () => {
         }
       }
 
-      // 3. Upload New Images
+      // 3. Upload New Product Images
       if (newImageFiles.length > 0) {
         for (let i = 0; i < newImageFiles.length; i++) {
           try {
@@ -621,19 +826,93 @@ export const EditProductPage: React.FC = () => {
         }
       }
 
-      // 4. Update Expiry Details on Variants Inventory if perishable
-      if (isPerishable && expiryDate && variants.length > 0) {
-        for (const v of variants) {
+      // 4. Create Newly Generated Variants if enabled
+      if (hasVariants && generatedVariants.length > 0) {
+        let dbVariations: any[] = [];
+        try {
+          dbVariations = await variantApi.getVariations();
+        } catch {
+          dbVariations = [];
+        }
+
+        const activeAttrs = attributes.filter((a) => a.values && a.values.length > 0);
+        const optionMap = new Map<string, number>();
+
+        for (const attr of activeAttrs) {
+          let dbVar = dbVariations.find(
+            (v) => v.name?.toLowerCase() === attr.name.toLowerCase()
+          );
+          if (!dbVar) {
+            try {
+              dbVar = await variantApi.createVariation(attr.name);
+              dbVariations.push(dbVar);
+            } catch (err) {
+              console.warn('Failed to create variation:', err);
+            }
+          }
+
+          if (dbVar?.variationId) {
+            let existingOpts: any[] = [];
+            try {
+              existingOpts = await variantApi.getOptionsByVariationId(dbVar.variationId);
+            } catch {
+              existingOpts = [];
+            }
+
+            for (const val of attr.values) {
+              let dbOpt = existingOpts.find(
+                (o) => o.value?.toLowerCase() === val.toLowerCase()
+              );
+              if (!dbOpt) {
+                try {
+                  dbOpt = await variantApi.createVariationOption(dbVar.variationId, val);
+                  existingOpts.push(dbOpt);
+                } catch (err) {
+                  console.warn('Failed to create option:', err);
+                }
+              }
+              if (dbOpt?.optionId) {
+                optionMap.set(
+                  `${attr.name.toLowerCase()}:::${val.toLowerCase()}`,
+                  dbOpt.optionId
+                );
+              }
+            }
+          }
+        }
+
+        // Create each generated variant
+        for (const gv of generatedVariants) {
+          const validOptionIds = gv.combination
+            .map((c) => optionMap.get(`${c.attrName.toLowerCase()}:::${c.value.toLowerCase()}`))
+            .filter((id): id is number => typeof id === 'number');
+
+          const varSellingPrice = Number(gv.price) || 0;
+          const varCostPrice = gv.costPrice !== undefined && gv.costPrice !== '' ? Number(gv.costPrice) : undefined;
+          const varStock = Number(gv.stock) || 0;
+
           try {
-            await inventoryApi.restockVariant({
-              variantId: v.variantId,
-              quantity: 0,
-              expiryDate: expiryDate,
-              batchNumber: batchNumber.trim() || undefined,
-              remark: 'Updated product expiration details',
+            const createdVariant = await productManagementApi.createProductVariantWithOptions({
+              productId: productId,
+              sku: gv.sku, // Auto-generated SKU
+              sellingPrice: varSellingPrice,
+              costPrice: varCostPrice,
+              status: 'ACTIVE',
+              optionIds: validOptionIds,
+              initialStock: varStock,
             });
-          } catch (invErr) {
-            console.warn('Variant inventory expiry update skipped:', invErr);
+
+            if (gv.images && gv.images.length > 0 && createdVariant?.variantId) {
+              for (const file of gv.images) {
+                try {
+                  await productManagementApi.uploadProductVariantImage(createdVariant.variantId, file);
+                } catch (err) {
+                  console.warn('Failed to upload variant image:', err);
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('Failed to create variant:', err);
           }
         }
       }
@@ -670,97 +949,66 @@ export const EditProductPage: React.FC = () => {
           </div>
           <div>
             <h1 className={styles.mainTitle} style={{ textAlign: 'left', margin: 0 }}>Edit Product #{productId}</h1>
-            <p className={styles.mainSubtitle} style={{ textAlign: 'left', margin: 0 }}>Update product specifications, category, brand, tags, and expiry tracking</p>
+            <p className={styles.mainSubtitle} style={{ textAlign: 'left', margin: 0 }}>Update product specifications, category, brand, tags, and variations</p>
           </div>
         </div>
       </div>
 
       {errorMessage && (
-        <div className={styles.errorAlertBox} style={{ marginBottom: '20px' }}>
-          <FiAlertCircle size={18} />
-          <span>{errorMessage}</span>
+        <div className={styles.alertError} style={{ marginBottom: '20px' }}>
+          <FiAlertCircle /> <span>{errorMessage}</span>
         </div>
       )}
-
       {successMessage && (
-        <div style={{
-          background: '#ecfdf5',
-          border: '1px solid #a7f3d0',
-          color: '#065f46',
-          padding: '12px 18px',
-          borderRadius: '10px',
-          marginBottom: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          fontWeight: 600
-        }}>
-          <FiCheck size={18} />
-          <span>{successMessage}</span>
+        <div className={styles.alertSuccess} style={{ marginBottom: '20px' }}>
+          <FiCheck /> <span>{successMessage}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
-          {/* Left Column: Core Specs & Details */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: '24px', alignItems: 'start' }}>
+          {/* Left Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* General Info Card */}
+            {/* Card 1: Basic Information */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
-              <h2 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 16px 0', color: '#0f172a' }}>
-                General Information
-              </h2>
+              <h2 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 16px 0', color: '#0f172a' }}>Basic Information</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                    Product Name <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    placeholder="e.g. Dell Inspiron 15"
+                    className={styles.inputField}
+                    required
+                  />
+                </div>
 
-              <div style={{ marginBottom: '18px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                  Product Name <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  placeholder="e.g. Premium Cotton T-Shirt"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '14px',
-                    outline: 'none',
-                  }}
-                  required
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                  Description
-                </label>
-                <textarea
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Detailed product description, materials, features..."
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '14px',
-                    outline: 'none',
-                    resize: 'vertical',
-                  }}
-                />
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                    Description
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Enter detailed product description..."
+                    className={styles.inputField}
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Expiration & Perishable Details Card */}
+            {/* Card 2: Expiration & Perishable tracking */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FiClock color="#f59e0b" size={18} />
-                  <h2 style={{ fontSize: '14px', fontWeight: 600, margin: 0, color: '#0f172a' }}>
-                    Expiration &amp; Batch Details
-                  </h2>
+                  <FiClock color="#6366f1" size={18} />
+                  <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#0f172a' }}>Perishable &amp; Expiry Tracking</h2>
                 </div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
                   <input
@@ -768,68 +1016,72 @@ export const EditProductPage: React.FC = () => {
                     checked={isPerishable}
                     onChange={(e) => setIsPerishable(e.target.checked)}
                   />
-                  Is Perishable Product
+                  <span>Product is perishable</span>
                 </label>
               </div>
 
               {isPerishable && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#fffbeb', padding: '16px', borderRadius: '10px', border: '1px solid #fef3c7' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginTop: '14px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#92400e', marginBottom: '6px' }}>
-                      Expiration Date <span style={{ color: '#ef4444' }}>*</span>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                      Expiry Date <span style={{ color: '#ef4444' }}>*</span>
                     </label>
                     <DatePicker
                       value={expiryDate}
                       onChange={(e) => setExpiryDate(e.target.value)}
-                      inputStyle={{
-                        border: '1px solid #fcd34d',
-                        background: '#ffffff',
-                      }}
+                      placeholder="Select expiry date"
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#92400e', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                       Batch Number
                     </label>
                     <input
                       type="text"
                       value={batchNumber}
                       onChange={(e) => setBatchNumber(e.target.value)}
-                      placeholder="e.g. BATCH-2026-X1"
-                      style={{
-                        width: '100%',
-                        padding: '9px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid #fcd34d',
-                        background: '#ffffff',
-                        fontSize: '13px',
-                      }}
+                      placeholder="e.g. BATCH-2026-001"
+                      className={styles.inputField}
                     />
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Product Images Card */}
+            {/* Card 3: Product Images */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-                <div>
-                  <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FiImage size={18} color="#2563eb" /> Product Media &amp; Images
-                  </h2>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                    Manage gallery images, change primary display photo, replace, or delete.
-                  </p>
-                </div>
-                {existingImages.length > 0 && (
-                  <span style={{ fontSize: '12px', fontWeight: 600, background: '#eff6ff', color: '#2563eb', padding: '4px 10px', borderRadius: '20px' }}>
-                    {existingImages.length} image{existingImages.length > 1 ? 's' : ''} in gallery
-                  </span>
-                )}
+              <h2 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 16px 0', color: '#0f172a' }}>Add More Images</h2>
+              
+              <div
+                style={{
+                  border: '2px dashed #cbd5e1',
+                  borderRadius: '12px',
+                  padding: '32px 20px',
+                  textAlign: 'center',
+                  background: '#f8fafc',
+                  cursor: 'pointer',
+                  transition: 'border 0.2s',
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FiUploadCloud size={32} color="#94a3b8" style={{ marginBottom: '8px' }} />
+                <p style={{ margin: '0 0 4px 0', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                  Click to select files from device
+                </p>
+                <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>
+                  Supports PNG, JPG, JPEG, WEBP
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleImageFileChange}
+                />
               </div>
 
-              {/* Hidden file input for Replace */}
               <input
                 ref={replaceInputRef}
                 type="file"
@@ -838,323 +1090,116 @@ export const EditProductPage: React.FC = () => {
                 onChange={handleReplaceFileChange}
               />
 
-              {/* Existing Images Gallery */}
-              {existingImages.length > 0 ? (
-                <div style={{ marginBottom: '22px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '10px' }}>
-                    Current Gallery Photos:
-                  </label>
-                  <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-                    {existingImages.map((img: any) => (
-                      <div
-                        key={img.imageId}
-                        style={{
-                          width: '130px',
-                          borderRadius: '12px',
-                          border: img.isPrimary ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                          background: '#fff',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          boxShadow: img.isPrimary ? '0 3px 10px rgba(37,99,235,0.2)' : '0 1px 3px rgba(0,0,0,0.06)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        {/* Image Thumbnail */}
-                        <div style={{ position: 'relative', width: '100%', height: '110px', background: '#f8fafc' }}>
-                          <img
-                            src={getAssetUrl(img.imageUrl)}
-                            alt="product"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-
-                          {/* Primary Badge */}
-                          {img.isPrimary && (
-                            <span
-                              style={{
-                                position: 'absolute',
-                                top: '6px',
-                                left: '6px',
-                                background: '#2563eb',
-                                color: '#fff',
-                                fontSize: '9px',
-                                fontWeight: 700,
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '3px',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.25)',
-                              }}
-                            >
-                              <FiStar size={9} style={{ fill: '#fff' }} /> PRIMARY
-                            </span>
-                          )}
-
-                          {/* Loading Overlay during Action */}
-                          {imageActionLoading === img.imageId && (
-                            <div
-                              style={{
-                                position: 'absolute',
-                                inset: 0,
-                                background: 'rgba(255,255,255,0.85)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                color: '#2563eb',
-                              }}
-                            >
-                              <FiRefreshCw size={20} className={styles.exportSpinner} />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions Toolbar */}
-                        <div
+              {newImagePreviews.length > 0 && (
+                <div style={{ marginTop: '16px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '8px' }}>
+                    New Images to Upload ({newImagePreviews.length})
+                  </span>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {newImagePreviews.map((url, idx) => (
+                      <div key={idx} style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                        <img src={url} alt="New upload preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveNewImage(idx)}
                           style={{
-                            padding: '6px 8px',
-                            background: '#f8fafc',
-                            borderTop: '1px solid #e2e8f0',
+                            position: 'absolute',
+                            top: '4px',
+                            right: '4px',
+                            background: '#ef4444',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '18px',
+                            height: '18px',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: '4px',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
                           }}
                         >
-                          {!img.isPrimary ? (
+                          <FiX size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {existingImages.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '8px' }}>
+                    Current Photos ({existingImages.length})
+                  </span>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    {existingImages.map((img) => (
+                      <div key={img.imageId} style={{ position: 'relative', width: '90px', height: '90px', borderRadius: '8px', overflow: 'hidden', border: img.isPrimary ? '2px solid #2563eb' : '1px solid #e2e8f0' }}>
+                        <img src={getAssetUrl(img.imageUrl)} alt="Current photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        
+                        {img.isPrimary && (
+                          <span style={{ position: 'absolute', bottom: '2px', left: '2px', background: '#2563eb', color: '#fff', fontSize: '9px', fontWeight: 700, padding: '2px 5px', borderRadius: '4px' }}>
+                            Primary
+                          </span>
+                        )}
+
+                        <div style={{ position: 'absolute', top: '3px', right: '3px', display: 'flex', gap: '3px' }}>
+                          {!img.isPrimary && (
                             <button
                               type="button"
-                              title="Set as Primary display image"
+                              title="Set as Primary"
                               onClick={() => handleSetPrimaryImage(img.imageId)}
-                              disabled={imageActionLoading !== null}
-                              style={{
-                                flex: 1,
-                                padding: '3px 6px',
-                                fontSize: '10px',
-                                fontWeight: 600,
-                                borderRadius: '5px',
-                                border: '1px solid #cbd5e1',
-                                background: '#fff',
-                                color: '#334155',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '3px',
-                              }}
+                              style={{ background: 'rgba(15,23,42,0.7)', color: '#fff', border: 'none', borderRadius: '4px', width: '20px', height: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
-                              <FiStar size={10} color="#f59e0b" /> Primary
+                              <FiStar size={10} />
                             </button>
-                          ) : (
-                            <span style={{ flex: 1, fontSize: '10px', fontWeight: 700, color: '#2563eb', textAlign: 'center' }}>
-                              Main
-                            </span>
                           )}
-
-                          {/* Replace Button */}
                           <button
                             type="button"
-                            title="Replace this image file"
+                            title="Replace Photo"
                             onClick={() => handleOpenReplace(img.imageId, img.isPrimary)}
-                            disabled={imageActionLoading !== null}
-                            style={{
-                              padding: '3px 6px',
-                              fontSize: '11px',
-                              borderRadius: '5px',
-                              border: '1px solid #cbd5e1',
-                              background: '#fff',
-                              color: '#475569',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
+                            style={{ background: 'rgba(15,23,42,0.7)', color: '#fff', border: 'none', borderRadius: '4px', width: '20px', height: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           >
-                            <FiRefreshCw size={11} />
+                            <FiRefreshCw size={10} />
                           </button>
-
-                          {/* Delete Button */}
                           <button
                             type="button"
-                            title="Delete this image"
+                            title="Delete Photo"
                             onClick={() => handleDeleteExistingImage(img.imageId)}
-                            disabled={imageActionLoading !== null}
-                            style={{
-                              padding: '3px 6px',
-                              fontSize: '11px',
-                              borderRadius: '5px',
-                              border: '1px solid #fecaca',
-                              background: '#fff',
-                              color: '#ef4444',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
+                            style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', width: '20px', height: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           >
-                            <FiTrash2 size={11} />
+                            <FiX size={10} />
                           </button>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              ) : (
-                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', marginBottom: '18px', textAlign: 'center' }}>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>No images currently attached to this product.</p>
-                </div>
               )}
-
-              {/* Add More Images Section */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '8px' }}>
-                  Add More Images
-                </label>
-                <div
-                  style={{
-                    border: '2px dashed #cbd5e1',
-                    borderRadius: '10px',
-                    padding: '20px',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    background: '#f8fafc',
-                  }}
-                  onClick={() => document.getElementById('edit-product-img-input')?.click()}
-                >
-                  <FiUploadCloud size={28} color="#64748b" style={{ marginBottom: '6px' }} />
-                  <p style={{ margin: 0, fontSize: '13px', color: '#475569', fontWeight: 500 }}>
-                    Click to select files from device
-                  </p>
-                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>Supports PNG, JPG, JPEG, WEBP</span>
-                  <input
-                    id="edit-product-img-input"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handleImageFileChange}
-                  />
-                </div>
-
-                {/* Staged New Images Previews */}
-                {newImagePreviews.length > 0 && (
-                  <div style={{ marginTop: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
-                        Selected New Files ({newImagePreviews.length})
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleUploadNewImagesNow}
-                        disabled={uploadingNewImages}
-                        style={{
-                          background: '#2563eb',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          padding: '5px 12px',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                        }}
-                      >
-                        {uploadingNewImages ? (
-                          <>
-                            <FiRefreshCw size={11} className={styles.exportSpinner} /> Uploading...
-                          </>
-                        ) : (
-                          <>
-                            <FiUploadCloud size={12} /> Upload Now ({newImagePreviews.length})
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                      {newImagePreviews.map((url, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            width: '84px',
-                            height: '84px',
-                            borderRadius: '8px',
-                            border: '1px solid #93c5fd',
-                            overflow: 'hidden',
-                            position: 'relative',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                          }}
-                        >
-                          <img src={url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <button
-                            type="button"
-                            title="Discard"
-                            onClick={() => handleRemoveNewImage(i)}
-                            style={{
-                              position: 'absolute',
-                              top: '3px',
-                              right: '3px',
-                              background: 'rgba(239,68,68,0.9)',
-                              border: 'none',
-                              color: '#fff',
-                              borderRadius: '50%',
-                              width: '20px',
-                              height: '20px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <FiX size={12} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Existing Variants Management Card */}
-            <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <div>
-                  <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
-                    Associated Variants ({variants.length})
-                  </h2>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                    Edit price, cost, stock, status, and photos directly for each variant
-                  </p>
+            {/* Card 4: Existing Associated Variants (Listed cleanly, SKU is read-only) */}
+            {existingVariants.length > 0 && (
+              <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '24px', border: '1px solid #edf0f5' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: '#0f172a' }}>
+                      Associated Variants ({existingVariants.length})
+                    </h2>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                      Edit price, cost, status, and photos directly for each variant
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.btnActionOutline}
+                    onClick={() => navigate('/admin/variants')}
+                  >
+                    <FiSliders size={12} /> Manage in Variants Page
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className={styles.btnActionOutline}
-                  onClick={() => navigate('/admin/variants')}
-                >
-                  <FiSliders size={12} /> Manage in Variants Page
-                </button>
-              </div>
 
-              {/* Hidden file input for Variant Photo Replace */}
-              <input
-                ref={variantReplaceInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handleVariantImageReplaceFileChange}
-              />
-
-              {variants.length === 0 ? (
-                <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>No variants registered for this product.</p>
-              ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {variants.map((v) => (
+                  {existingVariants.map((v) => (
                     <div
                       key={v.variantId}
                       style={{
@@ -1165,7 +1210,7 @@ export const EditProductPage: React.FC = () => {
                         transition: 'all 0.2s ease',
                       }}
                     >
-                      {/* Variant Card Header */}
+                      {/* Card Header */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                           <span style={{
@@ -1183,9 +1228,9 @@ export const EditProductPage: React.FC = () => {
                           {/* Attribute Badges */}
                           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                             {v.attributeSummary ? (
-                              v.attributeSummary.split('|').map((part: string, idx: number) => (
+                              v.attributeSummary.split('|').map((part: string, pIdx: number) => (
                                 <span
-                                  key={idx}
+                                  key={pIdx}
                                   style={{
                                     fontSize: '11px',
                                     fontWeight: 600,
@@ -1205,12 +1250,12 @@ export const EditProductPage: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Quick Action Buttons */}
+                        {/* Action Buttons */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <button
                             type="button"
                             disabled={savingVariantId === v.variantId}
-                            onClick={() => handleSaveVariant(v)}
+                            onClick={() => handleSaveExistingVariant(v)}
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
@@ -1237,80 +1282,49 @@ export const EditProductPage: React.FC = () => {
                             )}
                           </button>
 
-                          {v.status === 'ACTIVE' ? (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteVariant(v.variantId)}
-                              title="Deactivate variant"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                background: '#fff',
-                                color: '#ef4444',
-                                border: '1px solid #fecaca',
-                                borderRadius: '7px',
-                                padding: '5px 10px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <FiTrash2 size={11} /> Deactivate
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleVariantFieldChange(v.variantId, 'status', 'ACTIVE')}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                background: '#ecfdf5',
-                                color: '#059669',
-                                border: '1px solid #a7f3d0',
-                                borderRadius: '7px',
-                                padding: '5px 10px',
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <FiCheck size={11} /> Activate
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleToggleExistingVariantStatus(v.variantId, v.status)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: 'transparent',
+                              color: v.status === 'ACTIVE' ? '#ef4444' : '#10b981',
+                              border: `1px solid ${v.status === 'ACTIVE' ? '#fecaca' : '#a7f3d0'}`,
+                              borderRadius: '7px',
+                              padding: '5px 10px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {v.status === 'ACTIVE' ? <><FiX size={11} /> Deactivate</> : <><FiCheck size={11} /> Activate</>}
+                          </button>
                         </div>
                       </div>
 
-                      {/* Variant Inputs Grid */}
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                        gap: '10px',
-                        background: '#ffffff',
-                        padding: '12px',
-                        borderRadius: '10px',
-                        border: '1px solid #e2e8f0',
-                        marginBottom: '12px'
-                      }}>
+                      {/* Variant Inputs Row (SKU is Read-only) */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                         <div>
                           <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
-                            SKU
+                            SKU (Auto-generated)
                           </label>
                           <input
                             type="text"
-                            value={v.sku || ''}
-                            onChange={(e) => handleVariantFieldChange(v.variantId, 'sku', e.target.value)}
+                            readOnly
+                            disabled
+                            value={v.sku || `#${v.variantId}`}
                             style={{
                               width: '100%',
                               padding: '6px 10px',
                               borderRadius: '6px',
-                              border: '1px solid #cbd5e1',
+                              border: '1px solid #e2e8f0',
                               fontSize: '12px',
                               fontWeight: 600,
-                              fontFamily: 'monospace',
-                              color: '#1e293b',
-                              outline: 'none',
+                              color: '#64748b',
+                              background: '#f1f5f9',
+                              cursor: 'not-allowed',
                             }}
                           />
                         </div>
@@ -1324,7 +1338,7 @@ export const EditProductPage: React.FC = () => {
                             min="0"
                             step="any"
                             value={v.sellingPrice ?? ''}
-                            onChange={(e) => handleVariantFieldChange(v.variantId, 'sellingPrice', e.target.value)}
+                            onChange={(e) => handleExistingVariantFieldChange(v.variantId, 'sellingPrice', e.target.value)}
                             style={{
                               width: '100%',
                               padding: '6px 10px',
@@ -1348,7 +1362,7 @@ export const EditProductPage: React.FC = () => {
                             step="any"
                             placeholder="Optional"
                             value={v.costPrice ?? ''}
-                            onChange={(e) => handleVariantFieldChange(v.variantId, 'costPrice', e.target.value)}
+                            onChange={(e) => handleExistingVariantFieldChange(v.variantId, 'costPrice', e.target.value)}
                             style={{
                               width: '100%',
                               padding: '6px 10px',
@@ -1361,15 +1375,13 @@ export const EditProductPage: React.FC = () => {
                           />
                         </div>
 
-
-
                         <div>
                           <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
                             Status
                           </label>
                           <select
                             value={v.status || 'ACTIVE'}
-                            onChange={(e) => handleVariantFieldChange(v.variantId, 'status', e.target.value)}
+                            onChange={(e) => handleExistingVariantFieldChange(v.variantId, 'status', e.target.value)}
                             style={{
                               width: '100%',
                               padding: '6px 10px',
@@ -1388,38 +1400,28 @@ export const EditProductPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Variant Photos and Edit/Replace Toolbar */}
+                      {/* Variant Photos */}
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b' }}>
-                            Variant Photos ({v.images?.length || 0})
-                          </span>
-                          {uploadingVariantId === v.variantId && (
-                            <span style={{ fontSize: '11px', color: '#2563eb', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <FiRefreshCw size={11} className={styles.exportSpinner} /> Updating photo...
-                            </span>
-                          )}
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                          {v.images && v.images.length > 0 ? (
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: '6px' }}>
+                          Variant Photos ({v.images ? v.images.length : 0})
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          {v.images && v.images.length > 0 && (
                             v.images.map((img: any) => (
                               <div
                                 key={img.productVariantImageId}
                                 style={{
                                   position: 'relative',
-                                  width: '56px',
-                                  height: '56px',
-                                  borderRadius: '8px',
-                                  border: '1px solid #cbd5e1',
-                                  background: '#fff',
+                                  width: '48px',
+                                  height: '48px',
+                                  borderRadius: '6px',
                                   overflow: 'hidden',
-                                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                                  border: '1px solid #cbd5e1',
                                 }}
                               >
                                 <img
                                   src={getAssetUrl(img.imageUrl)}
-                                  alt="variant"
+                                  alt="Variant"
                                   style={{
                                     width: '100%',
                                     height: '100%',
@@ -1427,43 +1429,16 @@ export const EditProductPage: React.FC = () => {
                                     display: 'block',
                                   }}
                                 />
-
-                                {/* Replace Button Overlay */}
                                 <button
                                   type="button"
-                                  onClick={() => handleOpenVariantImageReplace(v.variantId, img.productVariantImageId)}
-                                  title="Replace this photo"
-                                  style={{
-                                    position: 'absolute',
-                                    bottom: '2px',
-                                    left: '2px',
-                                    width: '20px',
-                                    height: '20px',
-                                    borderRadius: '4px',
-                                    background: 'rgba(15, 23, 42, 0.75)',
-                                    color: '#fff',
-                                    border: 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    padding: 0,
-                                  }}
-                                >
-                                  <FiRefreshCw size={10} />
-                                </button>
-
-                                {/* Delete Button Overlay */}
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteVariantImage(v.variantId, img.productVariantImageId)}
-                                  title="Delete this photo"
+                                  onClick={() => handleDeleteExistingVariantPhoto(v.variantId, img.productVariantImageId)}
+                                  title="Delete photo"
                                   style={{
                                     position: 'absolute',
                                     top: '2px',
                                     right: '2px',
-                                    width: '20px',
-                                    height: '20px',
+                                    width: '16px',
+                                    height: '16px',
                                     borderRadius: '50%',
                                     background: '#ef4444',
                                     color: '#fff',
@@ -1471,52 +1446,44 @@ export const EditProductPage: React.FC = () => {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '10px',
-                                    fontWeight: 'bold',
+                                    fontSize: '9px',
                                     cursor: 'pointer',
                                     padding: 0,
-                                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                                   }}
                                 >
                                   ✕
                                 </button>
                               </div>
                             ))
-                          ) : (
-                            <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
-                              No photos registered for this variant
-                            </span>
                           )}
 
-                          {/* Upload Photo Button for this variant */}
                           <button
                             type="button"
-                            onClick={() => document.getElementById(`variant-photo-input-${v.variantId}`)?.click()}
+                            onClick={() => document.getElementById(`existing-var-photo-${v.variantId}`)?.click()}
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '5px',
-                              padding: '7px 12px',
-                              borderRadius: '8px',
+                              gap: '4px',
+                              padding: '5px 10px',
+                              borderRadius: '6px',
                               border: '1px dashed #6366f1',
                               color: '#6366f1',
                               fontSize: '11px',
                               fontWeight: 700,
                               cursor: 'pointer',
                               background: '#ffffff',
-                              transition: 'all 0.15s ease',
                             }}
                           >
-                            <FiPlus size={13} /> Add Photo
+                            <FiPlus size={11} /> Add Photo
                           </button>
                           <input
-                            id={`variant-photo-input-${v.variantId}`}
+                            id={`existing-var-photo-${v.variantId}`}
                             type="file"
                             accept="image/*"
                             style={{ display: 'none' }}
                             onChange={(e) => {
                               if (e.target.files && e.target.files[0]) {
-                                handleUploadVariantImage(v.variantId, e.target.files[0]);
+                                handleUploadExistingVariantPhoto(v.variantId, e.target.files[0]);
                                 e.target.value = '';
                               }
                             }}
@@ -1525,6 +1492,494 @@ export const EditProductPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Card 5: Product Variations Builder (Starts UNCHECKED and EMPTY on load) */}
+            <div className={styles.sectionCard}>
+              <h3 className={styles.sectionTitle}>
+                <FiSliders color="#2563eb" /> Product Variations
+              </h3>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label className={styles.checkboxLabel} style={{ margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={hasVariants}
+                    onChange={(e) => handleToggleHasVariants(e.target.checked)}
+                  />
+                  <span style={{ fontWeight: 600, color: hasVariants ? '#2563eb' : '#334155' }}>
+                    This product has variants (size, color, etc.)
+                  </span>
+                </label>
+              </div>
+
+              {!hasVariants ? (
+                <div style={{ marginTop: '6px', padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                  <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                    💡 Click &quot;This product has variants&quot; above to select attributes and generate new variant cards.
+                  </p>
+                </div>
+              ) : (
+                <div className={styles.variationsSubSection}>
+                  {/* STEP 1: ADD EXISTING ATTRIBUTE */}
+                  <div className={styles.addExistingAttributeBox}>
+                    <label className={styles.addExistingAttrLabel}>
+                      ADD EXISTING ATTRIBUTE
+                    </label>
+                    <div className={styles.addExistingAttrControls}>
+                      <select
+                        className={styles.addExistingAttrSelect}
+                        value={selectedExistingAttr}
+                        onChange={(e) => setSelectedExistingAttr(e.target.value)}
+                      >
+                        <option value="">Select attribute</option>
+                        {availableAttributes
+                          .filter(
+                            (a) =>
+                              !attributes.some(
+                                (cur) => cur.name.toLowerCase() === a.toLowerCase()
+                              )
+                          )
+                          .map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        type="button"
+                        className={styles.btnAddAttrBtn}
+                        onClick={handleAddExistingAttribute}
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.btnNewAttrSmall}
+                        style={{ padding: '8px 12px' }}
+                        onClick={() => setShowAddAttrInput(true)}
+                      >
+                        <FiPlus size={12} /> Custom
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Inline input for custom new attribute */}
+                  {showAddAttrInput && (
+                    <div
+                      style={{
+                        background: '#eff6ff',
+                        border: '1px solid #bfdbfe',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        marginBottom: '16px',
+                        display: 'flex',
+                        gap: '8px',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Enter attribute name (e.g. Material)..."
+                        value={customAttrName}
+                        onChange={(e) => setCustomAttrName(e.target.value)}
+                        className={styles.inputField}
+                        style={{ flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        className={styles.btnNewAttrSmall}
+                        onClick={handleAddCustomAttribute}
+                      >
+                        <FiCheck /> Add
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.btnIconAction}
+                        onClick={() => {
+                          setShowAddAttrInput(false);
+                          setCustomAttrName('');
+                        }}
+                      >
+                        <FiX />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* STEP 2: ACTIVE ATTRIBUTES & VALUES */}
+                  {attributes.length > 0 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <div className={styles.attrSectionHeader}>
+                        <h4>Active Attributes &amp; Values</h4>
+                      </div>
+
+                      {attributes.map((attr) => {
+                        const isColor =
+                          attr.name.toLowerCase().includes('colour') ||
+                          attr.name.toLowerCase().includes('color');
+
+                        const attrLower = attr.name.toLowerCase();
+                        const presets =
+                          ATTRIBUTE_PRESETS[attrLower] ||
+                          (attrLower.includes('color') || attrLower.includes('colour')
+                            ? ATTRIBUTE_PRESETS.color
+                            : attrLower.includes('size')
+                            ? ATTRIBUTE_PRESETS.size
+                            : null);
+
+                        return (
+                          <div key={attr.id} className={styles.attributeItemCard}>
+                            <div className={styles.attrItemTitleRow}>
+                              <span className={styles.attrNameTitle}>{attr.name}</span>
+                              <button
+                                type="button"
+                                className={styles.btnIconAction}
+                                onClick={() => handleRemoveAttribute(attr.id)}
+                                title={`Delete ${attr.name}`}
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </div>
+
+                            {/* Quick Suggestions presets if available */}
+                            {presets && (
+                              <div style={{ marginBottom: '10px' }}>
+                                <span
+                                  style={{
+                                    fontSize: '11px',
+                                    color: '#64748b',
+                                    fontWeight: 600,
+                                    display: 'block',
+                                    marginBottom: '6px',
+                                  }}
+                                >
+                                  Quick Suggestions (click to add):
+                                </span>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                  {presets.map((presetVal) => {
+                                    const isAdded = attr.values.some(
+                                      (v) => v.toLowerCase() === presetVal.toLowerCase()
+                                    );
+                                    if (isAdded) return null;
+                                    return (
+                                      <button
+                                        key={presetVal}
+                                        type="button"
+                                        onClick={() => handleAddPresetValue(attr.id, presetVal)}
+                                        style={{
+                                          background: '#ffffff',
+                                          border: '1px solid #cbd5e1',
+                                          borderRadius: '16px',
+                                          padding: '3px 10px',
+                                          fontSize: '12px',
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '5px',
+                                          color: '#334155',
+                                        }}
+                                      >
+                                        {isColor && (
+                                          <span
+                                            style={{
+                                              width: '10px',
+                                              height: '10px',
+                                              borderRadius: '50%',
+                                              backgroundColor: getColorHex(presetVal),
+                                              border: '1px solid rgba(0,0,0,0.15)',
+                                              display: 'inline-block',
+                                            }}
+                                          />
+                                        )}
+                                        <span>+ {presetVal}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Swatches / Selected Values Box */}
+                            <div style={{ marginBottom: '8px' }}>
+                              <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#64748b' }}>
+                                💡 Click any pill below to remove it. Type in the input and click (+) to add new values.
+                              </p>
+                              <div className={styles.swatchesBox}>
+                                {isColor
+                                  ? attr.values.map((val) => (
+                                      <span
+                                        key={val}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '6px',
+                                          padding: '4px 10px',
+                                          borderRadius: '16px',
+                                          border: '1px solid #e2e8f0',
+                                          background: '#f8fafc',
+                                          cursor: 'pointer',
+                                          fontSize: '12px',
+                                          color: '#334155',
+                                          transition: 'all 0.15s ease',
+                                        }}
+                                        title={`${val} (Click to remove)`}
+                                        onClick={() => handleRemoveValue(attr.id, val)}
+                                      >
+                                        <span
+                                          style={{
+                                            width: '12px',
+                                            height: '12px',
+                                            borderRadius: '50%',
+                                            backgroundColor: getColorHex(val),
+                                            border: '1px solid rgba(0,0,0,0.15)',
+                                            display: 'inline-block',
+                                          }}
+                                        />
+                                        <span>{val}</span>
+                                        <FiX size={10} color="#94a3b8" />
+                                      </span>
+                                    ))
+                                  : attr.values.map((val) => (
+                                      <span
+                                        key={val}
+                                        className={styles.valuePill}
+                                        onClick={() => handleRemoveValue(attr.id, val)}
+                                        title={`${val} (Click to remove)`}
+                                      >
+                                        {val} <FiX size={10} color="#94a3b8" />
+                                      </span>
+                                    ))}
+                                {attr.values.length === 0 && (
+                                  <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                                    No values added yet. Select a suggestion above or enter a value below.
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Inline Add Value Input */}
+                            <div className={styles.inlineAddValueRow}>
+                              <input
+                                type="text"
+                                placeholder={`Add new ${attr.name.toLowerCase()} value`}
+                                value={inlineValues[attr.id] || ''}
+                                onChange={(e) =>
+                                  setInlineValues((prev) => ({
+                                    ...prev,
+                                    [attr.id]: e.target.value,
+                                  }))
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddValueToAttr(attr.id);
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                className={styles.btnAddValuePlus}
+                                onClick={() => handleAddValueToAttr(attr.id)}
+                                title="Add value"
+                              >
+                                <FiPlus />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      
+                    </div>
+                  )}
+
+                  {/* STEP 3: GENERATED VARIANTS CARDS */}
+                  {generatedVariants.length > 0 && (
+                    <div className={styles.generatedVariantsSection} style={{ marginTop: '24px' }}>
+                      <div className={styles.generatedVariantsHeader}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <h4 className={styles.generatedVariantsTitle}>
+                            New Generated Variants
+                          </h4>
+                          <span className={styles.variantsCountBadge}>
+                            {generatedVariants.length} new variant(s)
+                          </span>
+                        </div>
+
+                        
+                      </div>
+
+                      <div className={styles.variantsCardGrid}>
+                        {generatedVariants.map((gv, idx) => (
+                          <div key={gv.id} className={styles.singleVariantCard}>
+                            {/* Top row: Title + SKU + Trash Button */}
+                            <div className={styles.variantCardTopRow}>
+                              <div className={styles.variantCardTitleCol}>
+                                <span className={styles.variantCardTitle}>
+                                  New Variant {idx + 1}
+                                </span>
+                                <span className={styles.variantCardSku}>
+                                  {gv.sku}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                className={styles.btnDeleteVariantCard}
+                                onClick={() => handleDeleteGeneratedVariant(gv.id)}
+                                title="Remove this new variant"
+                              >
+                                <FiTrash2 size={13} />
+                              </button>
+                            </div>
+
+                            {/* Attribute Badges */}
+                            <div className={styles.variantAttrsPillsRow}>
+                              {gv.combination.map((c, cIdx) => {
+                                const isColor =
+                                  c.attrName.toLowerCase().includes('color') ||
+                                  c.attrName.toLowerCase().includes('colour');
+                                return (
+                                  <div key={cIdx} className={styles.variantAttrPill}>
+                                    {isColor && (
+                                      <span
+                                        className={styles.variantColorDot}
+                                        style={{
+                                          backgroundColor: getColorHex(c.value),
+                                        }}
+                                      />
+                                    )}
+                                    <span>
+                                      {isColor ? 'Color' : `${c.attrName}: ${c.value}`}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Price & Stock Inputs */}
+                            <div className={styles.variantCardInputsRow}>
+                              <div className={styles.variantCardInputCol}>
+                                <label>Selling Price (MMK) *</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={gv.price}
+                                  placeholder="0"
+                                  onChange={(e) =>
+                                    handleVariantFieldChange(gv.id, 'price', e.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className={styles.variantCardInputCol}>
+                                <label>Cost Price (MMK)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  placeholder="0"
+                                  value={gv.costPrice !== undefined ? gv.costPrice : ''}
+                                  onChange={(e) =>
+                                    handleVariantFieldChange(gv.id, 'costPrice', e.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className={styles.variantCardInputCol}>
+                                <label>Stock</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  placeholder="0"
+                                  value={gv.stock}
+                                  onChange={(e) =>
+                                    handleVariantFieldChange(gv.id, 'stock', e.target.value)
+                                  }
+                                />
+                              </div>
+                            </div>
+
+                            {/* Add Images Button & Previews */}
+                            <div>
+                              <input
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                id={`var-file-${gv.id}`}
+                                style={{ display: 'none' }}
+                                onChange={(e) =>
+                                  handleVariantImagesUpload(gv.id, e.target.files)
+                                }
+                              />
+                              <button
+                                type="button"
+                                className={styles.btnAddVariantImagesBtn}
+                                onClick={() =>
+                                  document.getElementById(`var-file-${gv.id}`)?.click()
+                                }
+                              >
+                                Add Images
+                              </button>
+
+                              {gv.imagePreviews && gv.imagePreviews.length > 0 && (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    gap: '8px',
+                                    marginTop: '10px',
+                                    flexWrap: 'wrap',
+                                  }}
+                                >
+                                  {gv.imagePreviews.map((url, imgIdx) => (
+                                    <div
+                                      key={imgIdx}
+                                      style={{
+                                        position: 'relative',
+                                        display: 'inline-block',
+                                      }}
+                                    >
+                                      <img
+                                        src={url}
+                                        alt={`Variant ${idx + 1} Preview ${imgIdx + 1}`}
+                                        style={{
+                                          width: '60px',
+                                          height: '60px',
+                                          objectFit: 'cover',
+                                          borderRadius: '6px',
+                                          border: '1px solid #e2e8f0',
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveVariantImage(gv.id, imgIdx)}
+                                        style={{
+                                          position: 'absolute',
+                                          top: '-6px',
+                                          right: '-6px',
+                                          background: '#ef4444',
+                                          color: 'white',
+                                          border: 'none',
+                                          borderRadius: '50%',
+                                          width: '18px',
+                                          height: '18px',
+                                          cursor: 'pointer',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          padding: 0,
+                                        }}
+                                      >
+                                        <FiX size={10} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1545,128 +2000,91 @@ export const EditProductPage: React.FC = () => {
                   padding: '9px 12px',
                   borderRadius: '8px',
                   border: '1px solid #cbd5e1',
-                  background: '#f8fafc',
                   fontSize: '13px',
                   fontWeight: 600,
-                  color: status === 'ACTIVE' ? '#059669' : '#64748b',
+                  color: '#334155',
+                  background: '#fff',
+                  outline: 'none',
                 }}
               >
-                <option value="ACTIVE">ACTIVE (Published)</option>
-                <option value="INACTIVE">INACTIVE (Draft)</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="INACTIVE">INACTIVE</option>
               </select>
             </div>
 
-            {/* Category Card */}
+            {/* Category & Brand Card */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #edf0f5' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
-                  Category <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowCategoryModal(true)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#2563eb',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
+              <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 16px 0', color: '#0f172a' }}>Organization</h3>
+
+              {/* Category */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                    Category <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryModal(true)}
+                    style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  >
+                    + New
+                  </button>
+                </div>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className={styles.inputField}
+                  required
                 >
-                  + Add New
-                </button>
+                  <option value="">Select category</option>
+                  {categories.map((c) => (
+                    <option key={c.categoryId} value={c.categoryId}>
+                      {c.categoryName}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '13px',
-                }}
-                required
-              >
-                <option value="">Select Category</option>
-                {categories.map((c) => (
-                  <option key={c.categoryId} value={c.categoryId}>
-                    {c.categoryName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Brand Card */}
-            <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #edf0f5' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
-                  Brand
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowBrandModal(true)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#2563eb',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
+              {/* Brand */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                    Brand
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowBrandModal(true)}
+                    style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  >
+                    + New
+                  </button>
+                </div>
+                <select
+                  value={selectedBrand}
+                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  className={styles.inputField}
                 >
-                  + Add New
-                </button>
+                  <option value="">Select brand</option>
+                  {brands.map((b) => (
+                    <option key={b.brandId} value={b.brandId}>
+                      {b.brandName}
+                    </option>
+                  ))}
+                </select>
               </div>
-
-              <select
-                value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
-                  fontSize: '13px',
-                }}
-              >
-                <option value="">None / Unbranded</option>
-                {brands.map((b) => (
-                  <option key={b.brandId} value={b.brandId}>
-                    {b.brandName}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Tags Card */}
             <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #edf0f5' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
-                  Tags
-                </label>
-                {!showTagModal && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowTagModal(true);
-                      setNewTagName('');
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#2563eb',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
-                  >
-                    + Add New
-                  </button>
-                )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: '#0f172a' }}>Tags</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowTagModal(true)}
+                  style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '11px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                >
+                  + New Tag
+                </button>
               </div>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -1674,22 +2092,21 @@ export const EditProductPage: React.FC = () => {
                   const isSelected = selectedTagIds.includes(tag.tagId);
                   return (
                     <button
-                      type="button"
                       key={tag.tagId}
-                      onClick={() => {
+                      type="button"
+                      onClick={() =>
                         setSelectedTagIds((prev) =>
                           isSelected ? prev.filter((id) => id !== tag.tagId) : [...prev, tag.tagId]
-                        );
-                      }}
+                        )
+                      }
                       style={{
                         padding: '4px 10px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
+                        borderRadius: '16px',
+                        fontSize: '11px',
                         fontWeight: 600,
-                        border: '1px solid',
-                        borderColor: isSelected ? '#2563eb' : '#e2e8f0',
-                        background: isSelected ? '#eff6ff' : '#ffffff',
-                        color: isSelected ? '#1d4ed8' : '#475569',
+                        border: isSelected ? '1px solid #2563eb' : '1px solid #cbd5e1',
+                        background: isSelected ? '#eff6ff' : '#fff',
+                        color: isSelected ? '#2563eb' : '#64748b',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1697,165 +2114,36 @@ export const EditProductPage: React.FC = () => {
                       }}
                     >
                       <FiTag size={10} />
-                      {tag.tagName}
+                      <span>{tag.tagName}</span>
                     </button>
                   );
                 })}
-                {allTags.length === 0 && (
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-                    No tags available
-                  </span>
-                )}
               </div>
-
-              {/* Inline Quick Add Tag Card (Under Add Tag on the Right Side) */}
-              {showTagModal && (
-                <div
-                  style={{
-                    marginTop: '14px',
-                    padding: '14px',
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
-                    animation: 'fadeIn 0.15s ease-out',
-                  }}
-                >
-                  <div style={{ marginBottom: '10px' }}>
-                    <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1e293b' }}>
-                      Add New Tag
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ marginBottom: '10px' }}>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: '11.5px',
-                          fontWeight: 600,
-                          color: '#475569',
-                          marginBottom: '5px',
-                        }}
-                      >
-                        Tag Name <span style={{ color: '#ef4444' }}>*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={newTagName}
-                        onChange={(e) => setNewTagName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleQuickCreateTag(e);
-                          }
-                        }}
-                        placeholder="Enter tag name (e.g. popular, sale)"
-                        autoFocus
-                        style={{
-                          width: '100%',
-                          padding: '7px 10px',
-                          borderRadius: '7px',
-                          border: '1px solid #cbd5e1',
-                          background: '#ffffff',
-                          fontSize: '12px',
-                          outline: 'none',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowTagModal(false);
-                          setNewTagName('');
-                        }}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '7px',
-                          border: '1px solid #cbd5e1',
-                          background: '#ffffff',
-                          color: '#475569',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleQuickCreateTag(e);
-                        }}
-                        disabled={tagLoading || !newTagName.trim()}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: '7px',
-                          border: 'none',
-                          background: '#2563eb',
-                          color: '#ffffff',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          cursor: tagLoading || !newTagName.trim() ? 'not-allowed' : 'pointer',
-                          opacity: tagLoading || !newTagName.trim() ? 0.6 : 1,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        {tagLoading ? (
-                          <>
-                            <FiRefreshCw size={11} className={styles.exportSpinner} /> Creating...
-                          </>
-                        ) : (
-                          'Create Tag'
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Action Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+            <div className={styles.card} style={{ background: '#fff', borderRadius: '14px', padding: '20px', border: '1px solid #edf0f5' }}>
               <button
                 type="submit"
                 disabled={submitting}
-                className={styles.btnPrimary}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                }}
+                className={styles.btnCreateProduct}
+                style={{ width: '100%', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >
-                <FiSave size={16} />
-                {submitting ? 'Saving Changes...' : 'Save Product Changes'}
+                {submitting ? (
+                  <>
+                    <FiRefreshCw className="spin" size={16} /> Saving Changes...
+                  </>
+                ) : (
+                  <>
+                    <FiSave size={16} /> Save Product Changes
+                  </>
+                )}
               </button>
-
               <button
                 type="button"
-                className={styles.btnActionOutline}
                 onClick={() => navigate('/admin/products')}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  textAlign: 'center',
-                  justifyContent: 'center',
-                }}
+                className={styles.btnActionOutline}
+                style={{ width: '100%' }}
               >
                 Cancel
               </button>
@@ -1864,7 +2152,7 @@ export const EditProductPage: React.FC = () => {
         </div>
       </form>
 
-      {/* Quick Category Form Modal (Exact modal from Category page with Parent Category & full styling) */}
+      {/* Quick Category Form Modal */}
       <CategoryFormModal
         isOpen={showCategoryModal}
         formData={categoryFormData}
@@ -1880,7 +2168,7 @@ export const EditProductPage: React.FC = () => {
         }}
       />
 
-      {/* Quick Brand Modal (Exact modal from Brand page with Logo, Categories & full styling) */}
+      {/* Quick Brand Modal */}
       <BrandModal
         show={showBrandModal}
         brand={null}
@@ -1893,8 +2181,44 @@ export const EditProductPage: React.FC = () => {
         onSubmit={handleBrandModalSubmit}
       />
 
-
+      {/* Quick Tag Modal */}
+      {showTagModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '14px', width: '360px', maxWidth: '90%' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: 700 }}>Add New Tag</h3>
+            <input
+              type="text"
+              placeholder="Tag name (e.g. Best Seller)..."
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              className={styles.inputField}
+              style={{ width: '100%', marginBottom: '16px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTagModal(false);
+                  setNewTagName('');
+                }}
+                className={styles.btnActionOutline}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleQuickCreateTag}
+                disabled={tagLoading}
+                className={styles.btnAddProductPurple}
+              >
+                {tagLoading ? 'Creating...' : 'Create Tag'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 export default EditProductPage;

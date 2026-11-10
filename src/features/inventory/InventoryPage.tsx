@@ -363,11 +363,7 @@ export const InventoryPage: React.FC = () => {
             </p>
         </div>
 
-        <div className={styles.headerActions}>
-          <button className={styles.btnSecondary} onClick={loadData} disabled={loading}>
-            <FiRefreshCw className={loading ? 'spin' : ''} size={14} /> Refresh
-          </button>
-        </div>
+
       </div>
 
       {error && <div className={styles.errorMessage}><FiAlertCircle /> {error}</div>}
@@ -658,7 +654,13 @@ export const InventoryPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredItems.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={11} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                      <FiRefreshCw className="spin" style={{ marginRight: '8px' }} /> Loading inventory...
+                    </td>
+                  </tr>
+                ) : filteredItems.length === 0 ? (
                   <tr>
                     <td colSpan={11} className={styles.emptyState}>
                       <FiBox />
