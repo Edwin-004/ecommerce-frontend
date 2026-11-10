@@ -224,13 +224,9 @@ export default function TagManagement() {
 
     const trimmedName = tagName.trim();
 
-    if (!trimmedName) {
-      setError("Tag name is required.");
-      return;
-    }
-
-    if (trimmedName.length > 100) {
-      setError("Tag name must not exceed 100 characters.");
+    // Validate that tag name is between 3 and 30 characters long
+    if (trimmedName.length < 3 || trimmedName.length > 30) {
+      setError("Tag name must be between 3 and 30 characters long.");
       return;
     }
 
@@ -541,9 +537,9 @@ export default function TagManagement() {
                           <FiPlus size={14} /> Add First Tag
                         </button>
                       )}
-                    </div>
-                  </td>
-                </tr>
+                  </div>
+                </td>
+              </tr>
               ) : (
                 tags.map((tag, index) => { const rowNumber = page * PAGE_SIZE + index + 1; return (
                   <tr key={tag.tagId}>
@@ -565,7 +561,7 @@ export default function TagManagement() {
                           </span>
                         </div>
                       </div>
-                    </td>
+                  </td>
 
 
 
@@ -712,18 +708,19 @@ export default function TagManagement() {
                     type="text"
                     value={tagName}
                     onChange={(e) => setTagName(e.target.value)}
-                    placeholder="e.g. New Arrival"
-                    maxLength={100}
+                    placeholder="e.g. New Arrival (3 to 30 chars)"
+                    minLength={3}
+                    maxLength={30}
                     required
                     autoFocus
                   />
                   <span className="character-count">
-                    {tagName.length}/100
+                    {tagName.length}/30
                   </span>
                 </div>
 
                 <p className="field-help">
-                  Use a short and descriptive name for your tag.
+                  Use a short and descriptive name for your tag (3 to 30 characters).
                 </p>
               </div>
 
