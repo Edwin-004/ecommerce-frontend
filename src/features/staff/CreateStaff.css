@@ -160,6 +160,18 @@
     cursor: not-allowed;
 }
 
+/* Email Format Hints */
+.email-requirements-box {
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
 /* Password Requirements Checklist */
 .pw-requirements-box {
     margin-top: 10px;

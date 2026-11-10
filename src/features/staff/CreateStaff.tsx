@@ -122,6 +122,14 @@ export const CreateStaff: React.FC = () => {
         }
     };
 
+    // Real-time email criteria
+    const em = newStaff.email || '';
+    const emailHasAt     = em.includes('@');
+    const emailHasDomain = emailHasAt && em.split('@')[1]?.length > 0;
+    const emailHasDot    = emailHasAt && em.split('@')[1]?.includes('.');
+    const emailNoSpace   = !/\s/.test(em);
+    const emailNotEmpty  = em.length > 0;
+
     // Real-time password criteria
     const pw = newStaff.password || '';
     const hasMinLength = pw.length >= 8;
@@ -173,6 +181,27 @@ export const CreateStaff: React.FC = () => {
                                 onChange={e => setNewStaff({...newStaff, email: e.target.value.toLowerCase().replace(/\s+/g, '')})} 
                                 onBlur={() => setNewStaff(prev => ({ ...prev, email: prev.email.trim().toLowerCase() }))}
                             />
+                            {/* Real-time Email Format Hints */}
+                            {emailNotEmpty && (
+                                <div className="email-requirements-box">
+                                    <div className={`pw-req-item ${emailNoSpace ? 'valid' : ''}`}>
+                                        {emailNoSpace ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                        <span>No spaces allowed</span>
+                                    </div>
+                                    <div className={`pw-req-item ${emailHasAt ? 'valid' : ''}`}>
+                                        {emailHasAt ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                        <span>Must contain @ symbol</span>
+                                    </div>
+                                    <div className={`pw-req-item ${emailHasDomain ? 'valid' : ''}`}>
+                                        {emailHasDomain ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                        <span>Must have domain after @</span>
+                                    </div>
+                                    <div className={`pw-req-item ${emailHasDot ? 'valid' : ''}`}>
+                                        {emailHasDot ? <FiCheck size={13} /> : <span className="pw-req-dot" />}
+                                        <span>Must have extension (e.g. .com)</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-group">
