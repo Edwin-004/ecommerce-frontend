@@ -17,6 +17,50 @@ interface StaffResponseDTO {
     createdAt: string;
 }
 
+interface StaffAvatarItemProps {
+    staff: StaffResponseDTO;
+    isSuperAdminUser: boolean;
+    isAdminRole: boolean;
+    avatarUrl: string | null;
+    onClearBadAvatar: (staff: StaffResponseDTO) => void;
+}
+
+const StaffAvatarItem: React.FC<StaffAvatarItemProps> = ({
+    staff,
+    isSuperAdminUser,
+    isAdminRole,
+    avatarUrl,
+    onClearBadAvatar
+}) => {
+    const [failed, setFailed] = useState(false);
+
+    useEffect(() => {
+        setFailed(false);
+    }, [avatarUrl]);
+
+    if (avatarUrl && !failed) {
+        return (
+            <div className="avatar-mini avatar-mini-has-img" title={staff.userName}>
+                <img
+                    src={avatarUrl}
+                    alt={staff.userName}
+                    className="avatar-mini-img"
+                    onError={() => {
+                        setFailed(true);
+                        onClearBadAvatar(staff);
+                    }}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div className={`avatar-mini ${isSuperAdminUser ? 'avatar-super' : isAdminRole ? 'avatar-admin' : staff.roleName === 'INVENTORY_STAFF' ? 'avatar-inventory' : 'avatar-sales'}`}>
+            {isSuperAdminUser ? '👑' : isAdminRole ? '🛡️' : staff.userName ? staff.userName.charAt(0).toUpperCase() : 'U'}
+        </div>
+    );
+};
+
 export const StaffList: React.FC = () => {
     const navigate = useNavigate();
     const currentUser = useSelector((state: RootState) => state.auth);
@@ -90,18 +134,66 @@ export const StaffList: React.FC = () => {
         };
     }, []);
 
+    const isValidAvatar = (val: string | null | undefined): boolean => {
+        if (!val) return false;
+        const trimmed = val.trim();
+        if (
+            trimmed === '' ||
+            trimmed === 'null' ||
+            trimmed === 'undefined' ||
+            trimmed === '[object Object]' ||
+            trimmed.length < 5
+        ) {
+            return false;
+        }
+        return (
+            trimmed.startsWith('data:image/') ||
+            trimmed.startsWith('http://') ||
+            trimmed.startsWith('https://') ||
+            trimmed.startsWith('/') ||
+            trimmed.startsWith('blob:')
+        );
+    };
+
     const getStaffAvatar = (staff: StaffResponseDTO): string | null => {
         const isSelf = currentUser.email?.toLowerCase() === staff.email?.toLowerCase() || 
                        currentUser.username?.toLowerCase() === staff.userName?.toLowerCase();
-        return (
-            localStorage.getItem(`avatar_${staff.email?.toLowerCase()}`) ||
-            localStorage.getItem(`avatar_${staff.email}`) ||
-            localStorage.getItem(`avatar_${staff.userName?.toLowerCase()}`) ||
-            localStorage.getItem(`avatar_${staff.userName}`) ||
-            localStorage.getItem(`avatar_${staff.userId}`) ||
-            (isSelf ? localStorage.getItem('currentUserAvatar') : null) ||
-            null
-        );
+        const candidates = [
+            localStorage.getItem(`avatar_${staff.email?.toLowerCase()}`),
+            localStorage.getItem(`avatar_${staff.email}`),
+            localStorage.getItem(`avatar_${staff.userName?.toLowerCase()}`),
+            localStorage.getItem(`avatar_${staff.userName}`),
+            localStorage.getItem(`avatar_${staff.userId}`),
+            isSelf ? localStorage.getItem('currentUserAvatar') : null
+        ];
+        for (const c of candidates) {
+            if (isValidAvatar(c)) return c!;
+        }
+        return null;
+    };
+
+    const handleClearBadAvatar = (badStaff: StaffResponseDTO) => {
+        try {
+            if (badStaff.email) {
+                localStorage.removeItem(`avatar_${badStaff.email.toLowerCase()}`);
+                localStorage.removeItem(`avatar_${badStaff.email}`);
+            }
+            if (badStaff.userName) {
+                localStorage.removeItem(`avatar_${badStaff.userName.toLowerCase()}`);
+                localStorage.removeItem(`avatar_${badStaff.userName}`);
+            }
+            if (badStaff.userId) {
+                localStorage.removeItem(`avatar_${badStaff.userId}`);
+            }
+            const isSelf = currentUser.email?.toLowerCase() === badStaff.email?.toLowerCase() || 
+                           currentUser.username?.toLowerCase() === badStaff.userName?.toLowerCase();
+            if (isSelf) {
+                localStorage.removeItem('currentUserAvatar');
+            }
+            window.dispatchEvent(new Event('avatarChange'));
+        } catch {
+            // ignore
+        }
     };
 
     const formatDateTimeDMY = (dateString?: string): string => {
@@ -377,15 +469,13 @@ export const StaffList: React.FC = () => {
                                             {/* Staff Name & Email with Avatar */}
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    {getStaffAvatar(staff) ? (
-                                                        <div className="avatar-mini avatar-mini-has-img" title={staff.userName}>
-                                                            <img src={getStaffAvatar(staff)!} alt={staff.userName} className="avatar-mini-img" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className={`avatar-mini ${isSuperAdminUser ? 'avatar-super' : isAdminRole ? 'avatar-admin' : staff.roleName === 'INVENTORY_STAFF' ? 'avatar-inventory' : 'avatar-sales'}`}>
-                                                            {isSuperAdminUser ? '👑' : isAdminRole ? '🛡️' : staff.userName ? staff.userName.charAt(0).toUpperCase() : 'U'}
-                                                        </div>
-                                                    )}
+                                                    <StaffAvatarItem
+                                                        staff={staff}
+                                                        isSuperAdminUser={isSuperAdminUser}
+                                                        isAdminRole={isAdminRole}
+                                                        avatarUrl={getStaffAvatar(staff)}
+                                                        onClearBadAvatar={handleClearBadAvatar}
+                                                    />
 
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

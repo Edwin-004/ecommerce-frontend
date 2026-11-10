@@ -48,16 +48,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
   const firstLetter = username ? username.charAt(0).toUpperCase() : 'A';
 
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const [userAvatar, setUserAvatar] = useState<string | null>(() => {
-    return (
+    const raw =
       localStorage.getItem(`avatar_${email?.toLowerCase()}`) ||
       localStorage.getItem(`avatar_${email}`) ||
       localStorage.getItem(`avatar_${username?.toLowerCase()}`) ||
       localStorage.getItem(`avatar_${username}`) ||
       localStorage.getItem('currentUserAvatar') ||
-      null
-    );
+      null;
+    if (raw && (raw === 'null' || raw === 'undefined' || raw.trim() === '')) return null;
+    return raw;
   });
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [userAvatar]);
 
   useEffect(() => {
     const handleAvatarUpdate = () => {
@@ -493,11 +499,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className={styles.avatarLeft}>
               <div className={styles.avatarBox}>
-                {userAvatar ? (
+                {userAvatar && !avatarFailed ? (
                   <img
                     src={userAvatar}
                     alt="Profile"
                     className={styles.avatarImg}
+                    onError={() => {
+                      setAvatarFailed(true);
+                      localStorage.removeItem('currentUserAvatar');
+                    }}
                   />
                 ) : (
                   firstLetter
@@ -530,11 +540,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => navigate('/admin/profile')}
             title={`${username || 'Admin'} (${getProfileSubtitle()})`}
           >
-            {userAvatar ? (
+            {userAvatar && !avatarFailed ? (
               <img
                 src={userAvatar}
                 alt="Profile"
                 className={styles.avatarImg}
+                onError={() => {
+                  setAvatarFailed(true);
+                  localStorage.removeItem('currentUserAvatar');
+                }}
               />
             ) : (
               firstLetter

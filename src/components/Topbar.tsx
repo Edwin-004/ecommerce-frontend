@@ -33,8 +33,46 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
   const location = useLocation();
 
   // Redux auth state
-  const { username, role } = useSelector((state: RootState) => state.auth);
+  const { username, role, email } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+
+  // Avatar state with real-time sync
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [userAvatar, setUserAvatar] = useState<string | null>(() => {
+    const raw =
+      localStorage.getItem(`avatar_${email?.toLowerCase()}`) ||
+      localStorage.getItem(`avatar_${email}`) ||
+      localStorage.getItem(`avatar_${username?.toLowerCase()}`) ||
+      localStorage.getItem(`avatar_${username}`) ||
+      localStorage.getItem('currentUserAvatar') ||
+      null;
+    if (raw && (raw === 'null' || raw === 'undefined' || raw.trim() === '')) return null;
+    return raw;
+  });
+
+  useEffect(() => {
+    const handleAvatarUpdate = () => {
+      const raw =
+        localStorage.getItem(`avatar_${email?.toLowerCase()}`) ||
+        localStorage.getItem(`avatar_${email}`) ||
+        localStorage.getItem(`avatar_${username?.toLowerCase()}`) ||
+        localStorage.getItem(`avatar_${username}`) ||
+        localStorage.getItem('currentUserAvatar') ||
+        null;
+      if (raw && (raw === 'null' || raw === 'undefined' || raw.trim() === '')) {
+        setUserAvatar(null);
+      } else {
+        setUserAvatar(raw);
+      }
+      setAvatarFailed(false);
+    };
+    window.addEventListener('avatarChange', handleAvatarUpdate);
+    window.addEventListener('storage', handleAvatarUpdate);
+    return () => {
+      window.removeEventListener('avatarChange', handleAvatarUpdate);
+      window.removeEventListener('storage', handleAvatarUpdate);
+    };
+  }, [email, username]);
 
   // Notifications via WebSocket Hook
   const {
@@ -571,8 +609,20 @@ export const Topbar = ({ onToggleMobileMenu }: TopbarProps) => {
             className="flex items-center gap-2 pl-2 border-l border-slate-200/60 ml-1 cursor-pointer hover:opacity-85 transition-opacity"
             title="Go to My Profile"
           >
-            <div className="w-7 h-7 rounded-lg bg-slate-900 text-white text-[11px] font-semibold flex items-center justify-center">
-              {firstLetter}
+            <div className="w-7 h-7 rounded-lg bg-slate-900 text-white text-[11px] font-semibold flex items-center justify-center overflow-hidden">
+              {userAvatar && !avatarFailed ? (
+                <img
+                  src={userAvatar}
+                  alt="Profile"
+                  className="w-full h-full object-cover rounded-lg"
+                  onError={() => {
+                    setAvatarFailed(true);
+                    localStorage.removeItem('currentUserAvatar');
+                  }}
+                />
+              ) : (
+                firstLetter
+              )}
             </div>
             <span className="text-xs font-semibold text-slate-800 hidden sm:inline">
               {formatRole(role) || username || 'System Admin'}

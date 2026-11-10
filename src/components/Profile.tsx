@@ -114,16 +114,22 @@ export const Profile = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
-    return (
+    const raw =
       localStorage.getItem(`avatar_${username?.toLowerCase()}`) ||
       localStorage.getItem(`avatar_${username}`) ||
       localStorage.getItem(`avatar_${email?.toLowerCase()}`) ||
       localStorage.getItem(`avatar_${email}`) ||
       localStorage.getItem('currentUserAvatar') ||
-      null
-    );
+      null;
+    if (raw && (raw === 'null' || raw === 'undefined' || raw.trim() === '')) return null;
+    return raw;
   });
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [avatarUrl]);
 
   useEffect(() => {
     if (!avatarUrl) {
@@ -301,8 +307,16 @@ export const Profile = () => {
         {/* Avatar Section */}
         <div className={styles.avatarSection}>
           <div className={styles.avatarWrapper}>
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Avatar" className={styles.avatarImg} />
+            {avatarUrl && !avatarFailed ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className={styles.avatarImg}
+                onError={() => {
+                  setAvatarFailed(true);
+                  localStorage.removeItem('currentUserAvatar');
+                }}
+              />
             ) : (
               <div className={styles.avatarFallback}>{firstLetter}</div>
             )}
