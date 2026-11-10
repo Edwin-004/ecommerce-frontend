@@ -35,7 +35,6 @@ const INVENTORY_EXPORT_COLUMNS = [
   { key: 'product', label: 'Product' },
   { key: 'sellingPrice', label: 'Selling Price' },
   { key: 'physicalStock', label: 'Physical Stock' },
-  { key: 'reservedStock', label: 'Reserved' },
   { key: 'availableStock', label: 'Available' },
   { key: 'reorderLevel', label: 'Reorder Level' },
   { key: 'expiryAndBatch', label: 'Expiry & Batch' },
@@ -104,7 +103,6 @@ export const InventoryPage: React.FC = () => {
     'product',
     'sellingPrice',
     'physicalStock',
-    'reservedStock',
     'availableStock',
     'reorderLevel',
     'expiryAndBatch',
@@ -645,7 +643,6 @@ export const InventoryPage: React.FC = () => {
                   <th>PRODUCT</th>
                   <th>SELLING PRICE</th>
                   <th>PHYSICAL STOCK</th>
-                  <th className="text-center">RESERVED</th>
                   <th className="text-center">AVAILABLE</th>
                   <th className="text-center">REORDER LEVEL</th>
                   <th>EXPIRY &amp; BATCH</th>
@@ -656,13 +653,13 @@ export const InventoryPage: React.FC = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={11} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                    <td colSpan={10} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
                       <FiRefreshCw className="spin" style={{ marginRight: '8px' }} /> Loading inventory...
                     </td>
                   </tr>
                 ) : filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className={styles.emptyState}>
+                    <td colSpan={10} className={styles.emptyState}>
                       <FiBox />
                       <p style={{ margin: '8px 0 16px 0', fontWeight: 500 }}>No inventory records found matching your filters.</p>
                       <button className={styles.btnPrimary} onClick={loadData}>
@@ -750,7 +747,6 @@ export const InventoryPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="text-center" style={{ color: '#64748b' }}>{item.reservedQuantity ?? 0}</td>
                       <td className="text-center">
                         <span style={{ color: '#16a34a', fontWeight: 600 }}>
                           {item.availableQuantity ?? Math.max(0, (item.quantity || 0) - (item.reservedQuantity || 0))}
@@ -854,14 +850,6 @@ export const InventoryPage: React.FC = () => {
                             onClick={() => { setSelectedItem(item); setActiveModal('WRITE_OFF'); }}
                           >
                             <FiMinusCircle size={13} /> Write-off
-                          </button>
-
-                          <button
-                            className={`${styles.btnAction} ${styles.btnAdjust}`}
-                            title="Adjust count after physical audit"
-                            onClick={() => { setSelectedItem(item); setActiveModal('ADJUST'); }}
-                          >
-                            <FiSliders size={13} /> Adjust
                           </button>
 
                           <button

@@ -28,6 +28,7 @@ import {
   EditVariantModal,
   AddVariationModal,
 } from './VariantModals';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { Pagination } from '../../components/common/Pagination';
 
 export const VariantsPage: React.FC = () => {
@@ -153,30 +154,66 @@ export const VariantsPage: React.FC = () => {
     loadData();
   }, []);
 
-  // Delete Variant
-  const handleDeleteVariant = async (variantId: number) => {
-    if (!window.confirm('Are you sure you want to deactivate this product variant? (Historical orders and stock audit will be safely preserved)')) return;
-    try {
-      setLoading(true);
-      await variantApi.deleteProductVariant(variantId);
-      loadData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete variant');
-      setLoading(false);
-    }
+  // Confirmation Modal State (Replaces native browser window.confirm)
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'danger' | 'warning' | 'info' | 'success';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // Delete Variant (Opens React Confirm Modal)
+  const handleDeleteVariant = (variantId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Deactivate Product Variant',
+      message: 'Are you sure you want to deactivate this product variant? (Historical orders and stock audit will be safely preserved)',
+      confirmText: 'Deactivate',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          setConfirmLoading(true);
+          await variantApi.deleteProductVariant(variantId);
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          loadData();
+        } catch (err: any) {
+          setError(err.message || 'Failed to deactivate variant');
+        } finally {
+          setConfirmLoading(false);
+        }
+      },
+    });
   };
 
-  // Delete Variation
-  const handleDeleteVariation = async (variationId: number) => {
-    if (!window.confirm('Delete this variation attribute? All its options will also be deleted.')) return;
-    try {
-      setLoading(true);
-      await variantApi.deleteVariation(variationId);
-      loadData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete variation');
-      setLoading(false);
-    }
+  // Delete Variation (Opens React Confirm Modal)
+  const handleDeleteVariation = (variationId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Variation Attribute',
+      message: 'Delete this variation attribute? All its options will also be deleted.',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          setConfirmLoading(true);
+          await variantApi.deleteVariation(variationId);
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          loadData();
+        } catch (err: any) {
+          setError(err.message || 'Failed to delete variation');
+        } finally {
+          setConfirmLoading(false);
+        }
+      },
+    });
   };
 
   // Add Option inline
@@ -762,6 +799,18 @@ export const VariantsPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* React Confirmation Modal (Replaces browser popup) */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+        isLoading={confirmLoading}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

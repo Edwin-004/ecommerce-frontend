@@ -15,6 +15,7 @@ import { categoryApi } from '../categories/categoryApi';
 import { createBrand, type BrandRequest } from '../brand/brandApi';
 import { CategoryFormModal } from '../categories/CategoryFormModal';
 import { BrandModal } from '../brand/BrandModels';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import type { CategoryRequestDto, CategoryResponseDto } from '../../types/category';
 import { inventoryApi } from '../inventory/inventoryApi';
 import { variantApi } from '../variants/variantApi';
@@ -153,6 +154,20 @@ export const EditProductPage: React.FC = () => {
 
   // Images
   const [existingImages, setExistingImages] = useState<Array<{ imageId: number; imageUrl: string; isPrimary: boolean }>>([]);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'danger' | 'warning' | 'info' | 'success';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const [replacingTarget, setReplacingTarget] = useState<{ imageId: number; isPrimary: boolean } | null>(null);
@@ -607,18 +622,30 @@ export const EditProductPage: React.FC = () => {
     setNewImagePreviews((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleDeleteExistingImage = async (imageId: number) => {
-    if (!window.confirm('Are you sure you want to delete this product image?')) return;
-    try {
-      await productManagementApi.deleteProductImage(imageId);
-      const updated = existingImages.filter((img) => img.imageId !== imageId);
-      setExistingImages(updated);
-      setSuccessMessage('Image deleted successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to delete image');
-      setTimeout(() => setErrorMessage(''), 4000);
-    }
+  const handleDeleteExistingImage = (imageId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Product Image',
+      message: 'Are you sure you want to delete this product image?',
+      confirmText: 'Delete',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          setConfirmLoading(true);
+          await productManagementApi.deleteProductImage(imageId);
+          const updated = existingImages.filter((img) => img.imageId !== imageId);
+          setExistingImages(updated);
+          setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+          setSuccessMessage('Image deleted successfully!');
+          setTimeout(() => setSuccessMessage(''), 3000);
+        } catch (err: any) {
+          setErrorMessage(err.message || 'Failed to delete image');
+          setTimeout(() => setErrorMessage(''), 4000);
+        } finally {
+          setConfirmLoading(false);
+        }
+      },
+    });
   };
 
   const handleSetPrimaryImage = async (imageId: number) => {
@@ -2179,6 +2206,18 @@ export const EditProductPage: React.FC = () => {
         }))}
         onClose={() => setShowBrandModal(false)}
         onSubmit={handleBrandModalSubmit}
+      />
+
+      {/* React Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+        isLoading={confirmLoading}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
       />
 
       {/* Quick Tag Modal */}

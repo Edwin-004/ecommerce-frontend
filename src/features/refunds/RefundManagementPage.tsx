@@ -1,5 +1,6 @@
 import { BackButton } from '../../components/common/BackButton';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { Pagination } from '../../components/common/Pagination';
 import { useSearchParams } from 'react-router-dom';
 import {
   FiInbox,
@@ -58,52 +59,61 @@ export function RefundManagementPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
 
-  // Filters
+  // Filters & Pagination
   const [searchParams, setSearchParams] = useSearchParams();
 
   const paramStatus = (searchParams.get('status') as RefundStatusFilter) || 'ALL';
   const paramSearch = searchParams.get('search') || '';
   const paramStart = searchParams.get('start') || '';
   const paramEnd = searchParams.get('end') || '';
+  const paramPage = Number(searchParams.get('page')) || 1;
 
   const [search, setSearchState] = useState<string>(paramSearch);
   const [status, setStatusState] = useState<RefundStatusFilter>(paramStatus);
   const [startDate, setStartDateState] = useState<string>(paramStart);
   const [endDate, setEndDateState] = useState<string>(paramEnd);
+  const [currentPage, setCurrentPage] = useState<number>(paramPage);
+  const [pageSize, setPageSize] = useState<number>(10);
 
-  const updateRefundParams = (updates: { status?: RefundStatusFilter; search?: string; start?: string; end?: string }) => {
+  const updateRefundParams = (updates: { status?: RefundStatusFilter; search?: string; start?: string; end?: string; page?: number }) => {
     const next = new URLSearchParams(searchParams);
     const nextStatus = updates.status !== undefined ? updates.status : status;
     const nextSearch = updates.search !== undefined ? updates.search : search;
     const nextStart = updates.start !== undefined ? updates.start : startDate;
     const nextEnd = updates.end !== undefined ? updates.end : endDate;
+    const nextPage = updates.page !== undefined ? updates.page : currentPage;
 
     if (nextStatus && nextStatus !== 'ALL') next.set('status', nextStatus); else next.delete('status');
     if (nextSearch && nextSearch.trim()) next.set('search', nextSearch.trim()); else next.delete('search');
     if (nextStart) next.set('start', nextStart); else next.delete('start');
     if (nextEnd) next.set('end', nextEnd); else next.delete('end');
+    if (nextPage && nextPage > 1) next.set('page', String(nextPage)); else next.delete('page');
 
     setSearchParams(next, { replace: true });
   };
 
   const setStatus = (st: RefundStatusFilter) => {
     setStatusState(st);
-    updateRefundParams({ status: st });
+    setCurrentPage(1);
+    updateRefundParams({ status: st, page: 1 });
   };
 
   const setSearch = (s: string) => {
     setSearchState(s);
-    updateRefundParams({ search: s });
+    setCurrentPage(1);
+    updateRefundParams({ search: s, page: 1 });
   };
 
   const setStartDate = (d: string) => {
     setStartDateState(d);
-    updateRefundParams({ start: d });
+    setCurrentPage(1);
+    updateRefundParams({ start: d, page: 1 });
   };
 
   const setEndDate = (d: string) => {
     setEndDateState(d);
-    updateRefundParams({ end: d });
+    setCurrentPage(1);
+    updateRefundParams({ end: d, page: 1 });
   };
 
   useEffect(() => {
@@ -111,7 +121,21 @@ export function RefundManagementPage() {
     setSearchState(searchParams.get('search') || '');
     setStartDateState(searchParams.get('start') || '');
     setEndDateState(searchParams.get('end') || '');
+    setCurrentPage(Number(searchParams.get('page')) || 1);
   }, [searchParams]);
+
+  const totalPages = Math.ceil(refunds.length / pageSize) || 1;
+
+  const paginatedRefunds = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return refunds.slice(start, start + pageSize);
+  }, [refunds, currentPage, pageSize]);
+
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
 
 
@@ -822,7 +846,7 @@ export function RefundManagementPage() {
                   </td>
                 </tr>
               ) : (
-                refunds.map((item, index) => {
+                paginatedRefunds.map((item, index) => {
                   const isPending = item.status === 'PENDING';
                   const isApproved = item.status === 'APPROVED';
                   const isRejected = item.status === 'REJECTED';
@@ -831,7 +855,7 @@ export function RefundManagementPage() {
                     <tr key={item.refundId}>
                       {/* 1. REFUND ID */}
                       <td className="text-center" style={{ textAlign: 'center' }}>
-                        <span className={styles.refundIdText}>{index + 1}</span>
+                        <span className={styles.refundIdText}>{(currentPage - 1) * pageSize + index + 1}</span>
                       </td>
 
                       {/* 2. ORDER NO */}
@@ -952,13 +976,27 @@ export function RefundManagementPage() {
           </table>
         </div>
 
-        {/* TABLE FOOTER */}
-        <div className={styles.tableFooter}>
-          <span className={styles.footerCount}>
-            Showing <strong>{refunds.length}</strong> refund request
-            {refunds.length !== 1 ? 's' : ''}
-          </span>
-        </div>
+        {/* TABLE FOOTER WITH PAGINATION */}
+        {refunds.length > 0 && (
+          <div style={{ padding: '0 16px 16px 16px' }}>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalResults={refunds.length}
+              pageSize={pageSize}
+              onPageChange={(p) => {
+                setCurrentPage(p);
+                updateRefundParams({ page: p });
+              }}
+              onPageSizeChange={(sz) => {
+                setPageSize(sz);
+                setCurrentPage(1);
+                updateRefundParams({ page: 1 });
+              }}
+              pageSizeOptions={[5, 10, 20, 50]}
+            />
+          </div>
+        )}
       </div>
 
       {/* CONFIRMATION DECISION MODAL (APPROVE / REJECT) */}
