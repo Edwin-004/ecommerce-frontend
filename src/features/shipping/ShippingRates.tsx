@@ -295,6 +295,7 @@ export const ShippingRates = () => {
             <FiSearch className={styles.searchIcon} />
             <input
               type="text"
+              maxLength={30}
               placeholder="Search zones, cities..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

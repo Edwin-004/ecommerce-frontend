@@ -89,12 +89,18 @@ export const BulkEditRateModal: React.FC<BulkEditRateModalProps> = ({
               <input
                 type="number"
                 value={shippingFee}
+                maxLength={50}
+                onInput={(e) => {
+                  if (e.currentTarget.value.length > 5) {
+                    e.currentTarget.value = e.currentTarget.value.slice(0, 5);
+                  }
+                }}
                 onChange={(e) =>
                   setShippingFee(
                     e.target.value === '' ? '' : Number(e.target.value)
                   )
                 }
-                min={0}
+                min={1000}
                 placeholder="Leave blank for no change"
               />
             </div>
@@ -103,6 +109,11 @@ export const BulkEditRateModal: React.FC<BulkEditRateModalProps> = ({
               <input
                 type="number"
                 value={estimatedDays}
+                onInput={(e) => {
+                  if (e.currentTarget.value.length > 2) {
+                    e.currentTarget.value = e.currentTarget.value.slice(0, 2);
+                  }
+                }}
                 onChange={(e) =>
                   setEstimatedDays(
                     e.target.value === '' ? '' : Number(e.target.value)
