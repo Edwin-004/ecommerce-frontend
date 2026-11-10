@@ -1,4 +1,3 @@
-
 import { BackButton } from '../../components/common/BackButton';
 import {
   type ChangeEvent,
@@ -197,8 +196,9 @@ export function BrandModal({
 
     const brandName = form.brandName.trim();
 
-    if (!brandName) {
-      setErrorMessage('Brand name is required.');
+    // Validate that brand name is between 3 and 30 characters long
+    if (brandName.length < 3 || brandName.length > 30) {
+      setErrorMessage('Brand name must be between 3 and 30 characters long.');
       return;
     }
 
@@ -343,10 +343,11 @@ export function BrandModal({
                   type="text"
                   name="brandName"
                   className="form-control"
-                  placeholder="e.g. Nike"
+                  placeholder="e.g. Nike (3 to 30 characters)"
                   value={form.brandName}
                   onChange={handleChange}
-                  maxLength={100}
+                  minLength={3}
+                  maxLength={30}
                   disabled={loading}
                 />
               </div>

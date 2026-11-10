@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { BackButton } from "../../components/common/BackButton";
 import {
@@ -45,7 +44,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   formData,
   editingId,
   saving,
-  errorMessage,
+  errorMessage: externalErrorMessage,
   availableParents,
   onInputChange,
   onSubmit,
@@ -53,14 +52,16 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [subcategories, setSubcategories] = useState<string[]>([""]);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Reset subcategories when opening a new category form
+  // Reset subcategories and validation error when opening a new category form
   useEffect(() => {
     if (isOpen) {
       setSubcategories(editingId === null ? [""] : []);
       setDropdownOpen(false);
+      setValidationError(null);
     }
   }, [isOpen, editingId]);
 
@@ -140,11 +141,34 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   };
 
   const handleFormSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+
+    // Validate that the category name is between 3 and 30 characters long
+    const trimmedCategoryName = formData.categoryName?.trim() ?? "";
+    if (trimmedCategoryName.length < 3 || trimmedCategoryName.length > 30) {
+      setValidationError("Category name must be between 3 and 30 characters long.");
+      return;
+    }
+
+    // Validate that each added subcategory name is between 3 and 30 characters long
+    const trimmedSubcategories = subcategories
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0);
+
+    const hasInvalidSubcategory = trimmedSubcategories.some(
+      (name) => name.length < 3 || name.length > 30
+    );
+
+    if (hasInvalidSubcategory) {
+      setValidationError("Each subcategory name must be between 3 and 30 characters long.");
+      return;
+    }
+
+    setValidationError(null);
+
     const names =
       editingId === null && formData.parentId == null
-        ? subcategories
-            .map((name) => name.trim())
-            .filter((name) => name.length > 0)
+        ? trimmedSubcategories
         : [];
 
     void onSubmit(event, names);
@@ -153,6 +177,9 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
   // Only root categories can have subcategories added in this form.
   const canAddSubcategories =
     editingId === null && formData.parentId == null;
+
+  // Display error message (either local validation error or external error)
+  const displayError = validationError || externalErrorMessage;
 
   return (
     <div
@@ -190,13 +217,13 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
           <form onSubmit={handleFormSubmit}>
             <div className="modal-body p-4">
               {/* Error */}
-              {errorMessage && (
+              {displayError && (
                 <div
                   className="alert alert-danger d-flex align-items-center gap-2 mb-3 rounded-3"
                   role="alert"
                 >
                   <FiAlertCircle className="flex-shrink-0 fs-5" />
-                  <div>{errorMessage}</div>
+                  <div>{displayError}</div>
                 </div>
               )}
 
@@ -214,10 +241,11 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
                   name="categoryName"
                   type="text"
                   className="form-control"
-                  placeholder="e.g. Electronics"
+                  placeholder="e.g. Electronics (max 30 chars)"
                   value={formData.categoryName}
                   onChange={onInputChange}
-                  maxLength={120}
+                  minLength={3}
+                  maxLength={30}
                   required
                   disabled={saving}
                 />
@@ -233,7 +261,7 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
                       </label>
 
                       <div className="small text-secondary">
-                        Optional — add them under this main category.
+                        Optional — add them under this main category (3 to 30 characters).
                       </div>
                     </div>
 
@@ -261,13 +289,14 @@ export const CategoryFormModal: React.FC<CategoryFormModalProps> = ({
                       <input
                         type="text"
                         className="form-control"
-                        placeholder={`Subcategory ${index + 1}`}
+                        placeholder={`Subcategory ${index + 1} (3-30 chars)`}
                         aria-label={`Subcategory ${index + 1}`}
                         value={name}
                         onChange={(event) =>
                           updateSubcategory(index, event.target.value)
                         }
-                        maxLength={120}
+                        minLength={3}
+                        maxLength={30}
                         disabled={saving}
                       />
 
