@@ -186,6 +186,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
               <label>Zone Name</label>
               <input
                 type="text"
+                maxLength={20}
                 value={zoneName}
                 onChange={(e) => setZoneName(e.target.value)}
                 required
@@ -208,13 +209,19 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
               <label>Shipping Fee.</label>
               <input
                 type="number"
+                maxLength={50}
                 value={shippingFee}
+                onInput={(e) => {
+                  if (e.currentTarget.value.length > 5) {
+                    e.currentTarget.value = e.currentTarget.value.slice(0, 5);
+                  }
+                }}
                 onChange={(e) =>
                   setShippingFee(
                     e.target.value === '' ? '' : Number(e.target.value)
                   )
                 }
-                min={0}
+                min={1000}
                 required
               />
             </div>
@@ -223,6 +230,11 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
               <input
                 type="number"
                 value={estimatedDays}
+                onInput={(e) => {
+                  if (e.currentTarget.value.length > 2) {
+                    e.currentTarget.value = e.currentTarget.value.slice(0, 2);
+                  }
+                }}
                 onChange={(e) =>
                   setEstimatedDays(
                     e.target.value === '' ? '' : Number(e.target.value)
@@ -254,13 +266,22 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
                     <label>Default Fee.</label>
                     <input
                       type="number"
+                      maxLength={50}
+                      onInput={(e) => {
+                        if (e.currentTarget.value.length > 5) {
+                          e.currentTarget.value = e.currentTarget.value.slice(
+                            0,
+                            5
+                          );
+                        }
+                      }}
                       value={defaultShippingFee}
                       onChange={(e) =>
                         setDefaultShippingFee(
                           e.target.value === '' ? '' : Number(e.target.value)
                         )
                       }
-                      min={0}
+                      min={1000}
                       required={isEditingDefault}
                     />
                   </div>
@@ -269,6 +290,14 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
                     <input
                       type="number"
                       value={defaultEstimatedDays}
+                      onInput={(e) => {
+                        if (e.currentTarget.value.length > 2) {
+                          e.currentTarget.value = e.currentTarget.value.slice(
+                            0,
+                            2
+                          );
+                        }
+                      }}
                       onChange={(e) =>
                         setDefaultEstimatedDays(
                           e.target.value === '' ? '' : Number(e.target.value)

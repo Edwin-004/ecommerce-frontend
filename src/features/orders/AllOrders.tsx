@@ -482,7 +482,7 @@ export const AllOrders = () => {
             <input
               type="text"
               placeholder="Search Order No or Customer..."
-              maxLength={100}
+              maxLength={30}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={styles.searchInput}
