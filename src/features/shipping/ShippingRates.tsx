@@ -21,6 +21,7 @@ import { AddNewZoneModal } from './AddNewZoneModal';
 import { EditZoneModal } from './EditZoneModal';
 import { BulkEditRateModal } from './BulkEditRateModal';
 import Swal from 'sweetalert2';
+import { toast } from 'react-toastify';
 
 export const ShippingRates = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,6 +123,7 @@ export const ShippingRates = () => {
           city: zone.city,
           newStatus,
         }).unwrap();
+        toast.success(`Zone status changed to ${newStatus}.`);
         Swal.fire('Updated!', 'Zone status has been changed.', 'success');
       } catch (err) {
         Swal.fire('Error!', 'Failed to change status.', 'error');

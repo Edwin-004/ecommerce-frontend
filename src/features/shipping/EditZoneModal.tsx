@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useUpdateZoneRateMutation } from './shippingApi';
 import styles from './EditZoneModal.module.css';
 import { FiX } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 
 interface EditZoneModalProps {
   isOpen: boolean;
@@ -109,6 +110,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
         estimatedDays: Number(estimatedDays),
         status,
       }).unwrap();
+      toast.success('Zone updated successfully.');
 
       // ၂။ Default Zone ကိုပါ ပြင်မည်ဟု Checkbox ခြစ်ထားလျှင် ထပ်မံ Update လုပ်မည်
       if (
@@ -122,6 +124,7 @@ export const EditZoneModal: React.FC<EditZoneModalProps> = ({
           shippingFee: Number(defaultShippingFee),
           estimatedDays: Number(defaultEstimatedDays),
         }).unwrap();
+        toast.success('Default zone rates updated successfully.');
       }
 
       onClose(); // အကုန်အောင်မြင်ပါက Modal ပိတ်မည်

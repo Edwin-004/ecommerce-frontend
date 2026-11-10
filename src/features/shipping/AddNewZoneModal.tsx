@@ -169,6 +169,7 @@ export const AddNewZoneModal: React.FC<AddNewZoneModalProps> = ({
           ? Number(defaultEstimatedDays)
           : undefined,
       }).unwrap();
+      toast.success('New delivery zone created successfully.');
       onClose();
       setZoneName('');
       setSelectedRegionOrState('');

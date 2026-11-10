@@ -364,11 +364,13 @@ export const AllOrders = () => {
           courierName,
           trackingNumber,
         }).unwrap();
+        toast.success('Shipment created and order status updated to SHIPPED.');
       } else {
         await updateOrderStatusApi({
           orderNo: selectedOrderNo,
           newStatus: selectedStatus,
         }).unwrap();
+        toast.success(`Order status updated to ${selectedStatus}.`);
       }
       setShowShipmentModal(false);
       setTrackingNumber('');

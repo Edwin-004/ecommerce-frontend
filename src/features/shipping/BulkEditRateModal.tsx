@@ -52,6 +52,7 @@ export const BulkEditRateModal: React.FC<BulkEditRateModalProps> = ({
         estimatedDays: estimatedDays !== '' ? Number(estimatedDays) : undefined,
         status: status !== '' ? status : undefined,
       }).unwrap();
+      toast.success('Rates updated successfully for selected zones.');
 
       onSuccess(); // Selection များကို ရှင်းလင်းရန်
       onClose();
