@@ -283,10 +283,17 @@ export const EditProductPage: React.FC = () => {
           const withImgs = await Promise.all(
             vars.map(async (v: any) => {
               try {
-                const varImgs = await productManagementApi.getVariantImages(v.variantId);
-                return { ...v, images: Array.isArray(varImgs) ? varImgs : [] };
+                const [varImgs, inv] = await Promise.all([
+                  productManagementApi.getVariantImages(v.variantId).catch(() => []),
+                  inventoryApi.getInventoryByVariantId(v.variantId).catch(() => null),
+                ]);
+                return {
+                  ...v,
+                  images: Array.isArray(varImgs) ? varImgs : [],
+                  stock: inv?.quantity ?? 0,
+                };
               } catch {
-                return { ...v, images: [] };
+                return { ...v, images: [], stock: 0 };
               }
             })
           );
@@ -1400,6 +1407,27 @@ export const EditProductPage: React.FC = () => {
                               outline: 'none',
                             }}
                           />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                            Current Stock
+                          </label>
+                          <div
+                            style={{
+                              width: '100%',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid #e2e8f0',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              color: (v.stock ?? 0) > 0 ? '#16a34a' : '#ef4444',
+                              background: '#f1f5f9',
+                              boxSizing: 'border-box',
+                            }}
+                          >
+                            {v.stock ?? 0} units
+                          </div>
                         </div>
 
                         <div>

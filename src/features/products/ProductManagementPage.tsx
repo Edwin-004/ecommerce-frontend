@@ -28,6 +28,7 @@ import {
 } from 'react-icons/fi';
 import { Pagination } from '../../components/common/Pagination';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
+import { inventoryApi } from '../inventory/inventoryApi';
 import { ExcelImportModal } from './ExcelImportModal';
 import { toast } from 'react-toastify';
 
@@ -145,10 +146,17 @@ export const ProductManagementPage: React.FC = () => {
             const withImgs = await Promise.all(
               rawVariants.map(async (v: any) => {
                 try {
-                  const varImgs = await productManagementApi.getVariantImages(v.variantId);
-                  return { ...v, images: Array.isArray(varImgs) ? varImgs : [] };
+                  const [varImgs, inv] = await Promise.all([
+                    productManagementApi.getVariantImages(v.variantId).catch(() => []),
+                    inventoryApi.getInventoryByVariantId(v.variantId).catch(() => null),
+                  ]);
+                  return {
+                    ...v,
+                    images: Array.isArray(varImgs) ? varImgs : [],
+                    stock: inv?.quantity ?? 0,
+                  };
                 } catch {
-                  return { ...v, images: [] };
+                  return { ...v, images: [], stock: 0 };
                 }
               })
             );
@@ -1239,6 +1247,22 @@ export const ProductManagementPage: React.FC = () => {
                           <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '13px' }}>
                             {Number(v.sellingPrice || 0).toLocaleString()} MMK
                           </span>
+                          <div style={{ marginTop: '4px' }}>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                background: (v.stock ?? 0) > 0 ? '#ecfdf5' : '#fef2f2',
+                                color: (v.stock ?? 0) > 0 ? '#059669' : '#dc2626',
+                                border: `1px solid ${(v.stock ?? 0) > 0 ? '#a7f3d0' : '#fecaca'}`,
+                              }}
+                            >
+                              Stock: {v.stock ?? 0} units
+                            </span>
+                          </div>
                         </div>
                       </div>
 
