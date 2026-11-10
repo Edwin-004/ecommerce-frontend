@@ -1184,7 +1184,7 @@ export const AdminDashboard = () => {
                           type="button"
                           className="table-btn-view"
                           onClick={() =>
-                            navigate(`/admin/orders/${ord.orderNo}`)
+                            navigate(`/admin/orders?orderNo=${ord.orderNo || ord.orderId}`)
                           }
                         >
                           <FiEye size={12} /> View

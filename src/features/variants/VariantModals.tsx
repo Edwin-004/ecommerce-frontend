@@ -205,9 +205,10 @@ export const CreateVariantModal: React.FC<CreateVariantModalProps> = ({
               <div className={styles.skuInputRow}>
                 <input
                   type="text"
-                  placeholder="e.g. NIKE-AIR-BLK-42"
+                  placeholder="Click Auto-Generate to create SKU"
                   value={sku}
-                  onChange={(e) => setSku(e.target.value.toUpperCase())}
+                  readOnly
+                  style={{ backgroundColor: '#f8fafc', color: '#334155', fontWeight: 600 }}
                 />
                 <button
                   type="button"
@@ -301,7 +302,7 @@ interface EditVariantModalProps {
 }
 
 export const EditVariantModal: React.FC<EditVariantModalProps> = ({ variant, onClose, onSuccess }) => {
-  const [sku, setSku] = useState(variant.sku);
+  const sku = variant.sku;
   const [sellingPrice, setSellingPrice] = useState<number>(variant.sellingPrice);
   const [costPrice, setCostPrice] = useState<number>(variant.costPrice || 0);
   const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>(variant.status);
@@ -340,13 +341,17 @@ export const EditVariantModal: React.FC<EditVariantModalProps> = ({ variant, onC
             {error && <div className={styles.errorMessage}><FiAlertCircle /> {error}</div>}
 
             <div className={styles.formGroup}>
-              <label>SKU Code *</label>
+              <label>SKU Code (Auto-generated - Read Only)</label>
               <input
                 type="text"
-                required
+                readOnly
+                disabled
                 value={sku}
-                onChange={(e) => setSku(e.target.value.toUpperCase())}
+                style={{ backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b', fontWeight: 600 }}
               />
+              <small style={{ color: '#64748b', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                Auto-generated SKU cannot be modified.
+              </small>
             </div>
 
             <div className={styles.row2}>

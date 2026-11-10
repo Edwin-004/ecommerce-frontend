@@ -1,5 +1,5 @@
 // src/App.tsx
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Login } from './features/auth/Login';
 import { FirstTimePassword } from './features/auth/FirstTimePassword';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -28,6 +28,12 @@ import { ShippingRates } from './features/shipping/ShippingRates';
 import AuditLog from './features/auditLog/AuditLog';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+
+const OrderRouteRedirect = () => {
+  const { orderNo } = useParams<{ orderNo: string }>();
+  return <Navigate to={`/admin/orders?orderNo=${orderNo || ''}`} replace />;
+};
 
 function App() {
   return (
@@ -116,6 +122,7 @@ function App() {
               }
             >
               <Route path="/admin/orders" element={<AllOrders />} />
+              <Route path="/admin/orders/:orderNo" element={<OrderRouteRedirect />} />
               <Route path="/admin/refunds" element={<RefundManagementPage />} />
               <Route path="/admin/shipping-rates" element={<ShippingRates />} />
             </Route>
